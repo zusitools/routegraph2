@@ -7,8 +7,10 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    view/streckeview.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    view/streckeview.h
 
 FORMS    += mainwindow.ui
