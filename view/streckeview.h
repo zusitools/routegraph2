@@ -16,6 +16,15 @@ public:
 
 protected:
     void wheelEvent(QWheelEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    void mouseDoubleClickEvent(QMouseEvent *event);
+
+private:
+    bool m_rechteMaustasteGedrueckt;
+    bool m_linkeMaustasteGedrueckt;
+    QPoint m_dragStart;
 
 signals:
 
