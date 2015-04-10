@@ -14,12 +14,15 @@ SOURCES += main.cpp\
     zusi_file_lib/src/model/punkt3d.cpp \
     zusi_file_lib/src/io/z2_leser.cpp \
     zusi_file_lib/src/io/str_leser.cpp \
-    view/graphicsitems/streckenelementitem.cpp
+    view/graphicsitems/streckensegmentitem.cpp \
+    routegraphapplication.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
     view/streckescene.h \
-    view/graphicsitems/streckenelementitem.h
+    view/graphicsitems/minbreitegraphicsitem.h \
+    view/graphicsitems/streckensegmentitem.h \
+    routegraphapplication.h
 
 FORMS    += mainwindow.ui
 

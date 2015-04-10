@@ -4,6 +4,7 @@ StreckeView::StreckeView(QWidget *parent) :
     QGraphicsView(parent)
 {
     this->setDragMode(QGraphicsView::ScrollHandDrag);
+    this->setRenderHint(QPainter::Antialiasing);
 }
 
 void StreckeView::skalieren(double faktor)

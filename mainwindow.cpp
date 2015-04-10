@@ -31,7 +31,12 @@ void MainWindow::actionOeffnenTriggered()
     StrLeser strLeser;
     this->m_strecke = strLeser.liesStrDateiMitDateiname(dateiname.toStdString());
     ui->streckeView->setScene(new StreckeScene(this->m_strecke));
+
+    // Zusi 2
+    ui->streckeView->rotate(-90);
+    ui->streckeView->scale(1.0f, -1.0f);
     ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
+    ui->streckeView->centerOn(ui->streckeView->sceneRect().center());
 }
 
 QString MainWindow::zeigeStreckeOeffnenDialog()
