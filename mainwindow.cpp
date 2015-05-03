@@ -5,6 +5,7 @@
 
 #include "view/streckescene.h"
 
+#include "zusi_file_lib/src/io/st3_leser.hpp"
 #include "zusi_file_lib/src/io/str_leser.hpp"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -28,8 +29,16 @@ void MainWindow::actionOeffnenTriggered()
         return;
     }
 
-    StrLeser strLeser;
-    this->m_strecke = strLeser.liesStrDateiMitDateiname(dateiname.toStdString());
+    if (dateiname.endsWith("st3", Qt::CaseInsensitive))
+    {
+        St3Leser st3Leser;
+        this->m_strecke = st3Leser.liesSt3DateiMitDateiname(dateiname.toStdString());
+    }
+    else
+    {
+        StrLeser strLeser;
+        this->m_strecke = strLeser.liesStrDateiMitDateiname(dateiname.toStdString());
+    }
     ui->streckeView->setScene(new StreckeScene(this->m_strecke));
 
     // Zusi 2

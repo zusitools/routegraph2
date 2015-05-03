@@ -15,7 +15,9 @@ SOURCES += main.cpp\
     zusi_file_lib/src/io/z2_leser.cpp \
     zusi_file_lib/src/io/str_leser.cpp \
     view/graphicsitems/streckensegmentitem.cpp \
-    routegraphapplication.cpp
+    routegraphapplication.cpp \
+    zusi_file_lib/src/io/z3_leser.cpp \
+    zusi_file_lib/src/io/st3_leser.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
@@ -28,4 +30,5 @@ FORMS    += mainwindow.ui
 
 QMAKE_CXXFLAGS += -std=c++11
 
+INCLUDEPATH += $$PWD/zusi_file_lib
 INCLUDEPATH += $$PWD/zusi_file_lib/src
