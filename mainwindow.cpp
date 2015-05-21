@@ -41,11 +41,17 @@ void MainWindow::actionOeffnenTriggered()
     }
     ui->streckeView->setScene(new StreckeScene(this->m_strecke));
 
-    // Zusi 2
+    // Zusi 2&3
     ui->streckeView->rotate(-90);
     ui->streckeView->scale(1.0f, -1.0f);
     ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
     ui->streckeView->centerOn(ui->streckeView->sceneRect().center());
+
+    // Zusi 3
+    if (this->m_strecke->dateiInfo->formatVersion[0] != '2')
+    {
+        ui->streckeView->rotate(-90);
+    }
 }
 
 QString MainWindow::zeigeStreckeOeffnenDialog()
