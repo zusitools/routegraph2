@@ -20,6 +20,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
+    void drawBackground(QPainter *painter, const QRectF &rect);
 
 private:
     bool m_rechteMaustasteGedrueckt;
