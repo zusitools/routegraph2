@@ -2,6 +2,8 @@
 
 #include "view/graphicsitems/streckensegmentitem.h"
 
+#include <QDebug>
+
 bool istSegmentStart(StreckenelementUndRichtung elementUndRichtung)
 {
     if (!elementUndRichtung.hatVorgaenger())
@@ -27,14 +29,58 @@ StreckeScene::StreckeScene(unique_ptr<Strecke> &strecke, QObject *parent) :
     }
 
     this->setItemIndexMethod(QGraphicsScene::NoIndex);
+    auto anzahlSegmente = 0;
+
+    bool istZusi2 = strecke->dateiInfo->formatVersion[0] == '2';
+    auto richtungen = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
+    if (istZusi2) richtungen = {Streckenelement::RICHTUNG_NORM };
 
     for (auto streckenelement : strecke->streckenelemente)
     {
-        if (streckenelement != nullptr && istSegmentStart(StreckenelementUndRichtung(streckenelement, Streckenelement::RICHTUNG_NORM)))
+        if (streckenelement != nullptr)
         {
-            this->addItem(new StreckensegmentItem(
-                                                  StreckenelementUndRichtung(streckenelement, Streckenelement::RICHTUNG_NORM),
-                                                  istSegmentStart, nullptr));
+            for (auto richtung : richtungen)
+            {
+              if (istSegmentStart(StreckenelementUndRichtung(streckenelement, richtung)))
+              {
+                  auto item = new StreckensegmentItem(
+                              StreckenelementUndRichtung(streckenelement, richtung),
+                              istSegmentStart, nullptr);
+                  auto startNr = streckenelement->nr;
+                  auto endeNr = item->ende.streckenelement.lock()->nr;
+                  // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
+                  // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
+                  // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
+                  if (!istZusi2 && (endeNr < startNr || (endeNr == startNr && richtung == Streckenelement::RICHTUNG_GEGEN)))
+                  {
+                      delete item;
+                  }
+                  else
+                  {
+                      this->addItem(item);
+                      anzahlSegmente++;
+
+                      // Debug
+                      auto ti = this->addText(QString::number(streckenelement->nr) + " Start");
+                      if (richtung == Streckenelement::RICHTUNG_NORM)
+                        ti->setPos(streckenelement->p1.x, streckenelement->p1.y);
+                      else
+                        ti->setPos(streckenelement->p2.x, streckenelement->p2.y);
+                      ti->setTransform(QTransform().scale(-1, 1).rotate(180));
+                      ti->setDefaultTextColor(item->pen().color());
+
+                      ti = this->addText(QString::number(streckenelement->nr) + " Ende");
+                      if (item->ende.richtung == Streckenelement::RICHTUNG_NORM)
+                        ti->setPos(item->ende.streckenelement.lock()->p2.x, item->ende.streckenelement.lock()->p2.y);
+                      else
+                          ti->setPos(item->ende.streckenelement.lock()->p1.x, item->ende.streckenelement.lock()->p1.y);
+                                            ti->setTransform(QTransform().scale(-1, 1).rotate(180));
+                                            ti->setDefaultTextColor(item->pen().color());
+                  }
+              }
+            }
         }
     }
+
+    qDebug() << anzahlSegmente << "Segmente";
 }

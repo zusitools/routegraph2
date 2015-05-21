@@ -44,6 +44,7 @@ StreckensegmentItem::StreckensegmentItem(StreckenelementUndRichtung start,
     } while (!istSegmentStart(cur));
 
     this->setPath(path);
+    this->ende = cur;
 
     QColor penColor = QColor(qrand() % 256, qrand() % 256, qrand() % 256);
     QPen pen = this->pen();

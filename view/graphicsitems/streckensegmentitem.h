@@ -14,6 +14,8 @@ class StreckensegmentItem : public MinBreiteGraphicsItem<QGraphicsPathItem>
 public:
     explicit StreckensegmentItem(StreckenelementUndRichtung start, bool (*istSegmentStart)(StreckenelementUndRichtung), QGraphicsItem *parent = 0);
 
+    StreckenelementUndRichtung ende;
+
 private:
 };
 
