@@ -40,6 +40,7 @@ void MainWindow::actionOeffnenTriggered()
         this->m_strecke = strLeser.liesStrDateiMitDateiname(dateiname.toStdString());
     }
     ui->streckeView->setScene(new StreckeScene(this->m_strecke));
+    ui->streckeView->resetTransform();
 
     // Zusi 2&3
     ui->streckeView->rotate(-90);
