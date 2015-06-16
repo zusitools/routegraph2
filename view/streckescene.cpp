@@ -4,7 +4,7 @@
 
 #include <QDebug>
 
-bool istSegmentStart(StreckenelementUndRichtung elementUndRichtung)
+bool istSegmentStart(const StreckenelementUndRichtung elementUndRichtung)
 {
     if (!elementUndRichtung.hatVorgaenger())
     {

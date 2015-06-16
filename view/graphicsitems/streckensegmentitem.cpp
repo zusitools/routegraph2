@@ -31,16 +31,11 @@ StreckensegmentItem::StreckensegmentItem(StreckenelementUndRichtung start,
             path.lineTo(curelem->p1.x, curelem->p1.y);
         }
 
-        if (!cur.hatNachfolger())
+        if (istSegmentStart(cur.gegenrichtung()))
         {
             break;
         }
-        auto next = cur.nachfolger();
-        if (next.hatVorgaenger() && next.vorgaenger().streckenelement.lock() != curelem)
-        {
-            break;
-        }
-        cur = next;
+        cur= cur.nachfolger();
     } while (!istSegmentStart(cur));
 
     this->setPath(path);
