@@ -24,22 +24,42 @@ void MainWindow::actionOeffnenTriggered()
 {
     QString dateiname = this->zeigeStreckeOeffnenDialog();
 
-    if (dateiname.isNull())
+    if (!dateiname.isNull())
     {
-        return;
+        this->m_strecken.clear();
+        this->oeffneStrecke(dateiname);
     }
+}
 
+void MainWindow::actionModulOeffnenTriggered()
+{
+    QString dateiname = this->zeigeStreckeOeffnenDialog();
+
+    if (!dateiname.isNull())
+    {
+        this->oeffneStrecke(dateiname);
+    }
+}
+
+void MainWindow::oeffneStrecke(QString dateiname)
+{
     if (dateiname.endsWith("st3", Qt::CaseInsensitive))
     {
         St3Leser st3Leser;
-        this->m_strecke = st3Leser.liesSt3DateiMitDateiname(dateiname.toStdString());
+        this->m_strecken.push_back(st3Leser.liesSt3DateiMitDateiname(dateiname.toStdString()));
     }
     else
     {
         StrLeser strLeser;
-        this->m_strecke = strLeser.liesStrDateiMitDateiname(dateiname.toStdString());
+        this->m_strecken.push_back(strLeser.liesStrDateiMitDateiname(dateiname.toStdString()));
     }
-    ui->streckeView->setScene(new StreckeScene(this->m_strecke));
+
+    vector<reference_wrapper<unique_ptr<Strecke> > > strecken;
+    for (auto &strecke : this->m_strecken)
+    {
+        strecken.push_back(reference_wrapper<unique_ptr<Strecke> >(strecke));
+    }
+    ui->streckeView->setScene(new StreckeScene(strecken));
     ui->streckeView->resetTransform();
 
     // Zusi 2&3
@@ -49,7 +69,7 @@ void MainWindow::actionOeffnenTriggered()
     ui->streckeView->centerOn(ui->streckeView->sceneRect().center());
 
     // Zusi 3
-    if (this->m_strecke->dateiInfo->formatVersion[0] != '2')
+    if (this->m_strecken[0]->dateiInfo->formatVersion[0] != '2')
     {
         ui->streckeView->rotate(-90);
     }

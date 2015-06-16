@@ -37,12 +37,18 @@
      <string>&amp;Datei</string>
     </property>
     <addaction name="actionOeffnen"/>
+    <addaction name="actionModulOeffnen"/>
    </widget>
    <addaction name="menuDatei"/>
   </widget>
   <action name="actionOeffnen">
    <property name="text">
     <string>Ö&amp;ffnen ...</string>
+   </property>
+  </action>
+  <action name="actionModulOeffnen">
+   <property name="text">
+    <string>&amp;Modul öffnen ...</string>
    </property>
   </action>
  </widget>
@@ -61,6 +67,22 @@
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>actionOeffnenTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>152</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionModulOeffnen</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionModulOeffnenTriggered()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>

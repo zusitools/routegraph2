@@ -21,11 +21,15 @@ public:
 
 public slots:
     void actionOeffnenTriggered();
+    void actionModulOeffnenTriggered();
 
 private:
     Ui::MainWindow *ui;
 
-    unique_ptr<Strecke> m_strecke;
+    vector<unique_ptr<Strecke> > m_strecken;
+
+    /** Oeffnet eine Streckendatei und fuegt sie zur Liste der offenen Strecken hinzu. */
+    void oeffneStrecke(QString dateiname);
 
     /** Zeigt einen Dialog zum Oeffnen einer Strecke mit passendem Startverzeichnis und liefert den Dateinamen zurueck. */
     QString zeigeStreckeOeffnenDialog();
