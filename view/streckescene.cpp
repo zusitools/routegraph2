@@ -17,7 +17,28 @@ bool istSegmentStart(const StreckenelementUndRichtung elementUndRichtung)
         return true;
     }
 
+    auto vorgaengerElement = vorgaenger.streckenelement.lock();
+    if (vorgaengerElement->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
+            elementUndRichtung.streckenelement.lock()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
+        return true;
+    }
+
     return vorgaenger.nachfolger().streckenelement.lock().get() != elementUndRichtung.streckenelement.lock().get();
+}
+
+void setzeDarstellung(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
+{
+    auto el = start.streckenelement.lock();
+
+    QPen pen = item.pen();
+    auto test = el->flags.find(StreckenelementFlag::KeineGleisfunktion);
+    if (el->flags.find(StreckenelementFlag::KeineGleisfunktion) == el->flags.end())
+    {
+        pen.setColor(Qt::black);
+    } else {
+        pen.setColor(Qt::lightGray);
+    }
+    item.setPen(pen);
 }
 
 StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > strecken, QObject *parent) :
@@ -53,7 +74,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                     {
                         auto item = new StreckensegmentItem(
                                     StreckenelementUndRichtung(streckenelement, richtung),
-                                    istSegmentStart, nullptr);
+                                    istSegmentStart, setzeDarstellung, nullptr);
                         auto startNr = streckenelement->nr;
                         auto endeNr = item->ende.streckenelement.lock()->nr;
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).

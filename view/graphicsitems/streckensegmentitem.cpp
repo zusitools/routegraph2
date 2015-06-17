@@ -2,8 +2,9 @@
 
 StreckensegmentItem::StreckensegmentItem(StreckenelementUndRichtung start,
                                          bool (*istSegmentStart)(StreckenelementUndRichtung),
+                                         void (*setzeDarstellung)(StreckensegmentItem&, const StreckenelementUndRichtung&),
                                          QGraphicsItem *parent) :
-    MinBreiteGraphicsItem<QGraphicsPathItem>(parent, float(qrand()) / RAND_MAX * 3.0f)
+    MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f)
 {
     if (start.streckenelement.expired())
     {
@@ -39,10 +40,7 @@ StreckensegmentItem::StreckensegmentItem(StreckenelementUndRichtung start,
     } while (!istSegmentStart(cur));
 
     this->setPath(path);
+    this->setToolTip(QString::number(start.streckenelement.lock()->nr));
     this->ende = cur;
-
-    QColor penColor = QColor(qrand() % 256, qrand() % 256, qrand() % 256);
-    QPen pen = this->pen();
-    pen.setColor(penColor);
-    this->setPen(pen);
+    setzeDarstellung(*this, start);
 }

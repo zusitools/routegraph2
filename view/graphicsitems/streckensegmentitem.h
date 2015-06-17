@@ -12,7 +12,10 @@ using namespace std;
 class StreckensegmentItem : public MinBreiteGraphicsItem<QGraphicsPathItem>
 {
 public:
-    explicit StreckensegmentItem(StreckenelementUndRichtung start, bool (*istSegmentStart)(StreckenelementUndRichtung), QGraphicsItem *parent = 0);
+    explicit StreckensegmentItem(StreckenelementUndRichtung start,
+        bool (*istSegmentStart)(StreckenelementUndRichtung),
+        void (*setzeDarstellung)(StreckensegmentItem &, const StreckenelementUndRichtung &),
+        QGraphicsItem *parent = 0);
 
     StreckenelementUndRichtung ende;
 
