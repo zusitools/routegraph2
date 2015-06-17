@@ -91,7 +91,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                             this->addItem(item);
                             anzahlSegmente++;
 
-                            // Debug
+#ifdef DEBUG_SEGMENTE
                             auto ti = this->addText(QString::number(streckenelement->nr) + " Start");
                             if (richtung == Streckenelement::RICHTUNG_NORM)
                                 ti->setPos(streckenelement->p1.x, streckenelement->p1.y);
@@ -109,6 +109,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                             ti->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
                             ti->setTransform(QTransform().scale(-1, 1).rotate(180));
                             ti->setDefaultTextColor(item->pen().color());
+#endif
                         }
                     }
                 }
