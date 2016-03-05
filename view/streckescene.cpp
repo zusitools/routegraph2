@@ -4,7 +4,7 @@
 
 #include <QDebug>
 
-bool istSegmentStart(const StreckenelementUndRichtung elementUndRichtung)
+bool istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung)
 {
     if (!elementUndRichtung.hatVorgaenger())
     {
@@ -17,26 +17,22 @@ bool istSegmentStart(const StreckenelementUndRichtung elementUndRichtung)
         return true;
     }
 
-    auto vorgaengerElement = vorgaenger.streckenelement.lock();
-    if (vorgaengerElement->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
-            elementUndRichtung.streckenelement.lock()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
+    if (vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
+            elementUndRichtung->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
         return true;
     }
 
-    return vorgaenger.nachfolger().streckenelement.lock().get() != elementUndRichtung.streckenelement.lock().get();
+    return &*vorgaenger.nachfolger() != &*elementUndRichtung;
 }
 
 void setzeDarstellung(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
 {
-    auto el = start.streckenelement.lock();
-
     QPen pen = item.pen();
-    auto test = el->flags.find(StreckenelementFlag::KeineGleisfunktion);
-    if (el->flags.find(StreckenelementFlag::KeineGleisfunktion) == el->flags.end())
+    if (start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion))
     {
-        pen.setColor(Qt::black);
-    } else {
         pen.setColor(Qt::lightGray);
+    } else {
+        pen.setColor(Qt::black);
     }
     item.setPen(pen);
 }
@@ -64,19 +60,19 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
         auto richtungen = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
         if (istZusi2) richtungen = {Streckenelement::RICHTUNG_NORM };
 
-        for (auto streckenelement : strecke->streckenelemente)
+        for (auto& streckenelement : strecke->streckenelemente)
         {
-            if (streckenelement != nullptr)
+            if (streckenelement)
             {
                 for (auto richtung : richtungen)
                 {
-                    if (istSegmentStart(StreckenelementUndRichtung(streckenelement, richtung)))
+                    if (istSegmentStart(streckenelement->richtung(richtung)))
                     {
                         auto item = new StreckensegmentItem(
-                                    StreckenelementUndRichtung(streckenelement, richtung),
+                                    streckenelement->richtung(richtung),
                                     istSegmentStart, setzeDarstellung, nullptr);
                         auto startNr = streckenelement->nr;
-                        auto endeNr = item->ende.streckenelement.lock()->nr;
+                        auto endeNr = item->ende->nr;
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
@@ -103,9 +99,9 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
 
                             ti = this->addText(QString::number(streckenelement->nr) + " Ende");
                             if (item->ende.richtung == Streckenelement::RICHTUNG_NORM)
-                                ti->setPos(item->ende.streckenelement.lock()->p2.x, item->ende.streckenelement.lock()->p2.y);
+                                ti->setPos(item->ende->p2.x, item->ende->p2.y);
                             else
-                                ti->setPos(item->ende.streckenelement.lock()->p1.x, item->ende.streckenelement.lock()->p1.y);
+                                ti->setPos(item->ende->p1.x, item->ende->p1.y);
                             ti->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
                             ti->setTransform(QTransform().scale(-1, 1).rotate(180));
                             ti->setDefaultTextColor(item->pen().color());
