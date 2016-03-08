@@ -1,6 +1,7 @@
 #include "streckescene.h"
 
 #include "view/graphicsitems/streckensegmentitem.h"
+#include "view/graphicsitems/dreieckitem.h"
 
 #include <QDebug>
 
@@ -107,6 +108,33 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                             ti->setDefaultTextColor(item->pen().color());
 #endif
                         }
+                    }
+
+                    auto& signal = streckenelement->richtungsInfo[richtung].signal;
+
+                    if (signal) {
+                        qreal phi;
+                        if (richtung == Streckenelement::RICHTUNG_NORM)
+                        {
+                            phi = QLineF(streckenelement->p1.x, streckenelement->p1.y, streckenelement->p2.x, streckenelement->p2.y).angle();
+                        }
+                        else
+                        {
+                            phi = QLineF(streckenelement->p2.x, streckenelement->p2.y, streckenelement->p1.x, streckenelement->p1.y).angle();
+                        }
+
+                        auto si = unique_ptr<DreieckItem>(new DreieckItem(phi, QString::fromStdString(signal->signalbezeichnung), Qt::red));
+                        if (richtung == Streckenelement::RICHTUNG_NORM)
+                        {
+                            si->setPos(streckenelement->p2.x, streckenelement->p2.y);
+                        }
+                        else
+                        {
+                            si->setPos(streckenelement->p1.x, streckenelement->p1.y);
+                        }
+
+                        si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+                        this->addItem(si.release());
                     }
                 }
             }
