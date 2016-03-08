@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 
 #include <QFileDialog>
+#include <QTime>
+#include <QDebug>
 
 #include "view/streckescene.h"
 
@@ -43,6 +45,9 @@ void MainWindow::actionModulOeffnenTriggered()
 
 void MainWindow::oeffneStrecke(QString dateiname)
 {
+    QTime timer;
+    timer.start();
+
     if (dateiname.endsWith("st3", Qt::CaseInsensitive))
     {
         St3Leser st3Leser;
@@ -54,12 +59,16 @@ void MainWindow::oeffneStrecke(QString dateiname)
         this->m_strecken.push_back(strLeser.liesStrDateiMitDateiname(dateiname.toStdString()));
     }
 
+    qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
+    timer.restart();
+
     vector<reference_wrapper<unique_ptr<Strecke> > > strecken;
     for (auto &strecke : this->m_strecken)
     {
         strecken.push_back(reference_wrapper<unique_ptr<Strecke> >(strecke));
     }
     ui->streckeView->setScene(new StreckeScene(strecken));
+    qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
     ui->streckeView->resetTransform();
 
     // Zusi 2&3
