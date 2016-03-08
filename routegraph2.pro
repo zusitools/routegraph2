@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     routegraphapplication.cpp \
     zusi_file_lib/src/io/z3_leser.cpp \
     zusi_file_lib/src/io/st3_leser.cpp \
-    view/graphicsitems/dreieckitem.cpp
+    view/graphicsitems/dreieckitem.cpp \
+    view/graphicsitems/label.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
@@ -26,7 +27,8 @@ HEADERS  += mainwindow.h \
     view/graphicsitems/minbreitegraphicsitem.h \
     view/graphicsitems/streckensegmentitem.h \
     routegraphapplication.h \
-    view/graphicsitems/dreieckitem.h
+    view/graphicsitems/dreieckitem.h \
+    view/graphicsitems/label.h
 
 FORMS    += mainwindow.ui
 

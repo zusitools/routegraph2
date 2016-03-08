@@ -7,6 +7,8 @@
 #include <QGraphicsSimpleTextItem>
 #include <QColor>
 
+#include "label.h"
+
 using namespace std;
 
 /**
@@ -28,7 +30,7 @@ private:
     QColor m_farbe;
     QPointF m_points[3];
 
-    unique_ptr<QGraphicsSimpleTextItem> m_label;
+    unique_ptr<Label> m_label;
 };
 
 #endif // DREIECKITEM_H

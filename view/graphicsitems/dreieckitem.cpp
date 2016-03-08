@@ -20,12 +20,23 @@ DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGra
 
     this->setToolTip(this->m_text);
 
-    this->m_label.reset(new QGraphicsSimpleTextItem(this->m_text, this));
-    this->m_label->setPen(Qt::NoPen);
+    this->m_label.reset(new Label(this->m_text, this));
+    this->m_label->setPen(QPen(this->m_farbe));
     this->m_label->setBrush(QBrush(this->m_farbe));
     this->m_label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
 
     this->m_label->setPos(this->m_points[0]); // Spitze
+
+    // TODO: optimiert auf Zusi-3-Strecken
+    auto phi_mod = fmod(phi, 360);
+    if (phi_mod >= 90 && phi_mod <= 270)
+    {
+        this->m_label->setAlignment(Qt::AlignRight);
+    }
+    if (phi_mod >= 180)
+    {
+        this->m_label->setAlignment(this->m_label->alignment() | Qt::AlignTop);
+    }
 }
 
 QRectF DreieckItem::boundingRect() const
