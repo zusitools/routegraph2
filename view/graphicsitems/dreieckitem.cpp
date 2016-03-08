@@ -3,21 +3,21 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
-#include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 // Maße des Dreiecks (in Szeneneinheiten = Metern)
 #define SEITENLAENGE 6.0
 #define HOEHE (SEITENLAENGE * sqrt(3.0) / 2)
 
 DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGraphicsItem *parent)
-    : QGraphicsItem(parent), m_phi(phi / 180 * M_PI), m_text(text), m_farbe(farbe),
-      m_points({
-          // Y-Koordinate invertieren, da sie bei Qts Koordinatensystem nach unten statt nach oben zeigt
-          QPointF(HOEHE * cos(this->m_phi), -(HOEHE * sin(this->m_phi))),
-          QPointF(SEITENLAENGE/2 * cos(this->m_phi - M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi - M_PI_2))),
-          QPointF(SEITENLAENGE/2 * cos(this->m_phi + M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi + M_PI_2))),
-      })
+    : QGraphicsItem(parent), m_phi(phi / 180 * M_PI), m_text(text), m_farbe(farbe)
 {
+    // Y-Koordinate invertieren, da sie bei Qts Koordinatensystem nach unten statt nach oben zeigt
+    this->m_points[0] = QPointF(HOEHE * cos(this->m_phi), -(HOEHE * sin(this->m_phi)));
+    this->m_points[1] = QPointF(SEITENLAENGE/2 * cos(this->m_phi - M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi - M_PI_2)));
+    this->m_points[2] = QPointF(SEITENLAENGE/2 * cos(this->m_phi + M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi + M_PI_2)));
+
     this->setToolTip(this->m_text);
 
     this->m_label.reset(new QGraphicsSimpleTextItem(this->m_text, this));

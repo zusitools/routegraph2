@@ -45,8 +45,8 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     auto anzahlSegmente = 0;
 
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
-    double utmRefWe = 0.0d;
-    double utmRefNs = 0.0d;
+    double utmRefWe = 0.0;
+    double utmRefNs = 0.0;
     for (unique_ptr<Strecke> &strecke : strecken)
     {
         utmRefWe += strecke->utmPunkt.we / float(strecken.size());
