@@ -129,10 +129,18 @@ void StreckeView::drawBackground(QPainter *painter, const QRectF &rect)
     QVarLengthArray<QLineF, 100> lines;
 
     for (qreal x = left; x < rect.right(); x += gridSize)
+    {
         lines.append(QLineF(x, rect.top(), x, rect.bottom()));
+    }
     for (qreal y = top; y < rect.bottom(); y += gridSize)
+    {
         lines.append(QLineF(rect.left(), y, rect.right(), y));
+    }
 
+    auto antiAliasingAn = painter->testRenderHint(QPainter::Antialiasing);
+    painter->setRenderHint(QPainter::Antialiasing, false);
     painter->setPen(QColor(220, 220, 220));
     painter->drawLines(lines.data(), lines.size());
+    painter->setRenderHint(QPainter::Antialiasing, antiAliasingAn);
+    }
 }
