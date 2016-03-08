@@ -1,5 +1,5 @@
-#ifndef STRECKENELEMENTITEM_H
-#define STRECKENELEMENTITEM_H
+#ifndef STRECKENSEGMENTITEM_H
+#define STRECKENSEGMENTITEM_H
 
 #include "view/graphicsitems/minbreitegraphicsitem.h"
 #include "zusi_file_lib/src/model/streckenelement.hpp"
@@ -24,4 +24,4 @@ private:
 
 
 
-#endif // STRECKENELEMENTITEM_H
+#endif // STRECKENSEGMENTITEM_H
