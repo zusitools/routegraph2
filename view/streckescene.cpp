@@ -112,7 +112,10 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
 
                     auto& signal = streckenelement->richtungsInfo[richtung].signal;
 
-                    if (signal) {
+                    if (signal && !signal->signalbezeichnung.empty()
+                            && signal->signaltyp != SignalTyp::Weiche
+                            && signal->signaltyp != SignalTyp::Unbestimmt
+                            && signal->signaltyp != SignalTyp::Sonstiges) {
                         qreal phi;
                         if (richtung == Streckenelement::RICHTUNG_NORM)
                         {
@@ -123,7 +126,20 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                             phi = QLineF(streckenelement->p2.x, streckenelement->p2.y, streckenelement->p1.x, streckenelement->p1.y).angle();
                         }
 
-                        auto si = unique_ptr<DreieckItem>(new DreieckItem(phi, QString::fromStdString(signal->signalbezeichnung), Qt::red));
+                        QColor farbe = Qt::red;
+                        switch (signal->signaltyp) {
+                            case SignalTyp::Vorsignal:
+                                farbe = Qt::darkGreen;
+                                break;
+                            case SignalTyp::Gleissperre:
+                            case SignalTyp::Rangiersignal:
+                                farbe = Qt::blue;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        auto si = unique_ptr<DreieckItem>(new DreieckItem(phi, QString::fromStdString(signal->signalbezeichnung), farbe));
                         if (richtung == Streckenelement::RICHTUNG_NORM)
                         {
                             si->setPos(streckenelement->p2.x, streckenelement->p2.y);
