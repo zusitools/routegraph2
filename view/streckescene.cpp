@@ -112,10 +112,10 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
 
                     auto& signal = streckenelement->richtungsInfo[richtung].signal;
 
-                    if (signal && !signal->signalbezeichnung.empty()
-                            && signal->signaltyp != SignalTyp::Weiche
+                    if (signal && !signal->signalbezeichnung.empty() &&
+                            (istZusi2 || (signal->signaltyp != SignalTyp::Weiche
                             && signal->signaltyp != SignalTyp::Unbestimmt
-                            && signal->signaltyp != SignalTyp::Sonstiges) {
+                            && signal->signaltyp != SignalTyp::Sonstiges))) {
                         qreal phi;
                         if (richtung == Streckenelement::RICHTUNG_NORM)
                         {
