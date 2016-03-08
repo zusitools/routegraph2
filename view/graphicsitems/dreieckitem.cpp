@@ -23,6 +23,7 @@ DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGra
     this->m_label.reset(new QGraphicsSimpleTextItem(this->m_text, this));
     this->m_label->setPen(Qt::NoPen);
     this->m_label->setBrush(QBrush(this->m_farbe));
+    this->m_label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
 
     this->m_label->setPos(this->m_points[0]); // Spitze
 }
