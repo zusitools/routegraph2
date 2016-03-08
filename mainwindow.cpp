@@ -73,6 +73,8 @@ void MainWindow::oeffneStrecke(QString dateiname)
     {
         ui->streckeView->rotate(-90);
     }
+
+    ui->streckeView->setDefaultTransform(ui->streckeView->transform());
 }
 
 QString MainWindow::zeigeStreckeOeffnenDialog()

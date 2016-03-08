@@ -14,6 +14,8 @@ public:
     void vergroessern();
     void verkleinern();
 
+    void setDefaultTransform(const QTransform& matrix);
+
 protected:
     void wheelEvent(QWheelEvent *event);
     void mousePressEvent(QMouseEvent *event);
@@ -26,6 +28,7 @@ private:
     bool m_rechteMaustasteGedrueckt;
     bool m_linkeMaustasteGedrueckt;
     QPoint m_dragStart;
+    QTransform m_defaultTransform;
 
 signals:
 

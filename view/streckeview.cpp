@@ -25,6 +25,11 @@ void StreckeView::verkleinern()
     this->skalieren(1.0/1.1);
 }
 
+void StreckeView::setDefaultTransform(const QTransform &matrix)
+{
+    this->m_defaultTransform = matrix;
+}
+
 void StreckeView::wheelEvent(QWheelEvent *event)
 {
      if (event->modifiers() == Qt::ControlModifier)
@@ -114,7 +119,7 @@ void StreckeView::mouseReleaseEvent(QMouseEvent *event)
 void StreckeView::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::RightButton) {
-        this->resetTransform();
+        this->setTransform(this->m_defaultTransform);
         this->fitInView(this->sceneRect(), Qt::KeepAspectRatio);
     }
 }
