@@ -5,8 +5,11 @@
 
 #include <limits>
 
+#include "view/zwerte.h"
+
 Label::Label(const QString text, QGraphicsItem *parent) : QGraphicsSimpleTextItem(text, parent)
 {
+    this->setZValue(ZWERT_BESCHRIFTUNG);
 }
 
 QRectF Label::boundingRect() const

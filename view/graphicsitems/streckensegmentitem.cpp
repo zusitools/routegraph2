@@ -1,11 +1,14 @@
 #include "streckensegmentitem.h"
 
+#include "view/zwerte.h"
+
 StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start,
                                          bool (*istSegmentStart)(const StreckenelementUndRichtung&),
                                          void (*setzeDarstellung)(StreckensegmentItem&, const StreckenelementUndRichtung&),
                                          QGraphicsItem *parent) :
     MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f), ende(start)
 {
+    this->setZValue(ZWERT_GLEIS);
     QPainterPath path;
 
     if (start.richtung == Streckenelement::RICHTUNG_NORM)

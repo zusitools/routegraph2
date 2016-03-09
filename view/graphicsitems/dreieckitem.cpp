@@ -6,6 +6,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "view/zwerte.h"
+
 // Maße des Dreiecks (in Szeneneinheiten = Metern)
 #define SEITENLAENGE 6.0
 #define HOEHE (SEITENLAENGE * sqrt(3.0) / 2)
@@ -19,6 +21,7 @@ DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGra
     this->m_points[2] = QPointF(SEITENLAENGE/2 * cos(this->m_phi + M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi + M_PI_2)));
 
     this->setToolTip(this->m_text);
+    this->setZValue(ZWERT_MARKIERUNG);
 
     this->m_label.reset(new Label(this->m_text, this));
     this->m_label->setPen(QPen(this->m_farbe));

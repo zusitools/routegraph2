@@ -28,7 +28,8 @@ HEADERS  += mainwindow.h \
     view/graphicsitems/streckensegmentitem.h \
     routegraphapplication.h \
     view/graphicsitems/dreieckitem.h \
-    view/graphicsitems/label.h
+    view/graphicsitems/label.h \
+    view/zwerte.h
 
 FORMS    += mainwindow.ui
 
