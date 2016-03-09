@@ -30,4 +30,4 @@
 *.out
 *.app
 
-*.user
+*.user.*
