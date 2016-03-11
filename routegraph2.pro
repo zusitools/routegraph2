@@ -16,7 +16,6 @@ SOURCES += main.cpp\
     zusi_file_lib/src/io/str_leser.cpp \
     view/graphicsitems/streckensegmentitem.cpp \
     routegraphapplication.cpp \
-    zusi_file_lib/src/io/z3_leser.cpp \
     zusi_file_lib/src/io/st3_leser.cpp \
     view/graphicsitems/dreieckitem.cpp \
     view/graphicsitems/label.cpp

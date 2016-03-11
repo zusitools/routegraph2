@@ -51,7 +51,7 @@ void MainWindow::oeffneStrecke(QString dateiname)
     if (dateiname.endsWith("st3", Qt::CaseInsensitive))
     {
         St3Leser st3Leser;
-        this->m_strecken.push_back(st3Leser.liesSt3DateiMitDateiname(dateiname.toStdString()));
+        this->m_strecken.push_back(st3Leser.liesDateiMitDateiname(dateiname.toStdString()));
     }
     else
     {
