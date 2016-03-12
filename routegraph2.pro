@@ -10,13 +10,8 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     view/streckeview.cpp \
     view/streckescene.cpp \
-    zusi_file_lib/src/model/streckenelement.cpp \
-    zusi_file_lib/src/model/punkt3d.cpp \
-    zusi_file_lib/src/io/z2_leser.cpp \
-    zusi_file_lib/src/io/str_leser.cpp \
     view/graphicsitems/streckensegmentitem.cpp \
     routegraphapplication.cpp \
-    zusi_file_lib/src/io/st3_leser.cpp \
     view/graphicsitems/dreieckitem.cpp \
     view/graphicsitems/label.cpp
 
