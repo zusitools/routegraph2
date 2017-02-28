@@ -1,5 +1,7 @@
 #include "streckeview.h"
 
+#include <cmath>
+
 #include <QVarLengthArray>
 
 StreckeView::StreckeView(QWidget *parent) :
