@@ -66,9 +66,9 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
 
     for (unique_ptr<Strecke> &strecke : strecken)
     {
-        bool istZusi2 = strecke->formatVersion[0] == '2';
+        bool istZusi2 = strecke->formatVersion.size() > 0 && strecke->formatVersion[0] == '2';
         auto richtungen = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
-        if (istZusi2) richtungen = {Streckenelement::RICHTUNG_NORM };
+        if (istZusi2) richtungen = { Streckenelement::RICHTUNG_NORM };
 
         for (auto& streckenelement : strecke->streckenelemente)
         {
