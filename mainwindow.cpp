@@ -7,6 +7,8 @@
 
 #include "view/streckescene.h"
 
+#include "zusi_file_lib/src/common/pfade.hpp"
+#include "zusi_file_lib/src/io/fpn_leser.hpp"
 #include "zusi_file_lib/src/io/st3_leser.hpp"
 #include "zusi_file_lib/src/io/str_leser.hpp"
 
@@ -52,6 +54,14 @@ void MainWindow::oeffneStrecke(QString dateiname)
     {
         St3Leser st3Leser;
         this->m_strecken.push_back(st3Leser.liesDateiMitDateiname(dateiname.toStdString()));
+    }
+    else if (dateiname.endsWith("fpn", Qt::CaseInsensitive))
+    {
+        St3Leser st3Leser;
+        auto fahrplan = FpnLeser().liesDateiMitDateiname(dateiname.toStdString());
+        for (auto& modul : fahrplan->streckenmodule) {
+            this->m_strecken.push_back(st3Leser.liesDateiMitDateiname(zusi_file_lib::pfade::zusiPfadZuOsPfad(modul)));
+        }
     }
     else
     {
