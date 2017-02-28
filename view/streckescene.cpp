@@ -4,73 +4,12 @@
 
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/dreieckitem.h"
+#include "view/segmentierer.h"
 
 #include <QDebug>
 
 #include <cassert>
 #include <cmath>
-
-class Segmentierer
-{
-protected:
-    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger)
-    {
-        return false;
-    }
-
-    /* Segment-Startelemente sind Elemente, die nicht der erste Nachfolger ihres Vorgaengers sind
-     * oder keinen Vorgaenger haben. Zusaetzlich kann ein beliebiger Callback angegeben werden,
-     * der fuer zwei aufeinanderfolgende Elemente entscheidet, ob sie getrennt werden sollen, weil sie
-     * sich in einer relevanten Eigenschaft unterscheiden. */
-    virtual bool istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung)
-    {
-        if (!elementUndRichtung.hatVorgaenger())
-        {
-            return true;
-        }
-
-        auto vorgaenger = elementUndRichtung.vorgaenger();
-        return !vorgaenger.hatNachfolger() ||
-                (vorgaenger.nachfolger(0) != elementUndRichtung) ||
-                istSegmentGrenze(vorgaenger, elementUndRichtung);
-    }
-
-public:
-    bool operator()(const StreckenelementUndRichtung &elementUndRichtung) {
-        return this->istSegmentStart(elementUndRichtung);
-    }
-};
-
-class RichtungsInfoSegmentierer : public Segmentierer
-{
-protected:
-    virtual bool istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger) = 0;
-
-    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) override
-    {
-        return istSegmentGrenze(vorgaenger.richtungsInfo(), nachfolger.richtungsInfo()) ||
-                istSegmentGrenze(vorgaenger.gegenrichtung().richtungsInfo(), nachfolger.gegenrichtung().richtungsInfo());
-    }
-};
-
-class GleisfunktionSegmentierer : public Segmentierer
-{
-protected:
-    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) override
-    {
-        return vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
-                nachfolger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion);
-    }
-};
-
-class GeschwindigkeitSegmentierer : public RichtungsInfoSegmentierer
-{
-protected:
-    virtual bool istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger) override
-    {
-        return vorgaenger.vmax != nachfolger.vmax;
-    }
-};
 
 void setzeDarstellung_Zufallsfarbe(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
 {
@@ -123,7 +62,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     this->m_utmRefPunkt.we = int(utmRefWe);
     this->m_utmRefPunkt.ns = int(utmRefNs);
 
-    GeschwindigkeitSegmentierer segmentierer;
+    Segmentierer istSegmentStart = GeschwindigkeitSegmentierer();
 
     for (unique_ptr<Strecke> &strecke : strecken)
     {
@@ -139,11 +78,11 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                 for (auto richtung : richtungen)
                 {
                     // Streckenelement-Segmente
-                    if (segmentierer(streckenelement->richtung(richtung)))
+                    if (istSegmentStart(streckenelement->richtung(richtung)))
                     {
                         auto item = new StreckensegmentItem(
                                     streckenelement->richtung(richtung),
-                                    segmentierer, setzeDarstellung_Geschwindigkeit, nullptr);
+                                    istSegmentStart, setzeDarstellung_Geschwindigkeit, nullptr);
                         auto startNr = streckenelement->nr;
                         auto endeNr = item->ende->nr;
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).

@@ -13,7 +13,8 @@ SOURCES += main.cpp\
     view/graphicsitems/streckensegmentitem.cpp \
     routegraphapplication.cpp \
     view/graphicsitems/dreieckitem.cpp \
-    view/graphicsitems/label.cpp
+    view/graphicsitems/label.cpp \
+    view/segmentierer.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
@@ -23,7 +24,8 @@ HEADERS  += mainwindow.h \
     routegraphapplication.h \
     view/graphicsitems/dreieckitem.h \
     view/graphicsitems/label.h \
-    view/zwerte.h
+    view/zwerte.h \
+    view/segmentierer.h
 
 FORMS    += mainwindow.ui
 
