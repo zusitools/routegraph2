@@ -110,7 +110,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     QGraphicsScene(parent)
 {
     this->setItemIndexMethod(QGraphicsScene::NoIndex);
-    auto anzahlSegmente = 0;
+    size_t anzahlSegmente = 0, anzahlStreckenelemente = 0;
 
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
     double utmRefWe = 0.0;
@@ -135,6 +135,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
         {
             if (streckenelement)
             {
+                anzahlStreckenelemente++;
                 for (auto richtung : richtungen)
                 {
                     // Streckenelement-Segmente
@@ -228,5 +229,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
         }
     }
 
-    qDebug() << anzahlSegmente << "Segmente";
+    // TODO: Kreise ohne jegliche Weichen werden nicht als Segmente erkannt.
+
+    qDebug() << anzahlSegmente << "Segmente für" << anzahlStreckenelemente << "Streckenelemente";
 }
