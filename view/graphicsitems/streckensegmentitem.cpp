@@ -3,8 +3,8 @@
 #include "view/zwerte.h"
 
 StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start,
-                                         bool (*istSegmentStart)(const StreckenelementUndRichtung&),
-                                         void (*setzeDarstellung)(StreckensegmentItem&, const StreckenelementUndRichtung&),
+                                         std::function<bool(const StreckenelementUndRichtung&)> istSegmentStart,
+                                         std::function<void(StreckensegmentItem &, const StreckenelementUndRichtung &)> setzeDarstellung,
                                          QGraphicsItem *parent) :
     MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f), ende(start)
 {

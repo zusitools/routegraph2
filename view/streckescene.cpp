@@ -1,39 +1,107 @@
 #include "streckescene.h"
 
+#include "model/streckenelement.hpp"
+
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/dreieckitem.h"
 
 #include <QDebug>
 
-bool istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung)
+#include <cassert>
+#include <cmath>
+
+class Segmentierer
 {
-    if (!elementUndRichtung.hatVorgaenger())
+protected:
+    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger)
     {
-        return true;
+        return false;
     }
 
-    auto vorgaenger = elementUndRichtung.vorgaenger();
-    if (!vorgaenger.hatNachfolger())
+    /* Segment-Startelemente sind Elemente, die nicht der erste Nachfolger ihres Vorgaengers sind
+     * oder keinen Vorgaenger haben. Zusaetzlich kann ein beliebiger Callback angegeben werden,
+     * der fuer zwei aufeinanderfolgende Elemente entscheidet, ob sie getrennt werden sollen, weil sie
+     * sich in einer relevanten Eigenschaft unterscheiden. */
+    virtual bool istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung)
     {
-        return true;
+        if (!elementUndRichtung.hatVorgaenger())
+        {
+            return true;
+        }
+
+        auto vorgaenger = elementUndRichtung.vorgaenger();
+        return !vorgaenger.hatNachfolger() ||
+                (vorgaenger.nachfolger(0) != elementUndRichtung) ||
+                istSegmentGrenze(vorgaenger, elementUndRichtung);
     }
 
-    if (vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
-            elementUndRichtung->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
-        return true;
+public:
+    bool operator()(const StreckenelementUndRichtung &elementUndRichtung) {
+        return this->istSegmentStart(elementUndRichtung);
     }
+};
 
-    return &*vorgaenger.nachfolger() != &*elementUndRichtung;
+class RichtungsInfoSegmentierer : public Segmentierer
+{
+protected:
+    virtual bool istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger) = 0;
+
+    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) override
+    {
+        return istSegmentGrenze(vorgaenger.richtungsInfo(), nachfolger.richtungsInfo()) ||
+                istSegmentGrenze(vorgaenger.gegenrichtung().richtungsInfo(), nachfolger.gegenrichtung().richtungsInfo());
+    }
+};
+
+class GleisfunktionSegmentierer : public Segmentierer
+{
+protected:
+    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) override
+    {
+        return vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
+                nachfolger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion);
+    }
+};
+
+class GeschwindigkeitSegmentierer : public RichtungsInfoSegmentierer
+{
+protected:
+    virtual bool istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger) override
+    {
+        return vorgaenger.vmax != nachfolger.vmax;
+    }
+};
+
+void setzeDarstellung_Zufallsfarbe(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
+{
+    (void)start;
+    QPen pen = item.pen();
+    pen.setColor(QColor::fromRgb(rand() % 256, rand() % 256, rand() % 256));
+    item.setPen(pen);
 }
 
-void setzeDarstellung(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
+void setzeDarstellung_Gleisfunktion(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
 {
     QPen pen = item.pen();
-    if (start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion))
-    {
+    pen.setColor(start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) ? Qt::lightGray : Qt::black);
+    item.setPen(pen);
+}
+
+void setzeDarstellung_Geschwindigkeit(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
+{
+    QPen pen = item.pen();
+    geschwindigkeit_t geschwindigkeit = start.richtungsInfo().vmax;
+    if (start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) || geschwindigkeit <= 0) {
         pen.setColor(Qt::lightGray);
     } else {
-        pen.setColor(Qt::black);
+        int kmh_div10 = std::round(geschwindigkeit * 3.6) / 10 - 1;
+        if (kmh_div10 < 0) kmh_div10 = 0;
+        if (kmh_div10 > 16) kmh_div10 = 16;
+        // <= 10 km/h -> hue 300
+        // ...
+        // >= 170 km/h -> hue 0
+        int hue = 300 - (300.0/16.0) * kmh_div10;
+        pen.setColor(QColor::fromHsv(hue, 255, 255));
     }
     item.setPen(pen);
 }
@@ -55,6 +123,8 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     this->m_utmRefPunkt.we = int(utmRefWe);
     this->m_utmRefPunkt.ns = int(utmRefNs);
 
+    GeschwindigkeitSegmentierer segmentierer;
+
     for (unique_ptr<Strecke> &strecke : strecken)
     {
         bool istZusi2 = strecke->dateiInfo->formatVersion[0] == '2';
@@ -67,11 +137,12 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
             {
                 for (auto richtung : richtungen)
                 {
-                    if (istSegmentStart(streckenelement->richtung(richtung)))
+                    // Streckenelement-Segmente
+                    if (segmentierer(streckenelement->richtung(richtung)))
                     {
                         auto item = new StreckensegmentItem(
                                     streckenelement->richtung(richtung),
-                                    istSegmentStart, setzeDarstellung, nullptr);
+                                    segmentierer, setzeDarstellung_Geschwindigkeit, nullptr);
                         auto startNr = streckenelement->nr;
                         auto endeNr = item->ende->nr;
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).

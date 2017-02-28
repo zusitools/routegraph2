@@ -13,8 +13,8 @@ class StreckensegmentItem : public MinBreiteGraphicsItem<QGraphicsPathItem>
 {
 public:
     explicit StreckensegmentItem(const StreckenelementUndRichtung& start,
-        bool (*istSegmentStart)(const StreckenelementUndRichtung&),
-        void (*setzeDarstellung)(StreckensegmentItem &, const StreckenelementUndRichtung &),
+        std::function<bool(const StreckenelementUndRichtung&)> istSegmentStart,
+        std::function<void(StreckensegmentItem &, const StreckenelementUndRichtung &)> setzeDarstellung,
         QGraphicsItem *parent = 0);
 
     StreckenelementUndRichtung ende;
