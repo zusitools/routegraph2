@@ -88,7 +88,7 @@ void MainWindow::oeffneStrecke(QString dateiname)
     ui->streckeView->centerOn(ui->streckeView->sceneRect().center());
 
     // Zusi 3
-    if (this->m_strecken[0]->dateiInfo->formatVersion[0] != '2')
+    if (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2')
     {
         ui->streckeView->rotate(-90);
     }
