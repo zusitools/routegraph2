@@ -4,6 +4,7 @@
 #include <QStyleOptionGraphicsItem>
 
 #define _USE_MATH_DEFINES
+#define _BSD_SOURCE
 #include <math.h>
 
 #include "view/zwerte.h"
