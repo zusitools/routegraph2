@@ -144,7 +144,9 @@ void StreckeView::drawBackground(QPainter *painter, const QRectF &rect)
 
     auto antiAliasingAn = painter->testRenderHint(QPainter::Antialiasing);
     painter->setRenderHint(QPainter::Antialiasing, false);
-    painter->setPen(QColor(220, 220, 220));
+    auto pen = QPen(QColor(220, 220, 220));
+    pen.setWidth(0);
+    painter->setPen(pen);
     painter->drawLines(lines.data(), lines.size());
     painter->setRenderHint(QPainter::Antialiasing, antiAliasingAn);
 }
