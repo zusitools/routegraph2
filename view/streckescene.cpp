@@ -33,14 +33,10 @@ void setzeDarstellung_Geschwindigkeit(StreckensegmentItem &item, const Streckene
     if (start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) || geschwindigkeit <= 0) {
         pen.setColor(Qt::lightGray);
     } else {
-        int kmh_div10 = std::round(geschwindigkeit * 3.6) / 10 - 1;
-        if (kmh_div10 < 0) kmh_div10 = 0;
-        if (kmh_div10 > 16) kmh_div10 = 16;
-        // <= 10 km/h -> hue 300
-        // ...
-        // >= 170 km/h -> hue 0
-        int hue = 300 - (300.0/16.0) * kmh_div10;
-        pen.setColor(QColor::fromHsv(hue, 255, 255));
+        int colormap[17] = { 300, 286, 270, 258, 247, 214, 197, 180, 160, 130, 100, 70, 58, 50, 40, 30, 0 };
+        int idx = std::round(geschwindigkeit * 3.6) / 10 - 1; /* <= 10 km/h, <= 20 km/h, ..., >= 170 km/h */
+        int hue = colormap[std::max(0, std::min(16, idx))];
+        pen.setColor(QColor::fromHsv(hue, 255, hue == 130 ? 230 : 255));
     }
     item.setPen(pen);
 }
