@@ -76,34 +76,20 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 
     if (this->m_linkeMaustasteGedrueckt)
     {
-        bool cursorNeuSetzen = true;
+        QPoint oldDragStart = this->m_dragStart;
 
-        // Unendliches Scrollen
-        if (event->pos().x() < 0)
-        {
-            this->m_dragStart = QPoint(this->width(), event->pos().y());
-        }
-        else if (event->pos().y() < 0)
-        {
-            this->m_dragStart = QPoint(event->pos().x(), this->height());
-        }
-        else if (event->pos().x() >= this->width())
-        {
-            this->m_dragStart = QPoint(1, event->pos().y());
-        }
-        else if (event->pos().y() >= this->height())
-        {
-            this->m_dragStart = QPoint(event->pos().x(), 1);
-        }
-        else
-        {
-            cursorNeuSetzen = false;
-        }
+        // Unendliches Scrollen. Die Cursorposition wird an die gegenüberliegende Kante gesetzt,
+        // wenn der Cursor den Rand des Widgets erreicht hat. (Nutze 1-Pixel-Rand, da das Fenster eventuell
+        // im Vollbildmodus ist und der Cursor nicht über die Grenzen des Widgets hinaus bewegt werden kann.)
+        this->m_dragStart = QPoint(
+          event->pos().x() <= 0 ? this->width() - 2 :
+            event->pos().x() >= this->width() ? 1 : this->m_dragStart.x(),
+          event->pos().y() <= 0 ? this->height() - 2 :
+            event->pos().y() >= this->height() - 1 ? 1 : this->m_dragStart.y());
 
-        if (cursorNeuSetzen)
+        if (this->m_dragStart != oldDragStart)
         {
             this->mouseReleaseEvent(event);
-
             QCursor::setPos(mapToGlobal(this->m_dragStart));
             QMouseEvent newEvent(event->type(), this->m_dragStart, event->button(), event->buttons(), event->modifiers());
             this->mousePressEvent(&newEvent);
