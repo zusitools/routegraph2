@@ -1,38 +1,56 @@
 #include "streckensegmentitem.h"
 
+#include <cmath>
+
 #include "view/zwerte.h"
 
 StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start,
-                                         Segmentierer istSegmentStart,
+                                         Segmentierer istSegmentStart, float offset,
                                          void (*setzeDarstellung)(StreckensegmentItem &, const StreckenelementUndRichtung &),
                                          QGraphicsItem *parent) :
     MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f), ende(start)
 {
     this->setZValue(ZWERT_GLEIS);
     QPainterPath path;
+    auto p1 = start.gegenrichtung().endpunkt();
+    auto p2 = start.endpunkt();
 
-    if (start.richtung == Streckenelement::RICHTUNG_NORM)
+    Punkt3D vec;
+    float phi;
+
+    if (offset == 0.0f)
     {
-        path.moveTo(start->p1.x, start->p1.y);
+        path.moveTo(p1.x, p1.y);
     }
     else
     {
-        path.moveTo(start->p2.x, start->p2.y);
+        vec = p2 - p1;
+        phi = std::atan2(-vec.y, vec.x);
+        path.moveTo(p1.x + std::sin(phi) * offset, p1.y + std::cos(phi) * offset);
     }
 
     auto cur = start;
     do {
-        if (cur.richtung == Streckenelement::RICHTUNG_NORM) {
-            path.lineTo(cur->p2.x, cur->p2.y);
-        } else {
-            path.lineTo(cur->p1.x, cur->p1.y);
+        if (offset == 0.0f)
+        {
+            path.lineTo(p2.x, p2.y);
         }
-
+        else
+        {
+            path.lineTo(p2.x + std::sin(phi) * offset, p2.y + std::cos(phi) * offset);
+        }
         if (istSegmentStart(cur.gegenrichtung()))
         {
             break;
         }
         cur = cur.nachfolger();
+        p1 = p2;
+        p2 = cur.endpunkt();
+        if (offset != 0.0f)
+        {
+            vec = p2 - p1;
+            phi = std::atan2(-vec.y, vec.x);
+        }
     } while (!istSegmentStart(cur));
 
     this->setPath(path);

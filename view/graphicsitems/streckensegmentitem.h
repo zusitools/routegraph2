@@ -1,7 +1,6 @@
 #ifndef STRECKENSEGMENTITEM_H
 #define STRECKENSEGMENTITEM_H
 
-
 #include <QGraphicsLineItem>
 
 #include "view/graphicsitems/minbreitegraphicsitem.h"
@@ -15,8 +14,15 @@ using namespace std;
 class StreckensegmentItem : public MinBreiteGraphicsItem<QGraphicsPathItem>
 {
 public:
+    /**
+     * @brief Erzeugt ein neues Streckensegment-Item.
+     * @param start Das Streckenelement und die Richtung, an der das Segment beginnt.
+     * @param istSegmentStart Callback, der angibt, ob das gegebene Streckenelement und die gegebene Richtung ein neues Segment anfängt.
+     * @param offset Verschiebung der grafischen Darstellung nach rechts (in Laufrichtung gesehen)
+     * @param parent Das übergeordnete GraphicsItem.
+     */
     explicit StreckensegmentItem(const StreckenelementUndRichtung& start,
-        Segmentierer istSegmentStart,
+        Segmentierer istSegmentStart, float offset,
         void (*setzeDarstellung)(StreckensegmentItem &, const StreckenelementUndRichtung &),
         QGraphicsItem *parent = 0);
 
