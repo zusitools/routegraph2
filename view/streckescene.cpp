@@ -165,13 +165,6 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                                 if (pos.y() < r.top()) { r.setTop(pos.y()); }
                             }
                         }
-                        else
-                        {
-                            si->setPos(streckenelement->p1.x, streckenelement->p1.y);
-                        }
-
-                        si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
-                        this->addItem(si.release());
                     }
                 }
             }
