@@ -66,6 +66,10 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
 
     for (unique_ptr<Strecke> &strecke : strecken)
     {
+        // Die Betriebsstellen werden pro Streckenmodul beschriftet, da manche Betriebsstellennamen
+        // (z.B. Sbk-Bezeichnungen) in mehreren Modulen vorkommen und dann falsch platziert wuerden.
+        std::unordered_map<std::string, QRectF> betriebsstellenKoordinaten;
+
         bool istZusi2 = strecke->formatVersion.size() > 0 && strecke->formatVersion[0] == '2';
         auto richtungen = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
         if (istZusi2) richtungen = { Streckenelement::RICHTUNG_NORM };
@@ -75,28 +79,23 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
             if (streckenelement)
             {
                 anzahlStreckenelemente++;
-                for (auto richtung : richtungen)
+                for (auto elementRichtung : streckenelement->richtungen())
                 {
                     // Streckenelement-Segmente
-                    if (istSegmentStart(streckenelement->richtung(richtung)))
+                    if (istSegmentStart(elementRichtung))
                     {
-                        auto item = new StreckensegmentItem(
-                                    streckenelement->richtung(richtung),
-                                    istSegmentStart, setzeDarstellung_Geschwindigkeit, nullptr);
+                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, setzeDarstellung_Geschwindigkeit, nullptr);
                         auto startNr = streckenelement->nr;
                         auto endeNr = item->ende->nr;
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
-                        if (!istZusi2 && (endeNr < startNr || (endeNr == startNr && richtung == Streckenelement::RICHTUNG_GEGEN)))
-                        {
-                            delete item;
-                        }
-                        else
+                        // Achtung: Manche Visualisierungen (z.B. Geschwindigkeit) brauchen beide Segmente!
+                        if (istZusi2 || endeNr > startNr || (endeNr == startNr && elementRichtung.richtung == Streckenelement::RICHTUNG_NORM))
                         {
                             // Zusi 3: x = Ost, y = Nord
                             item->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
-                            this->addItem(item);
+                            this->addItem(item.release());
                             anzahlSegmente++;
 
 #ifdef DEBUG_SEGMENTE
@@ -121,22 +120,16 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                         }
                     }
 
-                    auto& signal = streckenelement->richtungsInfo[richtung].signal;
+                    // Signale
+                    auto& signal = elementRichtung.richtungsInfo().signal;
 
                     if (signal && !signal->signalbezeichnung.empty() &&
                             (istZusi2 || (signal->signaltyp != SignalTyp::Weiche
                             && signal->signaltyp != SignalTyp::Unbestimmt
-                            && signal->signaltyp != SignalTyp::Sonstiges))) {
-                        qreal phi;
-                        if (richtung == Streckenelement::RICHTUNG_NORM)
-                        {
-                            phi = QLineF(streckenelement->p1.x, streckenelement->p1.y, streckenelement->p2.x, streckenelement->p2.y).angle();
-                        }
-                        else
-                        {
-                            phi = QLineF(streckenelement->p2.x, streckenelement->p2.y, streckenelement->p1.x, streckenelement->p1.y).angle();
-                        }
-
+                            && signal->signaltyp != SignalTyp::Sonstiges
+                            && signal->signaltyp != SignalTyp::Bahnuebergang))) {
+                        qreal phi = QLineF(elementRichtung.gegenrichtung().endpunkt().x, elementRichtung.gegenrichtung().endpunkt().y,
+                                         elementRichtung.endpunkt().x, elementRichtung.endpunkt().y).angle();
                         QColor farbe = Qt::red;
                         switch (signal->signaltyp) {
                             case SignalTyp::Vorsignal:
@@ -150,10 +143,27 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                                 break;
                         }
 
-                        auto si = unique_ptr<DreieckItem>(new DreieckItem(phi, QString::fromStdString(signal->signalbezeichnung), farbe));
-                        if (richtung == Streckenelement::RICHTUNG_NORM)
+                        auto si = unique_ptr<DreieckItem>(new DreieckItem(phi, QString::fromUtf8(signal->signalbezeichnung.data(), signal->signalbezeichnung.size()), farbe));
+                        QPointF pos(elementRichtung.endpunkt().x, elementRichtung.endpunkt().y);
+                        si->setPos(pos);
+                        si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+                        this->addItem(si.release());
+
+                        if (signal->signaltyp != SignalTyp::Vorsignal && !signal->betriebsstelle.empty())
                         {
-                            si->setPos(streckenelement->p2.x, streckenelement->p2.y);
+                            if (betriebsstellenKoordinaten.find(signal->betriebsstelle) == betriebsstellenKoordinaten.end())
+                            {
+                                betriebsstellenKoordinaten[signal->betriebsstelle] = QRectF(pos, pos);
+                            }
+                            else
+                            {
+                                QRectF& r = betriebsstellenKoordinaten[signal->betriebsstelle];
+                                // TODO somehow QRect::unite does not work
+                                if (pos.x() < r.left()) { r.setLeft(pos.x()); }
+                                if (pos.x() > r.right()) { r.setRight(pos.x()); }
+                                if (pos.y() > r.bottom()) { r.setBottom(pos.y()); }
+                                if (pos.y() < r.top()) { r.setTop(pos.y()); }
+                            }
                         }
                         else
                         {
@@ -165,6 +175,24 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                     }
                 }
             }
+        }
+
+        for (const auto& p : betriebsstellenKoordinaten) {
+            std::string betriebsstelle = p.first;
+
+#if 0
+            auto ri = this->addRect(p.second);
+            ri->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+#endif
+
+            auto ti = unique_ptr<Label>(new Label(QString::fromUtf8(betriebsstelle.data(), betriebsstelle.size())));
+            ti->setAlignment(Qt::AlignCenter | Qt::AlignHCenter);
+            ti->setPos((p.second.left() + p.second.right()) / 2.0, (p.second.top() + p.second.bottom()) / 2.0);
+            ti->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+            ti->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+            ti->setPen(QPen(Qt::black));
+            ti->setBrush(QBrush(Qt::black));
+            this->addItem(ti.release());
         }
     }
 

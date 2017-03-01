@@ -33,7 +33,7 @@ INCLUDEPATH += $$PWD/zusi_file_lib
 INCLUDEPATH += $$PWD/zusi_file_lib/src
 
 unix {
-    QMAKE_CXXFLAGS += -std=c++11
+    QMAKE_CXXFLAGS += -std=c++14
 
     QMAKE_CXXFLAGS_RELEASE -= -O
     QMAKE_CXXFLAGS_RELEASE -= -O1

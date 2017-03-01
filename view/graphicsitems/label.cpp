@@ -18,16 +18,18 @@ QRectF Label::boundingRect() const
 
     if (m_alignment & Qt::AlignRight) {
         result.translate(-result.width(), 0);
+    } else if (m_alignment & Qt::AlignCenter) {
+        result.translate(-result.width() / 2.0, 0);
     }
 
     if (m_alignment & Qt::AlignTop) {
         result.translate(0, -result.height());
+    } else if (m_alignment & Qt::AlignHCenter) {
+        result.translate(0, -result.height() / 2.0);
     }
 
     return result;
 }
-
-#include <QDebug>
 
 void Label::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
