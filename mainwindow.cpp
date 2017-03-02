@@ -9,11 +9,19 @@
 #include <QDebug>
 
 #include "view/streckescene.h"
+#include "view/visualisierung.h"
 
 #include "zusi_file_lib/src/common/pfade.hpp"
 #include "zusi_file_lib/src/io/fpn_leser.hpp"
 #include "zusi_file_lib/src/io/st3_leser.hpp"
 #include "zusi_file_lib/src/io/str_leser.hpp"
+
+#ifdef HAS_CALLGRIND
+#include <valgrind/callgrind.h>
+#else
+#define CALLGRIND_START_INSTRUMENTATION
+#define CALLGRIND_STOP_INSTRUMENTATION
+#endif
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -151,12 +159,8 @@ void MainWindow::oeffneStrecke(QString dateiname)
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
     timer.restart();
 
-    vector<reference_wrapper<unique_ptr<Strecke> > > strecken;
-    for (auto &strecke : this->m_strecken)
-    {
-        strecken.push_back(reference_wrapper<unique_ptr<Strecke> >(strecke));
-    }
-    ui->streckeView->setScene(new StreckeScene(strecken));
+    auto visualisierung = std::make_unique<GleisfunktionVisualisierung>();
+    ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
     ui->streckeView->resetTransform();
 
@@ -167,7 +171,8 @@ void MainWindow::oeffneStrecke(QString dateiname)
     ui->streckeView->centerOn(ui->streckeView->sceneRect().center());
 
     // Zusi 3
-    if (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2')
+    if (this->m_strecken.size() > 0 &&
+            (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2'))
     {
         ui->streckeView->rotate(-90);
     }

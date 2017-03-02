@@ -3,6 +3,8 @@
 
 #include <QGraphicsScene>
 
+#include "view/visualisierung.h"
+
 #include "zusi_file_lib/src/model/strecke.hpp"
 #include "zusi_file_lib/src/model/utmpunkt.hpp"
 
@@ -12,7 +14,8 @@ class StreckeScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > strecken, QObject *parent = 0);
+    explicit StreckeScene(const vector<unique_ptr<Strecke>>& strecken,
+                          const Visualisierung& visualisierung, QObject *parent = 0);
 
 signals:
 

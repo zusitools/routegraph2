@@ -6,9 +6,8 @@
 
 StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start,
                                          Segmentierer istSegmentStart, float offset,
-                                         void (*setzeDarstellung)(StreckensegmentItem &, const StreckenelementUndRichtung &),
                                          QGraphicsItem *parent) :
-    MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f), ende(start)
+    MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f), start_(start)
 {
     this->setZValue(ZWERT_GLEIS);
     QPainterPath path;
@@ -58,6 +57,5 @@ StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start
 
     this->setPath(path);
     this->setToolTip(QString::number(start->nr));
-    this->ende = cur;
-    setzeDarstellung(*this, start);
+    this->ende_ = cur;
 }

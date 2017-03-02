@@ -11,37 +11,7 @@
 #include <cassert>
 #include <cmath>
 
-void setzeDarstellung_Zufallsfarbe(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
-{
-    (void)start;
-    QPen pen = item.pen();
-    pen.setColor(QColor::fromRgb(rand() % 256, rand() % 256, rand() % 256));
-    item.setPen(pen);
-}
-
-void setzeDarstellung_Gleisfunktion(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
-{
-    QPen pen = item.pen();
-    pen.setColor(start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) ? Qt::lightGray : Qt::black);
-    item.setPen(pen);
-}
-
-void setzeDarstellung_Geschwindigkeit(StreckensegmentItem &item, const StreckenelementUndRichtung &start)
-{
-    QPen pen = item.pen();
-    geschwindigkeit_t geschwindigkeit = start.richtungsInfo().vmax;
-    if (start->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) || geschwindigkeit <= 0) {
-        pen.setColor(Qt::lightGray);
-    } else {
-        int colormap[17] = { 300, 286, 270, 258, 247, 214, 197, 180, 160, 130, 100, 70, 58, 50, 40, 30, 0 };
-        int idx = std::round(geschwindigkeit * 3.6) / 10 - 1; /* <= 10 km/h, <= 20 km/h, ..., >= 170 km/h */
-        int hue = colormap[std::max(0, std::min(16, idx))];
-        pen.setColor(QColor::fromHsv(hue, 255, hue == 130 ? 230 : 255));
-    }
-    item.setPen(pen);
-}
-
-StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > strecken, QObject *parent) :
+StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Visualisierung& visualisierung, QObject *parent) :
     QGraphicsScene(parent)
 {
     this->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -50,7 +20,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
     double utmRefWe = 0.0;
     double utmRefNs = 0.0;
-    for (unique_ptr<Strecke> &strecke : strecken)
+    for (const unique_ptr<Strecke>& strecke : strecken)
     {
         utmRefWe += strecke->utmPunkt.we / float(strecken.size());
         utmRefNs += strecke->utmPunkt.ns / float(strecken.size());
@@ -62,7 +32,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     const auto richtungen_zusi2 = { Streckenelement::RICHTUNG_NORM };
     const auto richtungen_zusi3 = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
 
-    for (unique_ptr<Strecke> &strecke : strecken)
+    for (const unique_ptr<Strecke>& strecke : strecken)
     {
         // Die Betriebsstellen werden pro Streckenmodul beschriftet, da manche Betriebsstellennamen
         // (z.B. Sbk-Bezeichnungen) in mehreren Modulen vorkommen und dann falsch platziert wuerden.
@@ -82,16 +52,19 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                     // Streckenelement-Segmente
                     if (istSegmentStart(elementRichtung))
                     {
-                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, 0.0f, setzeDarstellung_Geschwindigkeit, nullptr);
+                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, visualisierung.offset(), nullptr);
                         streckenelement_nr_t startNr = streckenelement->nr;
-                        streckenelement_nr_t endeNr = item->ende->nr;
+                        streckenelement_nr_t endeNr = item->ende()->nr;
+
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
+                        // Manche Visualisierungen sind nicht richtungsspezifisch und brauchen daher nur eines davon.
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
-                        // Achtung: Manche Visualisierungen (z.B. Geschwindigkeit) brauchen beide Segmente!
-                        if (istZusi2 || endeNr > startNr || (endeNr == startNr && elementRichtung.richtung == Streckenelement::RICHTUNG_NORM))
+                        if (istZusi2 || visualisierung.beideRichtungen() || endeNr > startNr ||
+                                (endeNr == startNr && elementRichtung.richtung == Streckenelement::RICHTUNG_NORM))
                         {
                             // Zusi 3: x = Ost, y = Nord
+                            visualisierung.setzeDarstellung(*item);
                             item->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
                             this->addItem(item.release());
                             anzahlSegmente++;

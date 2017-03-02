@@ -23,10 +23,14 @@ public:
      */
     explicit StreckensegmentItem(const StreckenelementUndRichtung& start,
         Segmentierer istSegmentStart, float offset,
-        void (*setzeDarstellung)(StreckensegmentItem &, const StreckenelementUndRichtung &),
         QGraphicsItem *parent = 0);
 
-    StreckenelementUndRichtung ende;
+    inline StreckenelementUndRichtung start() const { return start_; }
+    inline StreckenelementUndRichtung ende() const { return ende_; }
+
+private:
+    StreckenelementUndRichtung start_;
+    StreckenelementUndRichtung ende_;
 
 private:
 };
