@@ -67,16 +67,16 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
         std::unordered_map<std::string, QRectF> betriebsstellenKoordinaten;
 
         bool istZusi2 = strecke->formatVersion.size() > 0 && strecke->formatVersion[0] == '2';
-        auto richtungen = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
-        if (istZusi2) richtungen = { Streckenelement::RICHTUNG_NORM };
+        auto richtungen = { istZusi2 ? (Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN) : Streckenelement::RICHTUNG_NORM };
 
         for (auto& streckenelement : strecke->streckenelemente)
         {
             if (streckenelement)
             {
                 anzahlStreckenelemente++;
-                for (auto elementRichtung : streckenelement->richtungen())
+                for (streckenelement_richtung_t richtung : richtungen)
                 {
+                    StreckenelementUndRichtung elementRichtung = streckenelement->richtung(richtung);
                     // Streckenelement-Segmente
                     if (istSegmentStart(elementRichtung))
                     {
