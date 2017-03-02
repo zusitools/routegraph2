@@ -1,11 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <memory>
+#include <vector>
+
 #include <QMainWindow>
 
 #include "zusi_file_lib/src/model/strecke.hpp"
-
-using namespace std;
 
 namespace Ui {
 class MainWindow;
@@ -26,7 +27,7 @@ public slots:
 private:
     Ui::MainWindow *ui;
 
-    vector<unique_ptr<Strecke> > m_strecken;
+    std::vector<std::unique_ptr<Strecke> > m_strecken;
 
     /** Oeffnet eine Streckendatei und fuegt sie zur Liste der offenen Strecken hinzu. */
     void oeffneStrecke(QString dateiname);
