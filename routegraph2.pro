@@ -5,6 +5,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = routegraph2
 TEMPLATE = app
 
+CONFIG += c++14 rtti_off
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -29,19 +30,14 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-INCLUDEPATH += $$PWD/zusi_file_lib
-INCLUDEPATH += $$PWD/zusi_file_lib/src
+INCLUDEPATH += $$_PRO_FILE_PWD_/zusi_file_lib
+INCLUDEPATH += $$_PRO_FILE_PWD_/zusi_file_lib/src
 
-unix {
-    QMAKE_CXXFLAGS += -std=c++14
-
-    QMAKE_CXXFLAGS_RELEASE -= -O
-    QMAKE_CXXFLAGS_RELEASE -= -O1
-    QMAKE_CXXFLAGS_RELEASE -= -O2
-    QMAKE_CXXFLAGS_RELEASE *= -O3
-}
+QMAKE_CXXFLAGS_RELEASE -= -O
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O2
+QMAKE_CXXFLAGS_RELEASE *= -O3 -flto
 
 win32 {
-    INCLUDEPATH += "C:\Program Files\boost_1_63_0"
-    LIBS += -ladvapi32
+    LIBS += -ladvapi32 -lpthread
 }
