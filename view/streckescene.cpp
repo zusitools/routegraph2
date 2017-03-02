@@ -81,8 +81,6 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                     if (istSegmentStart(elementRichtung))
                     {
                         auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, setzeDarstellung_Geschwindigkeit, nullptr);
-                        auto startNr = streckenelement->nr;
-                        auto endeNr = item->ende->nr;
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
@@ -93,26 +91,6 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                             item->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
                             this->addItem(item.release());
                             anzahlSegmente++;
-
-#ifdef DEBUG_SEGMENTE
-                            auto ti = this->addText(QString::number(streckenelement->nr) + " Start");
-                            if (richtung == Streckenelement::RICHTUNG_NORM)
-                                ti->setPos(streckenelement->p1.x, streckenelement->p1.y);
-                            else
-                                ti->setPos(streckenelement->p2.x, streckenelement->p2.y);
-                            ti->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
-                            ti->setTransform(QTransform().scale(-1, 1).rotate(180));
-                            ti->setDefaultTextColor(item->pen().color());
-
-                            ti = this->addText(QString::number(streckenelement->nr) + " Ende");
-                            if (item->ende.richtung == Streckenelement::RICHTUNG_NORM)
-                                ti->setPos(item->ende->p2.x, item->ende->p2.y);
-                            else
-                                ti->setPos(item->ende->p1.x, item->ende->p1.y);
-                            ti->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
-                            ti->setTransform(QTransform().scale(-1, 1).rotate(180));
-                            ti->setDefaultTextColor(item->pen().color());
-#endif
                         }
                     }
 
