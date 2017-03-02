@@ -15,8 +15,8 @@ StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start
     auto p1 = start.gegenrichtung().endpunkt();
     auto p2 = start.endpunkt();
 
-    Punkt3D vec;
-    float phi;
+    Punkt3D vec {};
+    float veclen = 0;
 
     if (offset == 0.0f)
     {
@@ -25,8 +25,11 @@ StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start
     else
     {
         vec = p2 - p1;
-        phi = std::atan2(-vec.y, vec.x);
-        path.moveTo(p1.x + std::sin(phi) * offset, p1.y + std::cos(phi) * offset);
+        // Der transformierte Punkt ist (p1.x + sin(phi) * offset, p1.y + cos(phi) * offset)
+        // Dabei ist phi der Winkel, den das Streckenelement bildet, also atan2(-vec.y, vec.x).
+        // Es gilt: sin(atan2(y, x)) = x / sqrt(x^2+y^2), analog fuer cos.
+        veclen = std::sqrt(vec.x * vec.x + vec.y * vec.y);
+        path.moveTo(p1.x + (-vec.y * offset / veclen), p1.y + (vec.x * offset / veclen));
     }
 
     auto cur = start;
@@ -37,7 +40,7 @@ StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start
         }
         else
         {
-            path.lineTo(p2.x + std::sin(phi) * offset, p2.y + std::cos(phi) * offset);
+            path.lineTo(p2.x + (-vec.y * offset / veclen), p2.y + (vec.x * offset / veclen));
         }
         if (istSegmentStart(cur.gegenrichtung()))
         {
@@ -49,7 +52,7 @@ StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start
         if (offset != 0.0f)
         {
             vec = p2 - p1;
-            phi = std::atan2(-vec.y, vec.x);
+            veclen = std::sqrt(vec.x * vec.x + vec.y * vec.y);
         }
     } while (!istSegmentStart(cur));
 
