@@ -80,7 +80,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
                     // Streckenelement-Segmente
                     if (istSegmentStart(elementRichtung))
                     {
-                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, setzeDarstellung_Geschwindigkeit, nullptr);
+                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, 0.0f, setzeDarstellung_Geschwindigkeit, nullptr);
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
