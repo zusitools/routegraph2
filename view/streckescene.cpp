@@ -59,6 +59,8 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
     this->m_utmRefPunkt.ns = int(utmRefNs);
 
     Segmentierer istSegmentStart = GeschwindigkeitSegmentierer();
+    const auto richtungen_zusi2 = { Streckenelement::RICHTUNG_NORM };
+    const auto richtungen_zusi3 = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
 
     for (unique_ptr<Strecke> &strecke : strecken)
     {
@@ -67,7 +69,7 @@ StreckeScene::StreckeScene(vector<reference_wrapper<unique_ptr<Strecke> > > stre
         std::unordered_map<std::string, QRectF> betriebsstellenKoordinaten;
 
         bool istZusi2 = strecke->formatVersion.size() > 0 && strecke->formatVersion[0] == '2';
-        auto richtungen = { istZusi2 ? (Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN) : Streckenelement::RICHTUNG_NORM };
+        auto richtungen = istZusi2 ? richtungen_zusi2 : richtungen_zusi3;
 
         for (auto& streckenelement : strecke->streckenelemente)
         {
