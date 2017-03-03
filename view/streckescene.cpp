@@ -121,6 +121,25 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
             }
         }
 
+#if 0
+        for (auto& refpunkt : strecke->referenzpunkte)
+        {
+            if (!refpunkt || !refpunkt->elementRichtung.streckenelement) continue;
+
+            if (refpunkt->referenzTyp == Referenzpunkt::Typ::Aufgleispunkt) {
+                Punkt3D vec = refpunkt->elementRichtung.endpunkt() - refpunkt->elementRichtung.gegenrichtung().endpunkt();
+                qreal phi = atan2(-vec.y, vec.x);
+
+                assert(refpunkt->beschreibung.data() != NULL);
+                auto si = std::make_unique<DreieckItem>(phi,
+                        QString::fromUtf8(refpunkt->beschreibung.data(), refpunkt->beschreibung.size()), Qt::magenta);
+                si->setPos(refpunkt->elementRichtung.endpunkt().x, refpunkt->elementRichtung.endpunkt().y);
+                si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+                this->addItem(si.release());
+            }
+        }
+#endif
+
         for (const auto& p : betriebsstellenKoordinaten) {
             std::string betriebsstelle = p.first;
 
