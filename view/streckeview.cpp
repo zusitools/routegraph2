@@ -83,7 +83,7 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
         // im Vollbildmodus ist und der Cursor nicht über die Grenzen des Widgets hinaus bewegt werden kann.)
         this->m_dragStart = QPoint(
           event->pos().x() <= 0 ? this->width() - 2 :
-            event->pos().x() >= this->width() ? 1 : this->m_dragStart.x(),
+            event->pos().x() >= this->width() - 1 ? 1 : this->m_dragStart.x(),
           event->pos().y() <= 0 ? this->height() - 2 :
             event->pos().y() >= this->height() - 1 ? 1 : this->m_dragStart.y());
 
