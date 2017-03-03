@@ -157,9 +157,18 @@ void MainWindow::oeffneStrecke(QString dateiname)
     }
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
-    timer.restart();
 
-    auto visualisierung = std::make_unique<GleisfunktionVisualisierung>();
+    auto visualisierung = std::make_unique<GeschwindigkeitVisualisierung>();
+    if (visualisierung) {
+        ui->legendeView->setScene(visualisierung->legende().release());
+        ui->legendeView->setFixedHeight(ui->legendeView->sceneRect().height());
+    } else {
+        ui->legendeView->scene()->clear();
+        ui->legendeView->setFixedHeight(0);
+    }
+    ui->centralWidget->layout()->update();
+
+    timer.restart();
     ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
     ui->streckeView->resetTransform();

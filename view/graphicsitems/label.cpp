@@ -7,7 +7,7 @@
 
 #include "view/zwerte.h"
 
-Label::Label(const QString text, QGraphicsItem *parent) : QGraphicsSimpleTextItem(text, parent)
+Label::Label(const QString text, QGraphicsItem *parent) : QGraphicsSimpleTextItem(text, parent), m_alignment(0)
 {
     this->setZValue(ZWERT_BESCHRIFTUNG);
 }

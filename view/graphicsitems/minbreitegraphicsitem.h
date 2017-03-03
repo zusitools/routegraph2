@@ -12,9 +12,7 @@ template<typename T>
 class MinBreiteGraphicsItem : public T
 {
 public:
-    explicit MinBreiteGraphicsItem<T>(QGraphicsItem *parent = 0, qreal breite = 1.0f) : T(parent), m_breite(breite), m_stiftbreite(-1.0f)
-    {
-    }
+    explicit MinBreiteGraphicsItem<T>(QGraphicsItem *parent = 0, qreal breite = 1.0f) : T(parent), m_breite(breite) {}
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override
     {
@@ -38,9 +36,11 @@ public:
         T::paint(painter, option, widget);
     }
 
+    qreal breite() const { return m_breite; }
+    void setBreite(qreal breite) { m_breite = breite; }
+
 private:
     qreal m_breite;
-    qreal m_stiftbreite;
 };
 
 #endif // MINBREITEGRAPHICSITEM_H
