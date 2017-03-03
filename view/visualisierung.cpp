@@ -49,8 +49,8 @@ unique_ptr<QGraphicsScene> GeschwindigkeitVisualisierung::legende() const
 
     Streckenelement streckenelement;
     for (int v = 0; v <= 170; v += 10) {
-        streckenelement.p1.x = result->sceneRect().right();
-        streckenelement.p2.x = streckenelement.p2.x + 50.0;
+        streckenelement.p1.x = result->sceneRect().right() + 5.0;
+        streckenelement.p2.x = streckenelement.p1.x + 25.0;
         streckenelement.richtung(Streckenelement::RICHTUNG_NORM).richtungsInfo().vmax = v / 3.6;
         // TODO: Referenz auf Stackvariable (streckenelement)!
         auto segmentItem = std::make_unique<StreckensegmentItem>(
@@ -62,8 +62,8 @@ unique_ptr<QGraphicsScene> GeschwindigkeitVisualisierung::legende() const
 
         auto label = std::make_unique<Label>(v == 0 ? QString("undefiniert") :
             (v == 170 ? QString::fromUtf8("> 160") : (QString::fromUtf8("⩽ ") + QString::number(v))));
-        label->setPos(streckenelement.p2.x, 0);
-        label->setAlignment(Qt::AlignHCenter);
+        label->setAlignment(Qt::AlignVCenter);
+        label->setPos(streckenelement.p2.x + 3.0, 0);
         label->setPen(QPen(Qt::black));
         label->setBrush(QBrush(Qt::black));
         result->addItem(label.release());
