@@ -79,8 +79,8 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                             && signal->signaltyp != SignalTyp::Unbestimmt
                             && signal->signaltyp != SignalTyp::Sonstiges
                             && signal->signaltyp != SignalTyp::Bahnuebergang))) {
-                        qreal phi = QLineF(elementRichtung.gegenrichtung().endpunkt().x, elementRichtung.gegenrichtung().endpunkt().y,
-                                         elementRichtung.endpunkt().x, elementRichtung.endpunkt().y).angle();
+                        Punkt3D vec = elementRichtung.endpunkt() - elementRichtung.gegenrichtung().endpunkt();
+                        float phi = atan2(-vec.y, vec.x);
                         QColor farbe = Qt::red;
                         switch (signal->signaltyp) {
                             case SignalTyp::Vorsignal:
@@ -94,7 +94,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                                 break;
                         }
 
-                        auto si = unique_ptr<DreieckItem>(new DreieckItem(phi, QString::fromUtf8(signal->signalbezeichnung.data(), signal->signalbezeichnung.size()), farbe));
+                        auto si = std::make_unique<DreieckItem>(phi, QString::fromUtf8(signal->signalbezeichnung.data(), signal->signalbezeichnung.size()), farbe);
                         QPointF pos(elementRichtung.endpunkt().x, elementRichtung.endpunkt().y);
                         si->setPos(pos);
                         si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));

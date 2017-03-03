@@ -5,21 +5,23 @@
 
 #define _USE_MATH_DEFINES
 #define _BSD_SOURCE
-#include <math.h>
+#include <cmath>
 
 #include "view/zwerte.h"
 
 // Maße des Dreiecks (in Szeneneinheiten = Metern)
-#define SEITENLAENGE 6.0
-#define HOEHE (SEITENLAENGE * sqrt(3.0) / 2)
+namespace {
+    constexpr float SEITENLAENGE = 6.0f;
+    constexpr float HOEHE = SEITENLAENGE * sqrt(3.0) / 2;
+}
 
 DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGraphicsItem *parent)
-    : QGraphicsItem(parent), m_phi(phi / 180 * M_PI), m_text(text), m_farbe(farbe)
+    : QGraphicsItem(parent), m_phi(phi), m_text(text), m_farbe(farbe)
 {
     // Y-Koordinate invertieren, da sie bei Qts Koordinatensystem nach unten statt nach oben zeigt
-    this->m_points[0] = QPointF(HOEHE * cos(this->m_phi), -(HOEHE * sin(this->m_phi)));
-    this->m_points[1] = QPointF(SEITENLAENGE/2 * cos(this->m_phi - M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi - M_PI_2)));
-    this->m_points[2] = QPointF(SEITENLAENGE/2 * cos(this->m_phi + M_PI_2), -(SEITENLAENGE/2 * sin(this->m_phi + M_PI_2)));
+    this->m_points[0] = QPointF(HOEHE * cos(phi), -(HOEHE * sin(phi)));
+    this->m_points[1] = QPointF(SEITENLAENGE/2 * cos(phi - M_PI_2), -(SEITENLAENGE/2 * sin(phi - M_PI_2)));
+    this->m_points[2] = QPointF(SEITENLAENGE/2 * cos(phi + M_PI_2), -(SEITENLAENGE/2 * sin(phi + M_PI_2)));
 
     this->setToolTip(this->m_text);
     this->setZValue(ZWERT_MARKIERUNG);
@@ -32,12 +34,11 @@ DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGra
     this->m_label->setPos(this->m_points[0]); // Spitze
 
     // TODO: optimiert auf Zusi-3-Strecken
-    auto phi_mod = fmod(phi, 360);
-    if (phi_mod >= 90 && phi_mod <= 270)
+    if (phi <= -M_PI_2 || phi >= M_PI_2)
     {
         this->m_label->setAlignment(Qt::AlignRight);
     }
-    if (phi_mod >= 180)
+    if (phi < 0)
     {
         this->m_label->setAlignment(this->m_label->alignment() | Qt::AlignTop);
     }

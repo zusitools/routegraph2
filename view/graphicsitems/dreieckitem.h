@@ -14,7 +14,7 @@ using namespace std;
 /**
  * Eine Markierung (mit Text) in Form eines gleichseitigen Dreiecks.
  * Der Ursprung liegt in einer der Seiten; das Dreieck zeigt in die Richtung,
- * die durch den Winkel phi (in Grad, gegen den Uhrzeigersinn) vorgegeben ist.
+ * die durch den Winkel phi (im Bogenmass, gegen den Uhrzeigersinn, Bereich [-pi..pi]) vorgegeben ist.
  */
 class DreieckItem: public QGraphicsItem
 {
