@@ -25,7 +25,7 @@ static QColor GeschwindigkeitVisualisierung_farbe(int geschwindigkeit)
     if (idx < 0) {
         return Qt::lightGray;
     } else {
-        int hue = colormap[std::max(0, std::min(16, idx))];
+        int hue = colormap[std::min(16, idx)];
         return QColor::fromHsv(hue, 255, hue == 130 ? 230 : 255);
     }
 }
@@ -35,7 +35,7 @@ void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item) 
     QPen pen = item.pen();
     geschwindigkeit_t geschwindigkeit = item.start().richtungsInfo().vmax;
     if (item.start()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
-        pen.setColor(Qt::lightGray);
+        pen.setColor(QColor::fromRgb(240, 240, 240));
     } else {
         pen.setColor(GeschwindigkeitVisualisierung_farbe(std::round(geschwindigkeit * 3.6)));
     }
