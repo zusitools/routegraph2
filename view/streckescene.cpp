@@ -95,6 +95,11 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                         }
 
                         auto si = std::make_unique<DreieckItem>(phi, QString::fromUtf8(signal->signalbezeichnung.data(), signal->signalbezeichnung.size()), farbe);
+                        string tooltip = signal->betriebsstelle + " " + signal->signalbezeichnung;
+                        if (!signal->stellwerk.empty()) {
+                            tooltip += "\n[" + signal->stellwerk + "]";
+                        }
+                        si->setToolTip(QString::fromUtf8(tooltip.data(), tooltip.size()));
                         QPointF pos(elementRichtung.endpunkt().x, elementRichtung.endpunkt().y);
                         si->setPos(pos);
                         si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
