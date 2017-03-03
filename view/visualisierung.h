@@ -11,6 +11,9 @@ public:
     virtual float offset() const { return 0.0f; }
     virtual void setzeDarstellung(StreckensegmentItem&) const { }
     virtual unique_ptr<Segmentierer> segmentierer() const { return std::make_unique<GleisfunktionSegmentierer>(); }
+
+    Visualisierung() {}
+    Visualisierung(Visualisierung& other) = delete;
 };
 
 class GleisfunktionVisualisierung : public Visualisierung

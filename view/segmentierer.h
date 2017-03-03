@@ -18,6 +18,9 @@ public:
     bool operator()(const StreckenelementUndRichtung &elementUndRichtung) const {
         return this->istSegmentStart(elementUndRichtung);
     }
+
+    Segmentierer() {}
+    Segmentierer(Segmentierer& other) = delete;
 };
 
 class RichtungsInfoSegmentierer : public Segmentierer
