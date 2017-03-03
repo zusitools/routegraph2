@@ -22,7 +22,7 @@ public:
      * @param parent Das übergeordnete GraphicsItem.
      */
     explicit StreckensegmentItem(const StreckenelementUndRichtung& start,
-        Segmentierer istSegmentStart, float offset,
+        const Segmentierer& istSegmentStart, float offset,
         QGraphicsItem *parent = 0);
 
     inline StreckenelementUndRichtung start() const { return start_; }

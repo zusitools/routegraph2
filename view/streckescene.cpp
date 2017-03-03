@@ -28,7 +28,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
     this->m_utmRefPunkt.we = int(utmRefWe);
     this->m_utmRefPunkt.ns = int(utmRefNs);
 
-    Segmentierer istSegmentStart = GeschwindigkeitSegmentierer();
+    unique_ptr<Segmentierer> istSegmentStart = visualisierung.segmentierer();
     const auto richtungen_zusi2 = { Streckenelement::RICHTUNG_NORM };
     const auto richtungen_zusi3 = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
 
@@ -50,9 +50,9 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                 {
                     StreckenelementUndRichtung elementRichtung = streckenelement->richtung(richtung);
                     // Streckenelement-Segmente
-                    if (istSegmentStart(elementRichtung))
+                    if ((*istSegmentStart)(elementRichtung))
                     {
-                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, istSegmentStart, visualisierung.offset(), nullptr);
+                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, *istSegmentStart, visualisierung.offset(), nullptr);
                         streckenelement_nr_t startNr = streckenelement->nr;
                         streckenelement_nr_t endeNr = item->ende()->nr;
 

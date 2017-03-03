@@ -1,13 +1,11 @@
 #include "segmentierer.h"
 
-bool Segmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger)
+bool Segmentierer::istSegmentGrenze(const StreckenelementUndRichtung&, const StreckenelementUndRichtung&) const
 {
-    (void)vorgaenger;
-    (void)nachfolger;
     return false;
 }
 
-bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung)
+bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung) const
 {
     if (!elementUndRichtung.hatVorgaenger())
     {
@@ -20,19 +18,19 @@ bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndR
             istSegmentGrenze(vorgaenger, elementUndRichtung);
 }
 
-bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger)
+bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
     return istSegmentGrenze(vorgaenger.richtungsInfo(), nachfolger.richtungsInfo()) ||
-            istSegmentGrenze(vorgaenger.gegenrichtung().richtungsInfo(), nachfolger.gegenrichtung().richtungsInfo());
+            istSegmentGrenze(nachfolger.gegenrichtung().richtungsInfo(), vorgaenger.gegenrichtung().richtungsInfo());
 }
 
-bool GleisfunktionSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger)
+bool GleisfunktionSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
     return vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
             nachfolger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion);
 }
 
-bool GeschwindigkeitSegmentierer::istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger)
+bool GeschwindigkeitSegmentierer::istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger) const
 {
     return vorgaenger.vmax != nachfolger.vmax;
 }
