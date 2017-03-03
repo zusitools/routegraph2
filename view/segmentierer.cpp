@@ -18,10 +18,37 @@ bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndR
             istSegmentGrenze(vorgaenger, elementUndRichtung);
 }
 
+bool Segmentierer::istSegmentEnde(const StreckenelementUndRichtung &elementUndRichtung) const
+{
+    return istSegmentStart(elementUndRichtung.gegenrichtung());
+}
+
+bool Segmentierer::beideRichtungen() const
+{
+    return false;
+}
+
 bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
-    return istSegmentGrenze(vorgaenger.richtungsInfo(), nachfolger.richtungsInfo()) ||
-            istSegmentGrenze(nachfolger.gegenrichtung().richtungsInfo(), vorgaenger.gegenrichtung().richtungsInfo());
+    return istSegmentGrenze(vorgaenger.richtungsInfo(), nachfolger.richtungsInfo());
+}
+
+bool RichtungsInfoSegmentierer::istSegmentEnde(const StreckenelementUndRichtung &elementUndRichtung) const
+{
+    if (!elementUndRichtung.hatNachfolger())
+    {
+        return true;
+    }
+
+    auto nachfolger = elementUndRichtung.nachfolger();
+    return !nachfolger.hatVorgaenger() ||
+            (nachfolger.vorgaenger(0) != elementUndRichtung) ||
+            istSegmentGrenze(elementUndRichtung, nachfolger);
+}
+
+bool RichtungsInfoSegmentierer::beideRichtungen() const
+{
+    return true;
 }
 
 bool GleisfunktionSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const

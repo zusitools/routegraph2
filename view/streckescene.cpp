@@ -28,7 +28,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
     this->m_utmRefPunkt.we = int(utmRefWe);
     this->m_utmRefPunkt.ns = int(utmRefNs);
 
-    unique_ptr<Segmentierer> istSegmentStart = visualisierung.segmentierer();
+    unique_ptr<Segmentierer> segmentierer = visualisierung.segmentierer();
     const auto richtungen_zusi2 = { Streckenelement::RICHTUNG_NORM };
     const auto richtungen_zusi3 = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
 
@@ -50,9 +50,9 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                 {
                     StreckenelementUndRichtung elementRichtung = streckenelement->richtung(richtung);
                     // Streckenelement-Segmente
-                    if ((*istSegmentStart)(elementRichtung))
+                    if (segmentierer->istSegmentStart(elementRichtung))
                     {
-                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, *istSegmentStart, visualisierung.offset(), nullptr);
+                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, *segmentierer, visualisierung.offset(), nullptr);
                         streckenelement_nr_t startNr = streckenelement->nr;
                         streckenelement_nr_t endeNr = item->ende()->nr;
 
@@ -60,7 +60,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                         // Manche Visualisierungen sind nicht richtungsspezifisch und brauchen daher nur eines davon.
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
-                        if (istZusi2 || visualisierung.beideRichtungen() || endeNr > startNr ||
+                        if (istZusi2 || segmentierer->beideRichtungen() || endeNr > startNr ||
                                 (endeNr == startNr && elementRichtung.richtung == Streckenelement::RICHTUNG_NORM))
                         {
                             // Zusi 3: x = Ost, y = Nord
