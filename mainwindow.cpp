@@ -55,7 +55,6 @@ void MainWindow::actionOeffnenTriggered()
         ui->streckeView->resetTransform();
         ui->streckeView->rotate(-90);
         ui->streckeView->scale(1.0f, -1.0f);
-        ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
 
         // Zusi 3
         if (this->m_strecken.size() > 0 &&
@@ -64,6 +63,7 @@ void MainWindow::actionOeffnenTriggered()
             ui->streckeView->rotate(-90);
         }
 
+        ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
         ui->streckeView->setDefaultTransform(ui->streckeView->transform());
     }
 }
