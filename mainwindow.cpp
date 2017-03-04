@@ -50,6 +50,21 @@ void MainWindow::actionOeffnenTriggered()
         this->m_strecken.clear();
         this->oeffneStrecke(dateiname);
         this->aktualisiereDarstellung();
+
+        // Zusi 2&3
+        ui->streckeView->resetTransform();
+        ui->streckeView->rotate(-90);
+        ui->streckeView->scale(1.0f, -1.0f);
+        ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
+
+        // Zusi 3
+        if (this->m_strecken.size() > 0 &&
+                (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2'))
+        {
+            ui->streckeView->rotate(-90);
+        }
+
+        ui->streckeView->setDefaultTransform(ui->streckeView->transform());
     }
 }
 
@@ -191,23 +206,6 @@ void MainWindow::aktualisiereDarstellung()
     timer.start();
     ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
-
-    ui->streckeView->resetTransform();
-
-    // Zusi 2&3
-    ui->streckeView->rotate(-90);
-    ui->streckeView->scale(1.0f, -1.0f);
-    ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
-    ui->streckeView->centerOn(ui->streckeView->sceneRect().center());
-
-    // Zusi 3
-    if (this->m_strecken.size() > 0 &&
-            (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2'))
-    {
-        ui->streckeView->rotate(-90);
-    }
-
-    ui->streckeView->setDefaultTransform(ui->streckeView->transform());
 }
 
 QString MainWindow::zeigeStreckeOeffnenDialog()
