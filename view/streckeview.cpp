@@ -119,15 +119,17 @@ void StreckeView::drawBackground(QPainter *painter, const QRectF &rect)
     qreal left = int(rect.left()) - (int(rect.left()) % gridSize);
     qreal top = int(rect.top()) - (int(rect.top()) % gridSize);
 
-    QVarLengthArray<QLineF, 100> lines;
+    QVarLengthArray<QPointF> points;
 
     for (qreal x = left; x < rect.right(); x += gridSize)
     {
-        lines.append(QLineF(x, rect.top(), x, rect.bottom()));
+        points.append(QPointF(x, rect.top()));
+        points.append(QPointF(x, rect.bottom()));
     }
     for (qreal y = top; y < rect.bottom(); y += gridSize)
     {
-        lines.append(QLineF(rect.left(), y, rect.right(), y));
+        points.append(QPointF(rect.left(), y));
+        points.append(QPointF(rect.right(), y));
     }
 
     auto antiAliasingAn = painter->testRenderHint(QPainter::Antialiasing);
