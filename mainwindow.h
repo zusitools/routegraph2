@@ -27,10 +27,13 @@ public slots:
 private:
     Ui::MainWindow *ui;
 
-    std::vector<std::unique_ptr<Strecke> > m_strecken;
+    std::vector<std::unique_ptr<Strecke>> m_strecken;
 
     /** Oeffnet eine Streckendatei und fuegt sie zur Liste der offenen Strecken hinzu. */
     void oeffneStrecke(QString dateiname);
+
+    /** Zeigt die aktuell geladenen Strecken im Strecken-Widget an. */
+    void aktualisiereDarstellung();
 
     /** Zeigt einen Dialog zum Oeffnen einer Strecke mit passendem Startverzeichnis und liefert den Dateinamen zurueck. */
     QString zeigeStreckeOeffnenDialog();

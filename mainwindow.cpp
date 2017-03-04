@@ -44,6 +44,7 @@ void MainWindow::actionOeffnenTriggered()
     {
         this->m_strecken.clear();
         this->oeffneStrecke(dateiname);
+        this->aktualisiereDarstellung();
     }
 }
 
@@ -54,6 +55,7 @@ void MainWindow::actionModulOeffnenTriggered()
     if (!dateiname.isNull())
     {
         this->oeffneStrecke(dateiname);
+        this->aktualisiereDarstellung();
     }
 }
 
@@ -158,7 +160,10 @@ void MainWindow::oeffneStrecke(QString dateiname)
     }
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
+}
 
+void MainWindow::aktualisiereDarstellung()
+{
     auto visualisierung = std::make_unique<GeschwindigkeitVisualisierung>();
     if (visualisierung) {
         ui->legendeView->setScene(visualisierung->legende().release());
@@ -169,9 +174,11 @@ void MainWindow::oeffneStrecke(QString dateiname)
     }
     ui->centralWidget->layout()->update();
 
-    timer.restart();
+    QTime timer;
+    timer.start();
     ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
+
     ui->streckeView->resetTransform();
 
     // Zusi 2&3
