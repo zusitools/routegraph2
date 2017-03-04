@@ -4,6 +4,7 @@
 #include <future>
 #include <thread>
 
+#include <QDir>
 #include <QFileDialog>
 #include <QTime>
 #include <QDebug>
@@ -191,6 +192,8 @@ void MainWindow::oeffneStrecke(QString dateiname)
 
 QString MainWindow::zeigeStreckeOeffnenDialog()
 {
-    QString startverzeichnis = "";
-    return QFileDialog::getOpenFileName(this, tr("Strecke öffnen"), startverzeichnis, QString(tr("Streckendateien (*.str *.STR *.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
+    QDir startverzeichnis(QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()));
+    return QFileDialog::getOpenFileName(this, tr("Strecke öffnen"),
+                                        this->m_strecken.size() == 0? startverzeichnis.filePath("Routes") : QString(""),
+                                        QString(tr("Strecken- und Fahrplandateien (*.str *.STR *.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
 }
