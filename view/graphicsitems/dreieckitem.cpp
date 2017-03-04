@@ -11,8 +11,9 @@
 
 // Maße des Dreiecks (in Szeneneinheiten = Metern)
 namespace {
-    constexpr float SEITENLAENGE = 6.0f;
-    constexpr float HOEHE = SEITENLAENGE * sqrt(3.0) / 2;
+    constexpr float sqrt_3 = 1.73205080756887729352;
+    constexpr float SEITENLAENGE = 6.0;
+    constexpr float HOEHE = SEITENLAENGE * sqrt_3 / 2.0;
 }
 
 DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGraphicsItem *parent)
