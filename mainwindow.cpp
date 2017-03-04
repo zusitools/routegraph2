@@ -193,14 +193,16 @@ void MainWindow::aktualisiereDarstellung()
     }
 
 
-    if (visualisierung) {
-        ui->legendeView->setScene(visualisierung->legende().release());
+    unique_ptr<QGraphicsScene> legende = visualisierung->legende();
+    if (legende) {
+        ui->legendeView->setScene(legende.release());
         ui->legendeView->setFixedHeight(ui->legendeView->sceneRect().height());
     } else {
-        ui->legendeView->scene()->clear();
+        if (ui->legendeView->scene()) {
+            ui->legendeView->scene()->clear();
+        }
         ui->legendeView->setFixedHeight(0);
     }
-    ui->centralWidget->layout()->update();
 
     QTime timer;
     timer.start();
