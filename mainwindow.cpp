@@ -31,7 +31,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::actionVisualisierungTriggered);
+    connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::aktualisiereDarstellung);
+    connect(ui->actionVergroessern, &QAction::triggered, this->ui->streckeView, &StreckeView::vergroessern);
+    connect(ui->actionVerkleinern, &QAction::triggered, this->ui->streckeView, &StreckeView::verkleinern);
 }
 
 MainWindow::~MainWindow()
@@ -60,11 +62,6 @@ void MainWindow::actionModulOeffnenTriggered()
         this->oeffneStrecke(dateiname);
         this->aktualisiereDarstellung();
     }
-}
-
-void MainWindow::actionVisualisierungTriggered()
-{
-    this->aktualisiereDarstellung();
 }
 
 void MainWindow::oeffneStrecke(QString dateiname)

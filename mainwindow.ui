@@ -90,8 +90,16 @@
     <addaction name="actionVisualisierungGleisfunktion"/>
     <addaction name="actionVisualisierungGeschwindigkeiten"/>
    </widget>
+   <widget class="QMenu" name="menu_Ansicht">
+    <property name="title">
+     <string>&amp;Ansicht</string>
+    </property>
+    <addaction name="actionVergroessern"/>
+    <addaction name="actionVerkleinern"/>
+   </widget>
    <addaction name="menuDatei"/>
    <addaction name="menuVisualisierung"/>
+   <addaction name="menu_Ansicht"/>
   </widget>
   <action name="actionOeffnen">
    <property name="text">
@@ -101,6 +109,22 @@
   <action name="actionModulOeffnen">
    <property name="text">
     <string>&amp;Anfügen ...</string>
+   </property>
+  </action>
+  <action name="actionVergroessern">
+   <property name="text">
+    <string>Ver&amp;größern</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl++</string>
+   </property>
+  </action>
+  <action name="actionVerkleinern">
+   <property name="text">
+    <string>Ver&amp;kleinern</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
    </property>
   </action>
   <actiongroup name="actiongroupVisualisierung">
