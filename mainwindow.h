@@ -23,6 +23,7 @@ public:
 public slots:
     void actionOeffnenTriggered();
     void actionModulOeffnenTriggered();
+    void actionVisualisierungTriggered();
 
 private:
     Ui::MainWindow *ui;

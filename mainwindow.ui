@@ -83,7 +83,15 @@
     <addaction name="actionOeffnen"/>
     <addaction name="actionModulOeffnen"/>
    </widget>
+   <widget class="QMenu" name="menuVisualisierung">
+    <property name="title">
+     <string>&amp;Visualisierung</string>
+    </property>
+    <addaction name="actionVisualisierungGleisfunktion"/>
+    <addaction name="actionVisualisierungGeschwindigkeiten"/>
+   </widget>
    <addaction name="menuDatei"/>
+   <addaction name="menuVisualisierung"/>
   </widget>
   <action name="actionOeffnen">
    <property name="text">
@@ -95,6 +103,27 @@
     <string>&amp;Anfügen ...</string>
    </property>
   </action>
+  <actiongroup name="actiongroupVisualisierung">
+   <action name="actionVisualisierungGleisfunktion">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>&amp;Gleisfunktion/Keine Gleisfunktion</string>
+    </property>
+   </action>
+   <action name="actionVisualisierungGeschwindigkeiten">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>G&amp;eschwindigkeiten</string>
+    </property>
+   </action>
+  </actiongroup>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>

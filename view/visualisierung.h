@@ -22,6 +22,7 @@ class GleisfunktionVisualisierung : public Visualisierung
 {
 public:
     virtual void setzeDarstellung(StreckensegmentItem& item) const override;
+    virtual unique_ptr<QGraphicsScene> legende() const override { return unique_ptr<QGraphicsScene>(nullptr); }
 };
 
 class GeschwindigkeitVisualisierung : public Visualisierung

@@ -4,6 +4,7 @@
 #include <future>
 #include <thread>
 
+#include <QActionGroup>
 #include <QDir>
 #include <QFileDialog>
 #include <QTime>
@@ -29,6 +30,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::actionVisualisierungTriggered);
 }
 
 MainWindow::~MainWindow()
@@ -57,6 +60,11 @@ void MainWindow::actionModulOeffnenTriggered()
         this->oeffneStrecke(dateiname);
         this->aktualisiereDarstellung();
     }
+}
+
+void MainWindow::actionVisualisierungTriggered()
+{
+    this->aktualisiereDarstellung();
 }
 
 void MainWindow::oeffneStrecke(QString dateiname)
@@ -164,7 +172,15 @@ void MainWindow::oeffneStrecke(QString dateiname)
 
 void MainWindow::aktualisiereDarstellung()
 {
-    auto visualisierung = std::make_unique<GeschwindigkeitVisualisierung>();
+    unique_ptr<Visualisierung> visualisierung;
+
+    if (ui->actionVisualisierungGeschwindigkeiten->isChecked()) {
+        visualisierung = std::make_unique<GeschwindigkeitVisualisierung>();
+    } else {
+        visualisierung = std::make_unique<GleisfunktionVisualisierung>();
+    }
+
+
     if (visualisierung) {
         ui->legendeView->setScene(visualisierung->legende().release());
         ui->legendeView->setFixedHeight(ui->legendeView->sceneRect().height());
