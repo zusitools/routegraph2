@@ -92,7 +92,7 @@
   </action>
   <action name="actionModulOeffnen">
    <property name="text">
-    <string>&amp;Modul öffnen ...</string>
+    <string>&amp;Anfügen ...</string>
    </property>
   </action>
  </widget>
