@@ -214,6 +214,6 @@ QString MainWindow::zeigeStreckeOeffnenDialog()
 {
     QDir startverzeichnis(QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()));
     return QFileDialog::getOpenFileName(this, tr("Strecke öffnen"),
-                                        this->m_strecken.size() == 0? startverzeichnis.filePath("Routes") : QString(""),
+                                        this->m_strecken.size() == 0? startverzeichnis.absolutePath() : QString(""),
                                         QString(tr("Strecken- und Fahrplandateien (*.str *.STR *.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
 }
