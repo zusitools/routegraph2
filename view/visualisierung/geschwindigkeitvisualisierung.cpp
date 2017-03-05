@@ -13,12 +13,11 @@
 
 static QColor farbe(int geschwindigkeit)
 {
-    static constexpr int colormap[17] = { 300, 286, 270, 258, 247, 214, 197, 180, 160, 130, 100, 70, 58, 50, 40, 30, 0 };
-    int idx = geschwindigkeit / 10 - 1; /* <= 10 km/h, <= 20 km/h, ..., >= 170 km/h */
-    if (idx < 0) {
+    if (geschwindigkeit < 0) {
         return Qt::lightGray;
     } else {
-        int hue = colormap[std::min(16, idx)];
+        static constexpr int colormap[17] = { 300, 286, 270, 258, 247, 214, 197, 180, 160, 130, 100, 70, 58, 50, 40, 30, 0 };
+        int hue = colormap[std::min(16, (geschwindigkeit - 1) / 10)];  /* <= 10 km/h, <= 20 km/h, ..., >= 170 km/h */
         return QColor::fromHsv(hue, 255, hue == 130 ? 230 : 255);
     }
 }
