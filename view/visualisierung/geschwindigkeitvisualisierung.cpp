@@ -1,4 +1,4 @@
-#include "visualisierung.h"
+#include "geschwindigkeitvisualisierung.h"
 
 #include <cmath>
 
@@ -11,14 +11,7 @@
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/label.h"
 
-void GleisfunktionVisualisierung::setzeDarstellung(StreckensegmentItem& item) const
-{
-    QPen pen = item.pen();
-    pen.setColor(item.start()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) ? Qt::lightGray : Qt::black);
-    item.setPen(pen);
-}
-
-static QColor GeschwindigkeitVisualisierung_farbe(int geschwindigkeit)
+static QColor farbe(int geschwindigkeit)
 {
     static constexpr int colormap[17] = { 300, 286, 270, 258, 247, 214, 197, 180, 160, 130, 100, 70, 58, 50, 40, 30, 0 };
     int idx = geschwindigkeit / 10 - 1; /* <= 10 km/h, <= 20 km/h, ..., >= 170 km/h */
@@ -37,7 +30,7 @@ void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item) 
     if (item.start()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
         pen.setColor(QColor::fromRgb(240, 240, 240));
     } else {
-        pen.setColor(GeschwindigkeitVisualisierung_farbe(std::round(geschwindigkeit * 3.6)));
+        pen.setColor(farbe(std::round(geschwindigkeit * 3.6)));
     }
     item.setPen(pen);
 }

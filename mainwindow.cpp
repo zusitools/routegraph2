@@ -11,7 +11,9 @@
 #include <QDebug>
 
 #include "view/streckescene.h"
-#include "view/visualisierung.h"
+#include "view/visualisierung/visualisierung.h"
+#include "view/visualisierung/gleisfunktionvisualisierung.h"
+#include "view/visualisierung/geschwindigkeitvisualisierung.h"
 
 #include "zusi_file_lib/src/common/pfade.hpp"
 #include "zusi_file_lib/src/io/fpn_leser.hpp"

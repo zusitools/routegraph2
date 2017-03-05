@@ -16,7 +16,8 @@ SOURCES += main.cpp\
     view/graphicsitems/dreieckitem.cpp \
     view/graphicsitems/label.cpp \
     view/segmentierer.cpp \
-    view/visualisierung.cpp
+    view/visualisierung/gleisfunktionvisualisierung.cpp \
+    view/visualisierung/geschwindigkeitvisualisierung.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
@@ -28,7 +29,9 @@ HEADERS  += mainwindow.h \
     view/graphicsitems/label.h \
     view/zwerte.h \
     view/segmentierer.h \
-    view/visualisierung.h
+    view/visualisierung/visualisierung.h \
+    view/visualisierung/gleisfunktionvisualisierung.h \
+    view/visualisierung/geschwindigkeitvisualisierung.h
 
 FORMS    += mainwindow.ui
 

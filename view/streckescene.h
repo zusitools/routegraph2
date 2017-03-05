@@ -3,7 +3,7 @@
 
 #include <QGraphicsScene>
 
-#include "view/visualisierung.h"
+#include "view/visualisierung/visualisierung.h"
 
 #include "zusi_file_lib/src/model/strecke.hpp"
 #include "zusi_file_lib/src/model/utmpunkt.hpp"
