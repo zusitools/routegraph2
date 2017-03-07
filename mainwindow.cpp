@@ -106,7 +106,7 @@ void MainWindow::oeffneStrecke(QString dateiname)
     else
     {
         StrLeser strLeser;
-        this->m_strecken.push_back(strLeser.liesStrDateiMitDateiname(dateiname.toStdString()));
+        this->m_strecken.push_back(strLeser.liesDateiMitDateiname(dateiname.toStdString()));
     }
 #else
     for (auto& dateiname : {
