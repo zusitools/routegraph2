@@ -13,7 +13,7 @@
 
 static QColor farbe(int geschwindigkeit)
 {
-    if (geschwindigkeit < 0) {
+    if (geschwindigkeit <= 0) {
         return Qt::lightGray;
     } else {
         static constexpr int colormap[17] = { 300, 286, 270, 258, 247, 214, 197, 180, 160, 130, 100, 70, 58, 50, 40, 30, 0 };
