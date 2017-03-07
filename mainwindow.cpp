@@ -7,6 +7,7 @@
 #include <QActionGroup>
 #include <QDir>
 #include <QFileDialog>
+#include <QMimeData>
 #include <QTime>
 #include <QDebug>
 
@@ -36,11 +37,36 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::aktualisiereDarstellung);
     connect(ui->actionVergroessern, &QAction::triggered, this->ui->streckeView, &StreckeView::vergroessern);
     connect(ui->actionVerkleinern, &QAction::triggered, this->ui->streckeView, &StreckeView::verkleinern);
+
+    ui->streckeView->installEventFilter(this);
+    ui->streckeView->viewport()->installEventFilter(this); // http://stackoverflow.com/a/2501489
+    ui->legendeView->installEventFilter(this);
+    ui->legendeView->viewport()->installEventFilter(this);
+
+    setAcceptDrops(true);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setzeAnsichtZurueck()
+{
+    // Zusi 2&3
+    ui->streckeView->resetTransform();
+    ui->streckeView->rotate(-90);
+    ui->streckeView->scale(1.0f, -1.0f);
+
+    // Zusi 3
+    if (this->m_strecken.size() > 0 &&
+            (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2'))
+    {
+        ui->streckeView->rotate(-90);
+    }
+
+    ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
+    ui->streckeView->setDefaultTransform(ui->streckeView->transform());
 }
 
 void MainWindow::actionOeffnenTriggered()
@@ -52,21 +78,7 @@ void MainWindow::actionOeffnenTriggered()
         this->m_strecken.clear();
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
-
-        // Zusi 2&3
-        ui->streckeView->resetTransform();
-        ui->streckeView->rotate(-90);
-        ui->streckeView->scale(1.0f, -1.0f);
-
-        // Zusi 3
-        if (this->m_strecken.size() > 0 &&
-                (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2'))
-        {
-            ui->streckeView->rotate(-90);
-        }
-
-        ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
-        ui->streckeView->setDefaultTransform(ui->streckeView->transform());
+        this->setzeAnsichtZurueck();
     }
 }
 
@@ -79,6 +91,52 @@ void MainWindow::actionModulOeffnenTriggered()
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
     }
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *e)
+{
+    if (e->mimeData()->hasUrls()) {
+        e->acceptProposedAction();
+    }
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent *e)
+{
+    if (e->mimeData()->hasUrls()) {
+        e->acceptProposedAction();
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent *e)
+{
+    QStringList dateien;
+    foreach (const QUrl &url, e->mimeData()->urls()) {
+        dateien.append(url.toLocalFile());
+    }
+    if (dateien.size() > 0) {
+        if (!(e->keyboardModifiers() & Qt::ShiftModifier)) {
+            this->m_strecken.clear();
+        }
+        this->oeffneStrecken(dateien);
+        this->aktualisiereDarstellung();
+        this->setzeAnsichtZurueck();
+    }
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    Q_UNUSED(obj);
+    if (event->type() == QEvent::DragEnter) {
+        this->dragEnterEvent(static_cast<QDragEnterEvent*>(event));
+        return true;
+    } else if (event->type() == QEvent::DragMove) {
+        this->dragMoveEvent(static_cast<QDragMoveEvent*>(event));
+        return true;
+    } else if (event->type() == QEvent::Drop) {
+        this->dropEvent(static_cast<QDropEvent*>(event));
+        return true;
+    }
+    return false;
 }
 
 void MainWindow::oeffneStrecken(const QStringList& dateinamen)

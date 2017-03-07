@@ -24,10 +24,18 @@ public slots:
     void actionOeffnenTriggered();
     void actionModulOeffnenTriggered();
 
+protected:
+    virtual void dragEnterEvent(QDragEnterEvent *e) override;
+    virtual void dragMoveEvent(QDragMoveEvent *e) override;
+    virtual void dropEvent(QDropEvent *e) override;protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+
 private:
     Ui::MainWindow *ui;
 
     std::vector<std::unique_ptr<Strecke>> m_strecken;
+
+    void setzeAnsichtZurueck();
 
     /** Oeffnet Streckendateien und fuegt sie zur Liste der offenen Strecken hinzu. */
     void oeffneStrecken(const QStringList& dateinamen);
