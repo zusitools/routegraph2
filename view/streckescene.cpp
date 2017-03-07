@@ -40,6 +40,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
 
         bool istZusi2 = strecke->formatVersion.size() > 0 && strecke->formatVersion[0] == '2';
         auto richtungen = istZusi2 ? richtungen_zusi2 : richtungen_zusi3;
+        float offset = (segmentierer->beideRichtungen() || istZusi2) ? 0.49 : 0.0;
 
         for (auto& streckenelement : strecke->streckenelemente)
         {
@@ -52,7 +53,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Vi
                     // Streckenelement-Segmente
                     if (segmentierer->istSegmentStart(elementRichtung))
                     {
-                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, *segmentierer, visualisierung.offset(), nullptr);
+                        auto item = std::make_unique<StreckensegmentItem>(elementRichtung, *segmentierer, offset, nullptr);
                         streckenelement_nr_t startNr = streckenelement->nr;
                         streckenelement_nr_t endeNr = item->ende()->nr;
 

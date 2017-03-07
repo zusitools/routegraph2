@@ -9,7 +9,6 @@
 class GeschwindigkeitVisualisierung : public Visualisierung
 {
 public:
-    virtual float offset() const override { return 0.49f; }
     virtual void setzeDarstellung(StreckensegmentItem& item) const override;
     virtual std::unique_ptr<Segmentierer> segmentierer() const override { return std::make_unique<GeschwindigkeitSegmentierer>(); }
     virtual std::unique_ptr<QGraphicsScene> legende() const override;

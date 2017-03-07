@@ -9,7 +9,6 @@
 class Visualisierung
 {
 public:
-    virtual float offset() const { return 0.0f; }
     virtual void setzeDarstellung(StreckensegmentItem&) const { }
     virtual std::unique_ptr<Segmentierer> segmentierer() const { return std::make_unique<GleisfunktionSegmentierer>(); }
     virtual std::unique_ptr<QGraphicsScene> legende() const = 0;
