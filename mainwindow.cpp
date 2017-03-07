@@ -45,12 +45,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::actionOeffnenTriggered()
 {
-    QString dateiname = this->zeigeStreckeOeffnenDialog();
+    QStringList dateinamen = this->zeigeStreckeOeffnenDialog();
 
-    if (!dateiname.isNull())
+    if (dateinamen.size() > 0)
     {
         this->m_strecken.clear();
-        this->oeffneStrecke(dateiname);
+        this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
 
         // Zusi 2&3
@@ -72,16 +72,16 @@ void MainWindow::actionOeffnenTriggered()
 
 void MainWindow::actionModulOeffnenTriggered()
 {
-    QString dateiname = this->zeigeStreckeOeffnenDialog();
+    QStringList dateinamen = this->zeigeStreckeOeffnenDialog();
 
-    if (!dateiname.isNull())
+    if (dateinamen.size() > 0)
     {
-        this->oeffneStrecke(dateiname);
+        this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
     }
 }
 
-void MainWindow::oeffneStrecke(QString dateiname)
+void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 {
     QTime timer;
     timer.start();
@@ -89,27 +89,9 @@ void MainWindow::oeffneStrecke(QString dateiname)
     St3Leser st3Leser;
     std::vector<std::future<std::unique_ptr<Strecke>>> futures;
 
-#if 1
-    if (dateiname.endsWith("st3", Qt::CaseInsensitive))
-    {
-        this->m_strecken.push_back(st3Leser.liesDateiMitDateiname(dateiname.toStdString()));
-    }
-    else if (dateiname.endsWith("fpn", Qt::CaseInsensitive))
-    {
-        auto fahrplan = FpnLeser().liesDateiMitDateiname(dateiname.toStdString());
-        for (auto& modul : fahrplan->streckenmodule) {
-            futures.push_back(std::async([&st3Leser, modul]{
-                return st3Leser.liesDateiMitDateiname(zusi_file_lib::pfade::zusiPfadZuOsPfad(modul));
-            }));
-        }
-    }
-    else
-    {
-        StrLeser strLeser;
-        this->m_strecken.push_back(strLeser.liesDateiMitDateiname(dateiname.toStdString()));
-    }
-#else
-    for (auto& dateiname : {
+#if 0
+    Q_UNUSED(dateinamen);
+    for (auto zusiPfad : {
          "Routes\\Deutschland\\32U_0004_0057\\000442_005692_Freienohl\\Freienohl_1985.st3",
          "Routes\\Deutschland\\32U_0004_0057\\000444_005689_Wennemen\\Wennemen_1973.st3",
          "Routes\\Deutschland\\32U_0004_0057\\000449_005689_Meschede\\Meschede_1980.st3",
@@ -173,9 +155,28 @@ void MainWindow::oeffneStrecke(QString dateiname)
          "Routes\\Deutschland\\32U_0006_0057\\000563_005706_Rosdorf\\Rosdorf_1998.st3",
          "Routes\\Deutschland\\32U_0006_0057\\000564_005713_Goettingen_Gbf\\Goettingen_Gbf_2000.st3",
     }) {
-        futures.push_back(std::async([&st3Leser, dateiname]{ return st3Leser.liesDateiMitDateiname(zusi_file_lib::pfade::zusiPfadZuOsPfad(dateiname)); }));
-    }
+        QString dateiname = QString::fromStdString(zusi_file_lib::pfade::zusiPfadZuOsPfad(zusiPfad));
+#else
+    for (auto dateiname : dateinamen) {
 #endif
+        if (dateiname.endsWith("st3", Qt::CaseInsensitive))
+        {
+            futures.push_back(std::async([&st3Leser, dateiname]{ return st3Leser.liesDateiMitDateiname(dateiname.toStdString()); }));
+        }
+        else if (dateiname.endsWith("fpn", Qt::CaseInsensitive))
+        {
+            auto fahrplan = FpnLeser().liesDateiMitDateiname(dateiname.toStdString());
+            for (auto& modul : fahrplan->streckenmodule) {
+                futures.push_back(std::async([&st3Leser, modul]{
+                    return st3Leser.liesDateiMitDateiname(zusi_file_lib::pfade::zusiPfadZuOsPfad(modul));
+                }));
+            }
+        }
+        else
+        {
+            futures.push_back(std::async([&st3Leser, dateiname]{ return StrLeser().liesDateiMitDateiname(dateiname.toStdString()); }));
+        }
+    }
 
     for (auto& fut : futures) {
         this->m_strecken.push_back(fut.get());
@@ -212,10 +213,10 @@ void MainWindow::aktualisiereDarstellung()
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
 }
 
-QString MainWindow::zeigeStreckeOeffnenDialog()
+QStringList MainWindow::zeigeStreckeOeffnenDialog()
 {
     QDir startverzeichnis(QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()));
-    return QFileDialog::getOpenFileName(this, tr("Strecke öffnen"),
+    return QFileDialog::getOpenFileNames(this, tr("Strecke öffnen"),
                                         this->m_strecken.size() == 0? startverzeichnis.absolutePath() : QString(""),
                                         QString(tr("Strecken- und Fahrplandateien (*.str *.STR *.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
 }

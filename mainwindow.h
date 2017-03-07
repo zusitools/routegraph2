@@ -29,14 +29,14 @@ private:
 
     std::vector<std::unique_ptr<Strecke>> m_strecken;
 
-    /** Oeffnet eine Streckendatei und fuegt sie zur Liste der offenen Strecken hinzu. */
-    void oeffneStrecke(QString dateiname);
+    /** Oeffnet Streckendateien und fuegt sie zur Liste der offenen Strecken hinzu. */
+    void oeffneStrecken(const QStringList& dateinamen);
 
     /** Zeigt die aktuell geladenen Strecken im Strecken-Widget an. */
     void aktualisiereDarstellung();
 
     /** Zeigt einen Dialog zum Oeffnen einer Strecke mit passendem Startverzeichnis und liefert den Dateinamen zurueck. */
-    QString zeigeStreckeOeffnenDialog();
+    QStringList zeigeStreckeOeffnenDialog();
 };
 
 #endif // MAINWINDOW_H
