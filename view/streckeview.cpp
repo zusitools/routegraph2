@@ -36,7 +36,7 @@ void StreckeView::setDefaultTransform(const QTransform &matrix)
 
 void StreckeView::wheelEvent(QWheelEvent *event)
 {
-     if (event->modifiers() == Qt::ControlModifier)
+     if (event->modifiers() == Qt::NoModifier)
      {
         this->skalieren(std::pow(4.0 / 3.0, (event->delta() / 240.0)));
      }
