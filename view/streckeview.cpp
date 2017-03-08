@@ -1,7 +1,9 @@
 #include "streckeview.h"
 
 #include <cmath>
+#include <memory>
 
+#include <QTimer>
 #include <QVarLengthArray>
 
 StreckeView::StreckeView(QWidget *parent) :
@@ -64,11 +66,10 @@ void StreckeView::mousePressEvent(QMouseEvent *event)
 
 void StreckeView::mouseMoveEvent(QMouseEvent *event)
 {
-    QPoint dxy = event->pos() - this->m_dragStart;
-    this->m_dragStart = event->pos();
-
     if (this->m_rechteMaustasteGedrueckt)
     {
+        QPoint dxy = event->pos() - this->m_dragStart;
+        this->m_dragStart = event->pos();
         this->rotate(dxy.y());
     }
 
@@ -76,6 +77,7 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 
     if (this->m_linkeMaustasteGedrueckt)
     {
+        this->m_dragStart = event->pos();
         QPoint oldDragStart = this->m_dragStart;
 
         // Unendliches Scrollen. Die Cursorposition wird an die gegenüberliegende Kante gesetzt,
@@ -91,8 +93,16 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
         {
             this->mouseReleaseEvent(event);
             QCursor::setPos(mapToGlobal(this->m_dragStart));
-            QMouseEvent newEvent(event->type(), this->m_dragStart, event->button(), event->buttons(), event->modifiers());
-            this->mousePressEvent(&newEvent);
+
+            // Sende Event ueber QTimer, damit es nach allen anderen Events, die noch in der Queue stecken, abgearbeitet wird.
+            auto event_type = event->type();
+            auto button = event->button();
+            auto buttons = event->buttons();
+            auto modifiers = event->modifiers();
+            QTimer::singleShot(0, [=] {
+                auto mouseEvent = std::make_unique<QMouseEvent>(event_type, this->m_dragStart, button, buttons, modifiers);
+                this->mousePressEvent(mouseEvent.get());
+            });
         }
     }
 }
