@@ -93,6 +93,41 @@ void MainWindow::actionModulOeffnenTriggered()
     }
 }
 
+static void findeSt3Rekursiv(QDir& dir, QStringList& filter, QStringList& result) {
+    for (const QString& dateiname : dir.entryList(filter, QDir::Files | QDir::NoSymLinks)) {
+        result.append(dir.path() + QLatin1Char('/') + dateiname);
+    }
+    for (const QString& subdir : dir.entryList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot)) {
+        dir.cd(subdir);
+        findeSt3Rekursiv(dir, filter, result);
+        dir.cdUp();
+    }
+}
+
+void MainWindow::actionOrdnerOeffnenTriggered()
+{
+    QStringList dateinamen = this->zeigeOrdnerOeffnenDialog();
+
+    if (dateinamen.size() > 0)
+    {
+        this->m_strecken.clear();
+        this->oeffneStrecken(dateinamen);
+        this->aktualisiereDarstellung();
+        this->setzeAnsichtZurueck();
+    }
+}
+
+void MainWindow::actionOrdnerAnfuegenTriggered()
+{
+    QStringList dateinamen = this->zeigeOrdnerOeffnenDialog();
+
+    if (dateinamen.size() > 0)
+    {
+        this->oeffneStrecken(dateinamen);
+        this->aktualisiereDarstellung();
+    }
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)
 {
     if (e->mimeData()->hasUrls()) {
@@ -241,6 +276,9 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
     }
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
+
+    ui->actionModulOeffnen->setEnabled(this->m_strecken.size() > 0);
+    ui->actionOrdnerAnfuegen->setEnabled(this->m_strecken.size() > 0);
 }
 
 void MainWindow::aktualisiereDarstellung()
@@ -275,6 +313,22 @@ QStringList MainWindow::zeigeStreckeOeffnenDialog()
 {
     QDir startverzeichnis(QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()));
     return QFileDialog::getOpenFileNames(this, tr("Strecke öffnen"),
-                                        this->m_strecken.size() == 0? startverzeichnis.absolutePath() : QString(""),
+                                        this->m_strecken.size() == 0? startverzeichnis.absolutePath() + "/Routes" : QString(""),
                                         QString(tr("Strecken- und Fahrplandateien (*.str *.STR *.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
+}
+
+QStringList MainWindow::zeigeOrdnerOeffnenDialog()
+{
+    QDir startverzeichnis { QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()) };
+    QDir dir { QFileDialog::getExistingDirectory(this, "",
+                                                 this->m_strecken.size() == 0? startverzeichnis.absolutePath() + "/Routes" : QString(""),
+                                                 QFileDialog::ShowDirsOnly) };
+    QStringList dateinamen;
+    QStringList filter { "*.ST3" };
+
+    QTime timer;
+    timer.start();
+    findeSt3Rekursiv(dir, filter, dateinamen);
+    qDebug() << timer.elapsed() << "ms zum Auflisten aller Streckendateien";
+    return dateinamen;
 }

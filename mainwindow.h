@@ -23,6 +23,8 @@ public:
 public slots:
     void actionOeffnenTriggered();
     void actionModulOeffnenTriggered();
+    void actionOrdnerOeffnenTriggered();
+    void actionOrdnerAnfuegenTriggered();
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent *e) override;
@@ -45,6 +47,9 @@ private:
 
     /** Zeigt einen Dialog zum Oeffnen einer Strecke mit passendem Startverzeichnis und liefert den Dateinamen zurueck. */
     QStringList zeigeStreckeOeffnenDialog();
+
+    /** Zeigt einen Dialog zum Oeffnen eines Streckenordners und liefert eine Liste von ST3-Dateien in diesem Verzeichnis zurueck. */
+    QStringList zeigeOrdnerOeffnenDialog();
 };
 
 #endif // MAINWINDOW_H

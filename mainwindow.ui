@@ -82,6 +82,9 @@
     </property>
     <addaction name="actionOeffnen"/>
     <addaction name="actionModulOeffnen"/>
+    <addaction name="separator"/>
+    <addaction name="actionOrdnerOeffnen"/>
+    <addaction name="actionOrdnerAnfuegen"/>
    </widget>
    <widget class="QMenu" name="menuVisualisierung">
     <property name="title">
@@ -103,12 +106,15 @@
   </widget>
   <action name="actionOeffnen">
    <property name="text">
-    <string>Ö&amp;ffnen ...</string>
+    <string>Strecke/Fahrplan ö&amp;ffnen ...</string>
    </property>
   </action>
   <action name="actionModulOeffnen">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
-    <string>&amp;Anfügen ...</string>
+    <string>Strecke(Fahrplan &amp;anfügen ...</string>
    </property>
   </action>
   <action name="actionVergroessern">
@@ -125,6 +131,19 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+-</string>
+   </property>
+  </action>
+  <action name="actionOrdnerOeffnen">
+   <property name="text">
+    <string>&amp;Streckenordner öffnen ...</string>
+   </property>
+  </action>
+  <action name="actionOrdnerAnfuegen">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>S&amp;treckenordner anfügen ...</string>
    </property>
   </action>
   <actiongroup name="actiongroupVisualisierung">
@@ -191,8 +210,43 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionOrdnerOeffnen</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionOrdnerOeffnenTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>509</x>
+     <y>381</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionOrdnerAnfuegen</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionOrdnerAnfuegenTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>509</x>
+     <y>381</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>actionOeffnenTriggered()</slot>
+  <slot>actionModulOeffnenTriggered()</slot>
+  <slot>actionOrdnerOeffnenTriggered()</slot>
+  <slot>actionOrdnerAnfuegenTriggered()</slot>
  </slots>
 </ui>
