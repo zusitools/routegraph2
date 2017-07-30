@@ -9,9 +9,9 @@
 class GeschwindigkeitVisualisierung : public Visualisierung
 {
 public:
-    virtual void setzeDarstellung(StreckensegmentItem& item) const override;
+    virtual void setzeDarstellung(StreckensegmentItem& item) override;
     virtual std::unique_ptr<Segmentierer> segmentierer() const override { return std::make_unique<GeschwindigkeitSegmentierer>(); }
-    virtual std::unique_ptr<QGraphicsScene> legende() const override;
+    virtual std::unique_ptr<QGraphicsScene> legende() override;
 };
 
 #endif // GESCHWINDIGKEITVISUALISIERUNG_H

@@ -15,6 +15,7 @@
 #include "view/visualisierung/visualisierung.h"
 #include "view/visualisierung/gleisfunktionvisualisierung.h"
 #include "view/visualisierung/geschwindigkeitvisualisierung.h"
+#include "view/visualisierung/oberbauvisualisierung.h"
 
 #include "zusi_file_lib/src/common/pfade.hpp"
 #include "zusi_file_lib/src/io/fpn_leser.hpp"
@@ -287,10 +288,16 @@ void MainWindow::aktualisiereDarstellung()
 
     if (ui->actionVisualisierungGeschwindigkeiten->isChecked()) {
         visualisierung = std::make_unique<GeschwindigkeitVisualisierung>();
+    } else if (ui->actionVisualisierungOberbau->isChecked()) {
+        visualisierung = std::make_unique<OberbauVisualisierung>();
     } else {
         visualisierung = std::make_unique<GleisfunktionVisualisierung>();
     }
 
+    QTime timer;
+    timer.start();
+    ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
+    qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
 
     unique_ptr<QGraphicsScene> legende = visualisierung->legende();
     if (legende) {
@@ -302,11 +309,6 @@ void MainWindow::aktualisiereDarstellung()
         }
         ui->legendeView->setFixedHeight(0);
     }
-
-    QTime timer;
-    timer.start();
-    ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
-    qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
 }
 
 QStringList MainWindow::zeigeStreckeOeffnenDialog()

@@ -92,6 +92,7 @@
     </property>
     <addaction name="actionVisualisierungGleisfunktion"/>
     <addaction name="actionVisualisierungGeschwindigkeiten"/>
+    <addaction name="actionVisualisierungOberbau"/>
    </widget>
    <widget class="QMenu" name="menu_Ansicht">
     <property name="title">
@@ -164,6 +165,14 @@
     </property>
     <property name="text">
      <string>G&amp;eschwindigkeiten</string>
+    </property>
+   </action>
+   <action name="actionVisualisierungOberbau">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>&amp;Oberbau</string>
     </property>
    </action>
   </actiongroup>

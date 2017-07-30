@@ -22,7 +22,7 @@ static QColor farbe(int geschwindigkeit)
     }
 }
 
-void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item) const
+void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
     geschwindigkeit_t geschwindigkeit = item.start().richtungsInfo().vmax;
@@ -34,31 +34,15 @@ void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item) 
     item.setPen(pen);
 }
 
-unique_ptr<QGraphicsScene> GeschwindigkeitVisualisierung::legende() const
+unique_ptr<QGraphicsScene> GeschwindigkeitVisualisierung::legende()
 {
     auto result = std::make_unique<QGraphicsScene>();
     auto segmentierer = this->segmentierer();
-
     Streckenelement streckenelement;
     for (int v = 0; v <= 170; v += 10) {
-        streckenelement.p1.x = result->sceneRect().right() + 5.0;
-        streckenelement.p2.x = streckenelement.p1.x + 25.0;
         streckenelement.richtung(Streckenelement::RICHTUNG_NORM).richtungsInfo().vmax = v / 3.6;
-        // TODO: Referenz auf Stackvariable (streckenelement)!
-        auto segmentItem = std::make_unique<StreckensegmentItem>(
-                            streckenelement.richtung(Streckenelement::RICHTUNG_NORM),
-                            *segmentierer, 0, nullptr);
-        this->setzeDarstellung(*segmentItem);
-        segmentItem->setBreite(5);
-        result->addItem(segmentItem.release());
-
-        auto label = std::make_unique<Label>(v == 0 ? QString("undefiniert") :
+        this->neuesLegendeElement(*result, *segmentierer, streckenelement, v == 0 ? QString("undefiniert") :
             (v == 170 ? QString::fromUtf8("> 160") : (QString::fromUtf8("⩽ ") + QString::number(v))));
-        label->setAlignment(Qt::AlignVCenter);
-        label->setPos(streckenelement.p2.x + 3.0, 0);
-        label->setPen(QPen(Qt::black));
-        label->setBrush(QBrush(Qt::black));
-        result->addItem(label.release());
     }
     return result;
 }

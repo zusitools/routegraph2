@@ -9,8 +9,8 @@
 class GleisfunktionVisualisierung : public Visualisierung
 {
 public:
-    virtual void setzeDarstellung(StreckensegmentItem& item) const override;
-    virtual std::unique_ptr<QGraphicsScene> legende() const override { return nullptr; }
+    virtual void setzeDarstellung(StreckensegmentItem& item) override;
+    virtual std::unique_ptr<QGraphicsScene> legende() override { return nullptr; }
 };
 
 #endif // GLEISFUNKTIONVISUALISIERUNG_H

@@ -11,7 +11,7 @@
 #include <cassert>
 #include <cmath>
 
-StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, const Visualisierung& visualisierung, QObject *parent) :
+StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualisierung& visualisierung, QObject *parent) :
     QGraphicsScene(parent)
 {
     this->setItemIndexMethod(QGraphicsScene::NoIndex);

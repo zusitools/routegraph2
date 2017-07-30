@@ -15,7 +15,7 @@ class StreckeScene : public QGraphicsScene
     Q_OBJECT
 public:
     explicit StreckeScene(const vector<unique_ptr<Strecke>>& strecken,
-                          const Visualisierung& visualisierung, QObject *parent = 0);
+                          Visualisierung& visualisierung, QObject *parent = 0);
 
 signals:
 
