@@ -16,6 +16,7 @@
 #include "view/visualisierung/gleisfunktionvisualisierung.h"
 #include "view/visualisierung/geschwindigkeitvisualisierung.h"
 #include "view/visualisierung/oberbauvisualisierung.h"
+#include "view/visualisierung/fahrleitungvisualisierung.h"
 
 #include "zusi_file_lib/src/common/pfade.hpp"
 #include "zusi_file_lib/src/io/fpn_leser.hpp"
@@ -290,6 +291,8 @@ void MainWindow::aktualisiereDarstellung()
         visualisierung = std::make_unique<GeschwindigkeitVisualisierung>();
     } else if (ui->actionVisualisierungOberbau->isChecked()) {
         visualisierung = std::make_unique<OberbauVisualisierung>();
+    } else if (ui->actionVisualisierungFahrleitung->isChecked()) {
+        visualisierung = std::make_unique<FahrleitungVisualisierung>();
     } else {
         visualisierung = std::make_unique<GleisfunktionVisualisierung>();
     }
