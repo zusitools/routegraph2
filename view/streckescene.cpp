@@ -127,7 +127,6 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
             }
         }
 
-#if 0
         for (auto& refpunkt : strecke->referenzpunkte)
         {
             if (!refpunkt || !refpunkt->elementRichtung.streckenelement) continue;
@@ -144,7 +143,6 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
                 this->addItem(si.release());
             }
         }
-#endif
 
         for (const auto& p : betriebsstellenKoordinaten) {
             std::string betriebsstelle = p.first;
