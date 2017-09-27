@@ -116,7 +116,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Strecke(Fahrplan &amp;anfügen ...</string>
+    <string>Strecke/Fahrplan &amp;anfügen ...</string>
    </property>
   </action>
   <action name="actionVergroessern">
