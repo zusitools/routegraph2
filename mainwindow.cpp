@@ -7,6 +7,7 @@
 #include <QActionGroup>
 #include <QDir>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QTime>
 #include <QDebug>
@@ -274,7 +275,11 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
     }
 
     for (auto& fut : futures) {
-        this->m_strecken.push_back(fut.get());
+        try {
+            this->m_strecken.push_back(fut.get());
+        } catch (const std::exception& e) {
+            QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
+        }
     }
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
