@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     view/visualisierung/geschwindigkeitvisualisierung.cpp \
     view/visualisierung/oberbauvisualisierung.cpp \
     view/visualisierung/visualisierung.cpp \
-    view/visualisierung/fahrleitungvisualisierung.cpp
+    view/visualisierung/fahrleitungvisualisierung.cpp \
+    view/visualisierung/kruemmungvisualisierung.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
@@ -36,7 +37,8 @@ HEADERS  += mainwindow.h \
     view/visualisierung/gleisfunktionvisualisierung.h \
     view/visualisierung/geschwindigkeitvisualisierung.h \
     view/visualisierung/oberbauvisualisierung.h \
-    view/visualisierung/fahrleitungvisualisierung.h
+    view/visualisierung/fahrleitungvisualisierung.h \
+    view/visualisierung/kruemmungvisualisierung.h
 
 FORMS    += mainwindow.ui
 

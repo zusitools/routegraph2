@@ -15,7 +15,7 @@ public:
     virtual std::unique_ptr<Segmentierer> segmentierer() const { return std::make_unique<GleisfunktionSegmentierer>(); }
     virtual std::unique_ptr<QGraphicsScene> legende() = 0;
 
-    Visualisierung() {}
+    Visualisierung() = default;
     Visualisierung(Visualisierung& other) = delete;
 };
 
