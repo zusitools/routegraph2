@@ -5,7 +5,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = routegraph2
 TEMPLATE = app
 
-CONFIG += c++14 rtti_off
+CONFIG += c++1z rtti_off
 
 SOURCES += main.cpp\
         mainwindow.cpp \
