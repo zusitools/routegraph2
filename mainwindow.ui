@@ -92,6 +92,7 @@
     </property>
     <addaction name="actionVisualisierungGleisfunktion"/>
     <addaction name="actionVisualisierungKruemmung"/>
+    <addaction name="actionVisualisierungUeberhoehung"/>
     <addaction name="actionVisualisierungGeschwindigkeiten"/>
     <addaction name="actionVisualisierungOberbau"/>
     <addaction name="actionVisualisierungFahrleitung"/>
@@ -170,6 +171,17 @@
     </property>
     <property name="text">
      <string>&amp;Krümmung</string>
+    </property>
+   </action>
+   <action name="actionVisualisierungUeberhoehung">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Ü&amp;berhöhung</string>
     </property>
    </action>
    <action name="actionVisualisierungGeschwindigkeiten">

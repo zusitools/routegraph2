@@ -16,6 +16,7 @@
 #include "view/visualisierung/visualisierung.h"
 #include "view/visualisierung/gleisfunktionvisualisierung.h"
 #include "view/visualisierung/kruemmungvisualisierung.h"
+#include "view/visualisierung/ueberhoehungvisualisierung.h"
 #include "view/visualisierung/geschwindigkeitvisualisierung.h"
 #include "view/visualisierung/oberbauvisualisierung.h"
 #include "view/visualisierung/fahrleitungvisualisierung.h"
@@ -301,6 +302,8 @@ void MainWindow::aktualisiereDarstellung()
         visualisierung = std::make_unique<FahrleitungVisualisierung>();
     } else if (ui->actionVisualisierungKruemmung->isChecked()) {
         visualisierung = std::make_unique<KruemmungVisualisierung>();
+    } else if (ui->actionVisualisierungUeberhoehung->isChecked()) {
+        visualisierung = std::make_unique<UeberhoehungVisualisierung>();
     } else {
         visualisierung = std::make_unique<GleisfunktionVisualisierung>();
     }

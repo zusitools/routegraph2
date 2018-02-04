@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     view/visualisierung/oberbauvisualisierung.cpp \
     view/visualisierung/visualisierung.cpp \
     view/visualisierung/fahrleitungvisualisierung.cpp \
-    view/visualisierung/kruemmungvisualisierung.cpp
+    view/visualisierung/kruemmungvisualisierung.cpp \
+    view/visualisierung/ueberhoehungvisualisierung.cpp
 
 HEADERS  += mainwindow.h \
     view/streckeview.h \
@@ -38,7 +39,8 @@ HEADERS  += mainwindow.h \
     view/visualisierung/geschwindigkeitvisualisierung.h \
     view/visualisierung/oberbauvisualisierung.h \
     view/visualisierung/fahrleitungvisualisierung.h \
-    view/visualisierung/kruemmungvisualisierung.h
+    view/visualisierung/kruemmungvisualisierung.h \
+    view/visualisierung/ueberhoehungvisualisierung.h
 
 FORMS    += mainwindow.ui
 
