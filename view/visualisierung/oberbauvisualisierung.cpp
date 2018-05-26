@@ -5,22 +5,21 @@
 #include <QPen>
 #include <QColor>
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
-#include "zusi_file_lib/src/common/types.hpp"
+#include "model/streckenelement.h"
 
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/label.h"
 
 bool OberbauSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
-    return vorgaenger->oberbauName != nachfolger->oberbauName;
+    return vorgaenger->Oberbau != nachfolger->Oberbau;
 }
 
 void OberbauVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
 
-    std::string oberbauName { item.start()->oberbauName };
+    const auto& oberbauName = item.start()->Oberbau;
     auto it = this->colors_.find(oberbauName);
     if (it == std::end(this->colors_)) {
         static constexpr int kNumColors = 14;
@@ -41,9 +40,9 @@ unique_ptr<QGraphicsScene> OberbauVisualisierung::legende()
 {
     auto result = std::make_unique<QGraphicsScene>();
     auto segmentierer = this->segmentierer();
-    Streckenelement streckenelement;
+    StrElement streckenelement {};
     for (const auto& it : this->colors_) {
-        streckenelement.oberbauName = it.first;
+        streckenelement.Oberbau = it.first;
         this->neuesLegendeElement(*result, *segmentierer, streckenelement, it.first == "" ? QString("(k.A.)") : QString::fromUtf8(it.first.data(), it.first.size()));
     }
     return result;

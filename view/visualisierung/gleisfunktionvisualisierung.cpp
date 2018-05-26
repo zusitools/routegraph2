@@ -6,6 +6,6 @@
 void GleisfunktionVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
-    pen.setColor(item.start()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) ? Qt::lightGray : Qt::black);
+    pen.setColor(hatFktFlag(*item.start(), StreckenelementFlag::KeineGleisfunktion) ? Qt::lightGray : Qt::black);
     item.setPen(pen);
 }

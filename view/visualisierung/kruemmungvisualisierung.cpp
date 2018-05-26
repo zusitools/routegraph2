@@ -1,7 +1,6 @@
 #include "kruemmungvisualisierung.h"
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
-#include "zusi_file_lib/src/common/types.hpp"
+#include "model/streckenelement.h"
 
 #include <QPen>
 #include <QColor>
@@ -20,10 +19,10 @@ namespace {
 
 bool KruemmungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
-    const bool gleisfunktionGleich = (vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) ==
-            nachfolger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion));
-    const qreal vorgaengerKruemmung = std::fabs(vorgaenger->kruemmung);
-    const qreal nachfolgerKruemmung = std::fabs(nachfolger->kruemmung);
+    const bool gleisfunktionGleich = (hatFktFlag(*vorgaenger, StreckenelementFlag::KeineGleisfunktion) ==
+            hatFktFlag(*nachfolger, StreckenelementFlag::KeineGleisfunktion));
+    const qreal vorgaengerKruemmung = std::fabs(vorgaenger->kr);
+    const qreal nachfolgerKruemmung = std::fabs(nachfolger->kr);
     const bool kruemmungGleich =
             (vorgaengerKruemmung < maxRadiusKruemmung && nachfolgerKruemmung < maxRadiusKruemmung) ||
             (vorgaengerKruemmung > minRadiusKruemmung && nachfolgerKruemmung > minRadiusKruemmung) ||
@@ -35,7 +34,7 @@ void KruemmungVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
 
-    const qreal kruemmung = std::fabs(item.start()->kruemmung);
+    const qreal kruemmung = std::fabs(item.start()->kr);
     qreal farbton = 83;
     qreal saettigung = 255;
     qreal wert = 0;
@@ -48,7 +47,7 @@ void KruemmungVisualisierung::setzeDarstellung(StreckensegmentItem& item)
         wert = std::min(qreal(255), std::max(qreal(0), 255 - (kruemmung - midRadiusKruemmung)/(maxRadiusKruemmung - midRadiusKruemmung) * 255));
     }
 
-    if (item.start()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
+    if (hatFktFlag(*item.start(), StreckenelementFlag::KeineGleisfunktion)) {
         saettigung /= 2;
         wert = 192 + saettigung / 2;
     }
@@ -61,9 +60,9 @@ std::unique_ptr<QGraphicsScene> KruemmungVisualisierung::legende()
 {
     auto result = std::make_unique<QGraphicsScene>();
     auto segmentierer = this->segmentierer();
-    Streckenelement streckenelement;
+    StrElement streckenelement {};
     for (qreal r  : { minRadius, (minRadius+midRadius)/2, midRadius, 1/((midRadiusKruemmung+maxRadiusKruemmung)/2), maxRadius }) {
-        streckenelement.kruemmung = 1/r;
+        streckenelement.kr = 1/r;
         this->neuesLegendeElement(*result, *segmentierer, streckenelement,
             (r == maxRadius ? QString::fromUtf8("r ⩾ ") :
                 (r == minRadius ? QString::fromUtf8("r ⩽ ") : (QString::fromUtf8("r = "))))

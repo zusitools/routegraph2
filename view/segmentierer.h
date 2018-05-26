@@ -1,7 +1,7 @@
 #ifndef SEGMENTIERER_H
 #define SEGMENTIERER_H
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
+#include "model/streckenelement.h"
 
 class Segmentierer
 {

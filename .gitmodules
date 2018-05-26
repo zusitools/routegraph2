@@ -1,3 +1,3 @@
-[submodule "zusi_file_lib"]
-	path = zusi_file_lib
-	url = https://github.com/zusitools/zusi_file_lib.git
+[submodule "parser"]
+	path = parser
+	url = https://github.com/zusitools/parser.git

@@ -2,13 +2,13 @@
 
 #include "view/graphicsitems/label.h"
 
-void Visualisierung::neuesLegendeElement(QGraphicsScene& scene, Segmentierer& segmentierer, Streckenelement& streckenelement, QString legende)
+void Visualisierung::neuesLegendeElement(QGraphicsScene& scene, Segmentierer& segmentierer, StrElement &streckenelement, QString legende)
 {
-    streckenelement.p1.x = scene.sceneRect().right() + 5.0;
-    streckenelement.p2.x = streckenelement.p1.x + 25.0;
+    streckenelement.g.X = scene.sceneRect().right() + 5.0;
+    streckenelement.b.X = streckenelement.g.X + 25.0;
     // TODO: Referenz auf Stackvariable (streckenelement)!
     auto segmentItem = std::make_unique<StreckensegmentItem>(
-                        streckenelement.richtung(Streckenelement::RICHTUNG_NORM),
+                        richtung(streckenelement, StreckenelementRichtung::Norm),
                         segmentierer, 0, nullptr);
     this->setzeDarstellung(*segmentItem);
     segmentItem->setBreite(5);
@@ -16,7 +16,7 @@ void Visualisierung::neuesLegendeElement(QGraphicsScene& scene, Segmentierer& se
 
     auto label = std::make_unique<Label>(legende);
     label->setAlignment(Qt::AlignVCenter);
-    label->setPos(streckenelement.p2.x + 3.0, 0);
+    label->setPos(streckenelement.b.X + 3.0, 0);
     label->setPen(QPen(Qt::black));
     label->setBrush(QBrush(Qt::black));
     scene.addItem(label.release());

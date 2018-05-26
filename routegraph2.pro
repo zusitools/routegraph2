@@ -40,12 +40,14 @@ HEADERS  += mainwindow.h \
     view/visualisierung/oberbauvisualisierung.h \
     view/visualisierung/fahrleitungvisualisierung.h \
     view/visualisierung/kruemmungvisualisierung.h \
-    view/visualisierung/ueberhoehungvisualisierung.h
+    view/visualisierung/ueberhoehungvisualisierung.h \
+    model/streckenelement.h
 
 FORMS    += mainwindow.ui
 
-INCLUDEPATH += $$_PRO_FILE_PWD_/zusi_file_lib
-INCLUDEPATH += $$_PRO_FILE_PWD_/zusi_file_lib/src
+INCLUDEPATH += $$_PRO_FILE_PWD_/build-parser/include
+INCLUDEPATH += $$_PRO_FILE_PWD_/parser/include
+INCLUDEPATH += $$_PRO_FILE_PWD_/parser/rapidxml-mod
 
 QMAKE_CXXFLAGS_RELEASE -= -O
 QMAKE_CXXFLAGS_RELEASE -= -O1

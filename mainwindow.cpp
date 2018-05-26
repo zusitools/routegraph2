@@ -21,10 +21,8 @@
 #include "view/visualisierung/oberbauvisualisierung.h"
 #include "view/visualisierung/fahrleitungvisualisierung.h"
 
-#include "zusi_file_lib/src/common/pfade.hpp"
-#include "zusi_file_lib/src/io/fpn_leser.hpp"
-#include "zusi_file_lib/src/io/st3_leser.hpp"
-#include "zusi_file_lib/src/io/str_leser.hpp"
+#include "zusi_parser/utils.hpp"
+#include "zusi_parser/zusi_types.hpp"
 
 #ifdef HAS_CALLGRIND
 #include <valgrind/callgrind.h>
@@ -64,11 +62,7 @@ void MainWindow::setzeAnsichtZurueck()
     ui->streckeView->scale(1.0f, -1.0f);
 
     // Zusi 3
-    if (this->m_strecken.size() > 0 &&
-            (this->m_strecken[0]->formatVersion.size() == 0 || this->m_strecken[0]->formatVersion[0] != '2'))
-    {
-        ui->streckeView->rotate(-90);
-    }
+    ui->streckeView->rotate(-90);
 
     ui->streckeView->fitInView(ui->streckeView->sceneRect(), Qt::KeepAspectRatio);
     ui->streckeView->setDefaultTransform(ui->streckeView->transform());
@@ -183,8 +177,6 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 {
     QTime timer;
     timer.start();
-
-    St3Leser st3Leser;
     std::vector<std::future<std::unique_ptr<Strecke>>> futures;
 
 #if 0
@@ -259,26 +251,46 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 #endif
         if (dateiname.endsWith("st3", Qt::CaseInsensitive))
         {
-            futures.push_back(std::async([&st3Leser, dateiname]{ return st3Leser.liesDateiMitDateiname(dateiname.toStdString()); }));
+            futures.push_back(std::async([&dateiname]{ return std::move(zusixml::parseFile(dateiname.toStdString())->Strecke); }));
         }
         else if (dateiname.endsWith("fpn", Qt::CaseInsensitive))
         {
-            auto fahrplan = FpnLeser().liesDateiMitDateiname(dateiname.toStdString());
-            for (auto& modul : fahrplan->streckenmodule) {
-                futures.push_back(std::async([&st3Leser, modul]{
-                    return st3Leser.liesDateiMitDateiname(zusi_file_lib::pfade::zusiPfadZuOsPfad(modul));
-                }));
+            auto fahrplan = std::move(zusixml::parseFile(dateiname.toStdString())->Fahrplan);
+            if (fahrplan)
+            {
+                for (const auto& modul : fahrplan->children_StrModul) {
+                    const auto& modulDateiname = modul->Datei.Dateiname;
+                    futures.push_back(std::async([modulDateiname, &dateiname]{
+                        return std::move(zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()))->Strecke);
+                    }));
             }
         }
         else
         {
-            futures.push_back(std::async([&st3Leser, dateiname]{ return StrLeser().liesDateiMitDateiname(dateiname.toStdString()); }));
+            QMessageBox::warning(this, "Datei nicht geladen", QString("Unbekannte Dateiendung: ") + dateiname);
         }
     }
 
     for (auto& fut : futures) {
         try {
-            this->m_strecken.push_back(fut.get());
+            auto strecke = fut.get();
+            // Strecke verknuepfen (zur Zeit nur innerhalb desselben Moduls)
+            const auto anzahlStreckenelemente = strecke->children_StrElement.size();
+            for (auto& streckenelement : strecke->children_StrElement) {
+                if (!streckenelement) {
+                    continue;
+                }
+                for (const auto& nachfolger : streckenelement->children_NachNorm) {
+                    const auto nr = nachfolger.Nr;
+                    streckenelement->nachfolgerElementeNorm.push_back((nr < 0) || (static_cast<size_t>(nr) >= anzahlStreckenelemente) ? nullptr : strecke->children_StrElement[nr].get());
+                }
+                for (const auto& nachfolger : streckenelement->children_NachGegen) {
+                    const auto nr = nachfolger.Nr;
+                    streckenelement->nachfolgerElementeGegen.push_back((nr < 0) || (static_cast<size_t>(nr) >= anzahlStreckenelemente) ? nullptr : strecke->children_StrElement[nr].get());
+                }
+            }
+
+            this->m_strecken.push_back(std::move(strecke));
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
         }
@@ -327,15 +339,15 @@ void MainWindow::aktualisiereDarstellung()
 
 QStringList MainWindow::zeigeStreckeOeffnenDialog()
 {
-    QDir startverzeichnis(QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()));
+    QDir startverzeichnis(QString::fromStdString(zusixml::getZusiDatenpfad()));
     return QFileDialog::getOpenFileNames(this, tr("Strecke öffnen"),
                                         this->m_strecken.size() == 0? startverzeichnis.absolutePath() + "/Routes" : QString(""),
-                                        QString(tr("Strecken- und Fahrplandateien (*.str *.STR *.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
+                                        QString(tr("Strecken- und Fahrplandateien (*.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
 }
 
 QStringList MainWindow::zeigeOrdnerOeffnenDialog()
 {
-    QDir startverzeichnis { QString::fromStdString(zusi_file_lib::pfade::getZusi3Datenpfad()) };
+    QDir startverzeichnis { QString::fromStdString(zusixml::getZusiDatenpfad()) };
     QDir dir { QFileDialog::getExistingDirectory(this, "",
                                                  this->m_strecken.size() == 0? startverzeichnis.absolutePath() + "/Routes" : QString(""),
                                                  QFileDialog::ShowDirsOnly) };

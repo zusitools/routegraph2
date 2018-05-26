@@ -5,8 +5,7 @@
 
 #include "view/visualisierung/visualisierung.h"
 
-#include "zusi_file_lib/src/model/strecke.hpp"
-#include "zusi_file_lib/src/model/utmpunkt.hpp"
+#include "zusi_parser/zusi_types.hpp"
 
 using namespace std;
 
@@ -23,7 +22,7 @@ public slots:
 
 private:
     // UTM-Referenzpunkt
-    UTMPunkt m_utmRefPunkt;
+    UTM m_utmRefPunkt = {};
 
 };
 

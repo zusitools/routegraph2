@@ -5,23 +5,22 @@
 #include <QPen>
 #include <QColor>
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
-#include "zusi_file_lib/src/common/types.hpp"
+#include "model/streckenelement.h"
 
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/label.h"
 
 bool FahrleitungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
-    return vorgaenger->fahrleitungTyp != nachfolger->fahrleitungTyp || ((vorgaenger->drahthoehe == 0) != (nachfolger->drahthoehe == 0));
+    return vorgaenger->Volt != nachfolger->Volt || ((vorgaenger->Drahthoehe == 0) != (nachfolger->Drahthoehe == 0));
 }
 
 void FahrleitungVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
 
-    FahrleitungTyp fahrleitungTyp = item.start()->fahrleitungTyp;
-    meter_t drahthoehe = item.start()->drahthoehe;
+    FahrleitungTyp fahrleitungTyp = static_cast<FahrleitungTyp>(item.start()->Volt);
+    auto drahthoehe = item.start()->Drahthoehe;
 
     auto it = this->farben_.find(fahrleitungTyp);
     if (it == std::end(this->farben_)) {
@@ -39,14 +38,14 @@ unique_ptr<QGraphicsScene> FahrleitungVisualisierung::legende()
 {
     auto result = std::make_unique<QGraphicsScene>();
     auto segmentierer = this->segmentierer();
-    Streckenelement streckenelement;
-    streckenelement.drahthoehe = 1;
+    StrElement streckenelement {};
+    streckenelement.Drahthoehe = 1;
     for (const auto& it : this->farben_) {
-        streckenelement.fahrleitungTyp = it.first;
+        streckenelement.Volt = static_cast<int32_t>(it.first);
         this->neuesLegendeElement(*result, *segmentierer, streckenelement, QString::fromUtf8(it.second.first.data(), it.second.first.size()));
     }
-    streckenelement.fahrleitungTyp = FahrleitungTyp::Unbestimmt;
-    streckenelement.drahthoehe = 0;
+    streckenelement.Volt = static_cast<int32_t>(FahrleitungTyp::Unbestimmt);
+    streckenelement.Drahthoehe = 0;
     this->neuesLegendeElement(*result, *segmentierer, streckenelement, QString("gestrichelt = Fahrdrahthöhe 0"));
     return result;
 }

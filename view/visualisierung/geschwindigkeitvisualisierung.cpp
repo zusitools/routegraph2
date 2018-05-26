@@ -5,8 +5,7 @@
 #include <QPen>
 #include <QColor>
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
-#include "zusi_file_lib/src/common/types.hpp"
+#include "model/streckenelement.h"
 
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/label.h"
@@ -25,8 +24,9 @@ static QColor farbe(int geschwindigkeit)
 void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
-    geschwindigkeit_t geschwindigkeit = item.start().richtungsInfo().vmax;
-    if (item.start()->hatFktFlag(StreckenelementFlag::KeineGleisfunktion)) {
+    const auto& richtungsInfo = item.start().richtungsInfo();
+    const auto geschwindigkeit = richtungsInfo.has_value() ? richtungsInfo->vMax : 0;
+    if (hatFktFlag(*item.start(), StreckenelementFlag::KeineGleisfunktion)) {
         pen.setColor(QColor::fromRgb(240, 240, 240));
     } else {
         pen.setColor(farbe(std::round(geschwindigkeit * 3.6)));
@@ -38,9 +38,10 @@ unique_ptr<QGraphicsScene> GeschwindigkeitVisualisierung::legende()
 {
     auto result = std::make_unique<QGraphicsScene>();
     auto segmentierer = this->segmentierer();
-    Streckenelement streckenelement;
+    StrElement streckenelement {};
     for (int v = 0; v <= 170; v += 10) {
-        streckenelement.richtung(Streckenelement::RICHTUNG_NORM).richtungsInfo().vmax = v / 3.6;
+        streckenelement.InfoNormRichtung.emplace();
+        streckenelement.InfoNormRichtung->vMax = v / 3.6;
         this->neuesLegendeElement(*result, *segmentierer, streckenelement, v == 0 ? QString("undefiniert") :
             (v == 170 ? QString::fromUtf8("> 160") : (QString::fromUtf8("⩽ ") + QString::number(v))));
     }

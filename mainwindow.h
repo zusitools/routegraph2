@@ -6,7 +6,7 @@
 
 #include <QMainWindow>
 
-#include "zusi_file_lib/src/model/strecke.hpp"
+#include "zusi_parser/zusi_types.hpp"
 
 namespace Ui {
 class MainWindow;

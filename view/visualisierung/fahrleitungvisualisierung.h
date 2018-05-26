@@ -7,7 +7,17 @@
 #include "view/segmentierer.h"
 #include "view/graphicsitems/streckensegmentitem.h"
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
+#include "zusi_parser/zusi_types.hpp"
+
+enum class FahrleitungTyp : decltype(StrElement::Volt) {
+    Ohne = 0,
+    Unbestimmt = 1,
+    AC_15000V_16_7_Hz = 2,
+    AC_25000V_50_Hz = 3,
+    DC_1500V = 4,
+    DC_1200V_Stromschiene = 5,
+    DC_3000V = 6,
+};
 
 class FahrleitungSegmentierer : public Segmentierer
 {

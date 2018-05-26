@@ -12,8 +12,8 @@ bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndR
         return true;
     }
 
-    auto vorgaenger = elementUndRichtung.vorgaenger();
-    return !vorgaenger.hatNachfolger() ||
+    const auto& vorgaenger = elementUndRichtung.vorgaenger();
+    return !vorgaenger.hatNachfolger(0) ||
             (vorgaenger.nachfolger(0) != elementUndRichtung) ||
             istSegmentGrenze(vorgaenger, elementUndRichtung);
 }
@@ -30,7 +30,13 @@ bool Segmentierer::beideRichtungen() const
 
 bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
-    return istSegmentGrenze(vorgaenger.richtungsInfo(), nachfolger.richtungsInfo());
+    const auto& vorgaengerRichtungsInfo = vorgaenger.richtungsInfo();
+    const auto& nachfolgerRichtungsInfo = nachfolger.richtungsInfo();
+    if (vorgaengerRichtungsInfo.has_value() != nachfolgerRichtungsInfo.has_value()) {
+        return true;
+    } else {
+        return !vorgaengerRichtungsInfo.has_value() || istSegmentGrenze(*vorgaengerRichtungsInfo, *nachfolgerRichtungsInfo);
+    }
 }
 
 bool RichtungsInfoSegmentierer::istSegmentEnde(const StreckenelementUndRichtung &elementUndRichtung) const
@@ -53,11 +59,11 @@ bool RichtungsInfoSegmentierer::beideRichtungen() const
 
 bool GleisfunktionSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
 {
-    return vorgaenger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion) !=
-            nachfolger->hatFktFlag(StreckenelementFlag::KeineGleisfunktion);
+    return hatFktFlag(*vorgaenger, StreckenelementFlag::KeineGleisfunktion) !=
+            hatFktFlag(*nachfolger, StreckenelementFlag::KeineGleisfunktion);
 }
 
 bool GeschwindigkeitSegmentierer::istSegmentGrenze(const StreckenelementRichtungsInfo &vorgaenger, const StreckenelementRichtungsInfo &nachfolger) const
 {
-    return vorgaenger.vmax != nachfolger.vmax;
+    return vorgaenger.vMax != nachfolger.vMax;
 }

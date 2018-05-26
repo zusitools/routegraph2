@@ -1,6 +1,6 @@
 #include "streckescene.h"
 
-#include "model/streckenelement.hpp"
+#include "model/streckenelement.h"
 
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/dreieckitem.h"
@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <unordered_map>
 
 StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualisierung& visualisierung, QObject *parent) :
     QGraphicsScene(parent)
@@ -22,104 +23,113 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
     double utmRefNs = 0.0;
     for (const unique_ptr<Strecke>& strecke : strecken)
     {
-        utmRefWe += strecke->utmPunkt.we / float(strecken.size());
-        utmRefNs += strecke->utmPunkt.ns / float(strecken.size());
+        if (strecke->UTM) {
+            utmRefWe += strecke->UTM->UTM_WE / float(strecken.size());
+            utmRefNs += strecke->UTM->UTM_NS / float(strecken.size());
+        }
     }
-    this->m_utmRefPunkt.we = int(utmRefWe);
-    this->m_utmRefPunkt.ns = int(utmRefNs);
+    this->m_utmRefPunkt.UTM_WE = static_cast<int>(utmRefWe);
+    this->m_utmRefPunkt.UTM_NS = static_cast<int>(utmRefNs);
 
     unique_ptr<Segmentierer> segmentierer = visualisierung.segmentierer();
-    const auto richtungen_zusi2 = { Streckenelement::RICHTUNG_NORM };
-    const auto richtungen_zusi3 = { Streckenelement::RICHTUNG_NORM, Streckenelement::RICHTUNG_GEGEN };
+    const auto richtungen_zusi2 = { StreckenelementRichtung::Norm };
+    const auto richtungen_zusi3 = { StreckenelementRichtung::Norm, StreckenelementRichtung::Gegen };
 
     for (const unique_ptr<Strecke>& strecke : strecken)
     {
+        const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
+        const auto utm_dx = 1000 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
+        const auto utm_dy = 1000 * (strecke_utm.UTM_NS - this->m_utmRefPunkt.UTM_NS);
+
         // Die Betriebsstellen werden pro Streckenmodul beschriftet, da manche Betriebsstellennamen
         // (z.B. Sbk-Bezeichnungen) in mehreren Modulen vorkommen und dann falsch platziert wuerden.
         std::unordered_map<std::string, QRectF> betriebsstellenKoordinaten;
 
-        bool istZusi2 = strecke->formatVersion.size() > 0 && strecke->formatVersion[0] == '2';
+        bool istZusi2 = false;
         auto richtungen = istZusi2 ? richtungen_zusi2 : richtungen_zusi3;
         float offset = (segmentierer->beideRichtungen() || istZusi2) ? 0.49 : 0.0;
 
-        for (auto& streckenelement : strecke->streckenelemente)
+        for (const auto& streckenelement : strecke->children_StrElement)
         {
             if (streckenelement)
             {
                 anzahlStreckenelemente++;
-                for (streckenelement_richtung_t richtung : richtungen)
+                for (StreckenelementRichtung richtung : richtungen)
                 {
-                    StreckenelementUndRichtung elementRichtung = streckenelement->richtung(richtung);
+                    StreckenelementUndRichtung elementRichtung { streckenelement.get(), richtung }; // streckenelement->richtung(richtung);
                     // Streckenelement-Segmente
                     if (segmentierer->istSegmentStart(elementRichtung))
                     {
                         auto item = std::make_unique<StreckensegmentItem>(elementRichtung, *segmentierer, offset, nullptr);
-                        streckenelement_nr_t startNr = streckenelement->nr;
-                        streckenelement_nr_t endeNr = item->ende()->nr;
+                        auto startNr = streckenelement->Nr;
+                        auto endeNr = item->ende()->Nr;
 
                         // Fuer Zusi-3-Strecken wird jedes Segment doppelt gefunden (einmal von jedem Ende).
                         // Manche Visualisierungen sind nicht richtungsspezifisch und brauchen daher nur eines davon.
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
                         if (istZusi2 || segmentierer->beideRichtungen() || endeNr > startNr ||
-                                (endeNr == startNr && elementRichtung.richtung == Streckenelement::RICHTUNG_NORM))
+                                (endeNr == startNr && elementRichtung.richtung == StreckenelementRichtung::Norm))
                         {
                             // Zusi 3: x = Ost, y = Nord
                             visualisierung.setzeDarstellung(*item);
-                            item->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+                            item->moveBy(utm_dx, utm_dy);
                             this->addItem(item.release());
                             anzahlSegmente++;
                         }
                     }
 
                     // Signale
-                    auto& signal = elementRichtung.richtungsInfo().signal;
+                    const auto& richtungsInfo = elementRichtung.richtungsInfo();
+                    if (richtungsInfo.has_value()) {
+                        const auto& signal = richtungsInfo->Signal;
 
-                    if (signal && !signal->signalbezeichnung.empty() &&
-                            (istZusi2 || (signal->signaltyp != SignalTyp::Weiche
-                            && signal->signaltyp != SignalTyp::Unbestimmt
-                            && signal->signaltyp != SignalTyp::Sonstiges
-                            && signal->signaltyp != SignalTyp::Bahnuebergang))) {
-                        Punkt3D vec = elementRichtung.endpunkt() - elementRichtung.gegenrichtung().endpunkt();
-                        float phi = atan2(-vec.y, vec.x);
-                        QColor farbe = Qt::red;
-                        switch (signal->signaltyp) {
-                            case SignalTyp::Vorsignal:
-                                farbe = Qt::darkGreen;
-                                break;
-                            case SignalTyp::Gleissperre:
-                            case SignalTyp::Rangiersignal:
-                                farbe = Qt::blue;
-                                break;
-                            default:
-                                break;
-                        }
-
-                        auto si = std::make_unique<DreieckItem>(phi, QString::fromUtf8(signal->signalbezeichnung.data(), signal->signalbezeichnung.size()), farbe);
-                        string tooltip = signal->betriebsstelle + " " + signal->signalbezeichnung;
-                        if (!signal->stellwerk.empty()) {
-                            tooltip += "\n[" + signal->stellwerk + "]";
-                        }
-                        si->setToolTip(QString::fromUtf8(tooltip.data(), tooltip.size()));
-                        QPointF pos(elementRichtung.endpunkt().x, elementRichtung.endpunkt().y);
-                        si->setPos(pos);
-                        si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
-                        this->addItem(si.release());
-
-                        if (signal->signaltyp != SignalTyp::Vorsignal && !signal->betriebsstelle.empty())
-                        {
-                            if (betriebsstellenKoordinaten.find(signal->betriebsstelle) == betriebsstellenKoordinaten.end())
-                            {
-                                betriebsstellenKoordinaten[signal->betriebsstelle] = QRectF(pos, pos);
+                        if (signal && !signal->Signalname.empty() &&
+                                (istZusi2 || (static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Weiche
+                                && static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Unbestimmt
+                                && static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Sonstiges
+                                && static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Bahnuebergang))) {
+                            Vec3 vec = elementRichtung.endpunkt() - elementRichtung.gegenrichtung().endpunkt();
+                            float phi = atan2(-vec.Y, vec.X);
+                            QColor farbe = Qt::red;
+                            switch (static_cast<SignalTyp>(signal->SignalTyp)) {
+                                case SignalTyp::Vorsignal:
+                                    farbe = Qt::darkGreen;
+                                    break;
+                                case SignalTyp::Gleissperre:
+                                case SignalTyp::Rangiersignal:
+                                    farbe = Qt::blue;
+                                    break;
+                                default:
+                                    break;
                             }
-                            else
+
+                            auto si = std::make_unique<DreieckItem>(phi, QString::fromUtf8(signal->Signalname.data(), signal->Signalname.size()), farbe);
+                            string tooltip = signal->NameBetriebsstelle + " " + signal->Signalname;
+                            if (!signal->Stellwerk.empty()) {
+                                tooltip += "\n[" + signal->Stellwerk + "]";
+                            }
+                            si->setToolTip(QString::fromUtf8(tooltip.data(), tooltip.size()));
+                            QPointF pos(elementRichtung.endpunkt().X, elementRichtung.endpunkt().Y);
+                            si->setPos(pos);
+                            si->moveBy(utm_dx, utm_dy);
+                            this->addItem(si.release());
+
+                            if (static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Vorsignal && !signal->NameBetriebsstelle.empty())
                             {
-                                QRectF& r = betriebsstellenKoordinaten[signal->betriebsstelle];
-                                // TODO somehow QRect::unite does not work
-                                if (pos.x() < r.left()) { r.setLeft(pos.x()); }
-                                if (pos.x() > r.right()) { r.setRight(pos.x()); }
-                                if (pos.y() > r.bottom()) { r.setBottom(pos.y()); }
-                                if (pos.y() < r.top()) { r.setTop(pos.y()); }
+                                if (betriebsstellenKoordinaten.find(signal->NameBetriebsstelle) == betriebsstellenKoordinaten.end())
+                                {
+                                    betriebsstellenKoordinaten[signal->NameBetriebsstelle] = QRectF(pos, pos);
+                                }
+                                else
+                                {
+                                    QRectF& r = betriebsstellenKoordinaten[signal->NameBetriebsstelle];
+                                    // TODO somehow QRect::unite does not work
+                                    if (pos.x() < r.left()) { r.setLeft(pos.x()); }
+                                    if (pos.x() > r.right()) { r.setRight(pos.x()); }
+                                    if (pos.y() > r.bottom()) { r.setBottom(pos.y()); }
+                                    if (pos.y() < r.top()) { r.setTop(pos.y()); }
+                                }
                             }
                         }
                     }
@@ -127,19 +137,27 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
             }
         }
 
-        for (auto& refpunkt : strecke->referenzpunkte)
+        const auto elementRichtung = [&strecke](const ReferenzElement& refpunkt) -> StreckenelementUndRichtung {
+            if ((refpunkt.StrElement < 0) || (static_cast<size_t>(refpunkt.StrElement) >= strecke->children_StrElement.size())) {
+                return { nullptr, static_cast<StreckenelementRichtung>(refpunkt.StrNorm) };
+            } else {
+                return { strecke->children_StrElement[refpunkt.StrElement].get(), static_cast<StreckenelementRichtung>(refpunkt.StrNorm) };
+            }
+        }; // TODO refpunkt->elementRichtung()
+
+        for (const auto& refpunkt : strecke->children_ReferenzElemente)
         {
-            if (!refpunkt || !refpunkt->elementRichtung.streckenelement) continue;
+            if (!refpunkt || !elementRichtung(*refpunkt).streckenelement) continue;
 
-            if (refpunkt->referenzTyp == Referenzpunkt::Typ::Aufgleispunkt) {
-                Punkt3D vec = refpunkt->elementRichtung.endpunkt() - refpunkt->elementRichtung.gegenrichtung().endpunkt();
-                qreal phi = atan2(-vec.y, vec.x);
+            if (static_cast<ReferenzpunktTyp>(refpunkt->RefTyp) == ReferenzpunktTyp::Aufgleispunkt) {
+                Vec3 vec = elementRichtung(*refpunkt).endpunkt() - elementRichtung(*refpunkt).gegenrichtung().endpunkt();
+                qreal phi = atan2(-vec.Y, vec.X);
 
-                assert(refpunkt->beschreibung.data() != NULL);
+                assert(refpunkt->Info.data() != NULL);
                 auto si = std::make_unique<DreieckItem>(phi,
-                        QString::fromUtf8(refpunkt->beschreibung.data(), refpunkt->beschreibung.size()), Qt::magenta);
-                si->setPos(refpunkt->elementRichtung.endpunkt().x, refpunkt->elementRichtung.endpunkt().y);
-                si->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+                        QString::fromUtf8(refpunkt->Info.data(), refpunkt->Info.size()), Qt::magenta);
+                si->setPos(elementRichtung(*refpunkt).endpunkt().X, elementRichtung(*refpunkt).endpunkt().Y);
+                si->moveBy(utm_dx, utm_dy);
                 this->addItem(si.release());
             }
         }
@@ -149,13 +167,13 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
 
 #if 0
             auto ri = this->addRect(p.second);
-            ri->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+            ri->moveBy(1000 * (strecke->utmPunkt.UTM_WE - this->m_utmRefPunkt.UTM_WE), 1000 * (strecke->utmPunkt.UTM_NS - this->m_utmRefPunkt.UTM_NS));
 #endif
 
             auto ti = unique_ptr<Label>(new Label(QString::fromUtf8(betriebsstelle.data(), betriebsstelle.size())));
             ti->setAlignment(Qt::AlignCenter | Qt::AlignHCenter);
             ti->setPos((p.second.left() + p.second.right()) / 2.0, (p.second.top() + p.second.bottom()) / 2.0);
-            ti->moveBy(1000 * (strecke->utmPunkt.we - this->m_utmRefPunkt.we), 1000 * (strecke->utmPunkt.ns - this->m_utmRefPunkt.ns));
+            ti->moveBy(utm_dx, utm_dy);
             ti->setFlag(QGraphicsItem::ItemIgnoresTransformations);
             ti->setPen(QPen(Qt::black));
             ti->setBrush(QBrush(Qt::black));

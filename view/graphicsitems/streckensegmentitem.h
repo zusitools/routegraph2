@@ -6,7 +6,7 @@
 #include "view/graphicsitems/minbreitegraphicsitem.h"
 #include "view/segmentierer.h"
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
+#include "zusi_parser/zusi_types.hpp"
 
 using namespace std;
 

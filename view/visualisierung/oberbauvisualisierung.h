@@ -7,7 +7,7 @@
 #include "view/segmentierer.h"
 #include "view/graphicsitems/streckensegmentitem.h"
 
-#include "zusi_file_lib/src/model/streckenelement.hpp"
+#include "zusi_parser/zusi_types.hpp"
 
 class OberbauSegmentierer : public Segmentierer
 {

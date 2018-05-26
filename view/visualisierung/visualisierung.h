@@ -9,7 +9,7 @@
 class Visualisierung
 {
 protected:
-    void neuesLegendeElement(QGraphicsScene& scene, Segmentierer& segmentierer, Streckenelement &streckenelement, QString legende);
+    void neuesLegendeElement(QGraphicsScene& scene, Segmentierer& segmentierer, StrElement &streckenelement, QString legende);
 public:
     virtual void setzeDarstellung(StreckensegmentItem&) { }
     virtual std::unique_ptr<Segmentierer> segmentierer() const { return std::make_unique<GleisfunktionSegmentierer>(); }
