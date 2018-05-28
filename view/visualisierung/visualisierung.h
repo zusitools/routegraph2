@@ -17,6 +17,7 @@ public:
 
     Visualisierung() = default;
     Visualisierung(Visualisierung& other) = delete;
+    virtual ~Visualisierung() { }
 };
 
 #endif // VISUALISIERUNG_H

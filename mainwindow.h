@@ -6,11 +6,13 @@
 
 #include <QMainWindow>
 
-#include "zusi_parser/zusi_types.hpp"
-
 namespace Ui {
 class MainWindow;
 }
+
+class Strecke;
+class StreckeScene;
+class QGraphicsScene;
 
 class MainWindow : public QMainWindow
 {
@@ -25,6 +27,7 @@ public slots:
     void actionModulOeffnenTriggered();
     void actionOrdnerOeffnenTriggered();
     void actionOrdnerAnfuegenTriggered();
+    void actionVisualisierungTriggered();
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent *e) override;
@@ -36,6 +39,8 @@ private:
     Ui::MainWindow *ui;
 
     std::vector<std::unique_ptr<Strecke>> m_strecken;
+    std::unique_ptr<StreckeScene> m_streckeScene;
+    std::unique_ptr<QGraphicsScene> m_legendeScene;
 
     void setzeAnsichtZurueck();
 

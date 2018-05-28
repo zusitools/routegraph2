@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::aktualisiereDarstellung);
+    connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::actionVisualisierungTriggered);
     connect(ui->actionVergroessern, &QAction::triggered, this->ui->streckeView, &StreckeView::vergroessern);
     connect(ui->actionVerkleinern, &QAction::triggered, this->ui->streckeView, &StreckeView::verkleinern);
 
@@ -125,6 +125,17 @@ void MainWindow::actionOrdnerAnfuegenTriggered()
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
     }
+}
+
+void MainWindow::actionVisualisierungTriggered()
+{
+    // Transformation und Scroll-Position speichern und wiederherstellen
+    const auto& transform = this->ui->streckeView->transform();
+    const auto& viewport = this->ui->streckeView->viewport();
+    const auto& centerPoint = this->ui->streckeView->mapToScene(viewport->width() / 2, viewport->height() / 2);
+    aktualisiereDarstellung();
+    this->ui->streckeView->setTransform(transform);
+    this->ui->streckeView->centerOn(centerPoint);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)
@@ -320,19 +331,23 @@ void MainWindow::aktualisiereDarstellung()
         visualisierung = std::make_unique<GleisfunktionVisualisierung>();
     }
 
+    ui->streckeView->setScene(nullptr);
+    this->m_streckeScene.reset(nullptr);
+
     QTime timer;
     timer.start();
-    ui->streckeView->setScene(new StreckeScene(this->m_strecken, *visualisierung));
+    this->m_streckeScene.reset(new StreckeScene(this->m_strecken, *visualisierung));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
+    ui->streckeView->setScene(this->m_streckeScene.get());
 
-    unique_ptr<QGraphicsScene> legende = visualisierung->legende();
-    if (legende) {
-        ui->legendeView->setScene(legende.release());
+    ui->legendeView->setScene(nullptr);
+    this->m_legendeScene.reset(nullptr);
+
+    this->m_legendeScene = visualisierung->legende();
+    if (this->m_legendeScene) {
+        ui->legendeView->setScene(this->m_legendeScene.get());
         ui->legendeView->setFixedHeight(ui->legendeView->sceneRect().height());
     } else {
-        if (ui->legendeView->scene()) {
-            ui->legendeView->scene()->clear();
-        }
         ui->legendeView->setFixedHeight(0);
     }
 }
