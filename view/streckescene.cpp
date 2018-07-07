@@ -69,7 +69,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
                         // Behalte nur die Segmente, deren Endelement eine groessere Nummer hat als das Startelement.
                         // (Fuer 1-Element-Segmente behalte dasjenige, das in Normrichtung beginnt).
                         if (istZusi2 || segmentierer->beideRichtungen() || endeNr > startNr ||
-                                (endeNr == startNr && elementRichtung.richtung == StreckenelementRichtung::Norm))
+                                (endeNr == startNr && elementRichtung.getRichtung() == StreckenelementRichtung::Norm))
                         {
                             // Zusi 3: x = Ost, y = Nord
                             visualisierung.setzeDarstellung(*item);
@@ -147,7 +147,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
 
         for (const auto& refpunkt : strecke->children_ReferenzElemente)
         {
-            if (!refpunkt || !elementRichtung(*refpunkt).streckenelement) continue;
+            if (!refpunkt || !elementRichtung(*refpunkt).getStreckenelement()) continue;
 
             if (static_cast<ReferenzpunktTyp>(refpunkt->RefTyp) == ReferenzpunktTyp::Aufgleispunkt) {
                 Vec3 vec = elementRichtung(*refpunkt).endpunkt() - elementRichtung(*refpunkt).gegenrichtung().endpunkt();

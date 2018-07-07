@@ -52,30 +52,54 @@ enum class StreckenelementFlag : uint32_t {
 // Ein Verweis auf eine Richtung eines Streckenelements.
 // Auf die Properties und Methoden des Streckenelements kann mit dem Operator -> zugegriffen werden.
 struct StreckenelementUndRichtung {
-    // Das Streckenelement, auf das sich die Referenz bezieht.
-    const StrElement* streckenelement;
+    // Union aus "const StrElement*" und "StreckenelementRichtung"
+    // à la llvm::PointerIntPair
+    intptr_t val;
 
-    // Die Richtung des Streckenelements, auf das sich die Referenz bezieht.
-    StreckenelementRichtung richtung;
+    enum {
+        BoolMask = (uintptr_t) 0x1,
+        PointerMask = ~(uintptr_t) 0x1,
+    };
+
+    StreckenelementUndRichtung() : val(reinterpret_cast<intptr_t>(nullptr)) {
+        assert((reinterpret_cast<intptr_t>(nullptr) & 0x1) == 0);
+    }
+
+    StreckenelementUndRichtung(const StrElement* strElement, StreckenelementRichtung richtung)
+        : val(reinterpret_cast<intptr_t>(strElement) | static_cast<intptr_t>(richtung)) {
+        assert((reinterpret_cast<intptr_t>(strElement) & 0x1) == 0);
+    }
+
+private:
+    explicit StreckenelementUndRichtung(intptr_t val) : val(val) {}
+
+public:
+    const StrElement* getStreckenelement() const {
+       return reinterpret_cast<const StrElement*>(val & PointerMask);
+    }
+
+    StreckenelementRichtung getRichtung() const {
+        return static_cast<StreckenelementRichtung>((val & BoolMask) != 0);
+    }
 
     inline const std::vector<StrElement*>& nachfolgerElemente() const {
-        return this->richtung == StreckenelementRichtung::Norm ?
-            this->streckenelement->nachfolgerElementeNorm :
-            this->streckenelement->nachfolgerElementeGegen;
+        return this->getRichtung() == StreckenelementRichtung::Norm ?
+            this->getStreckenelement()->nachfolgerElementeNorm :
+            this->getStreckenelement()->nachfolgerElementeGegen;
     }
 
     inline const std::vector<StrElement*>& vorgaengerElemente() const {
-        return this->richtung == StreckenelementRichtung::Norm ?
-            this->streckenelement->nachfolgerElementeGegen :
-            this->streckenelement->nachfolgerElementeNorm;
+        return this->getRichtung() == StreckenelementRichtung::Norm ?
+            this->getStreckenelement()->nachfolgerElementeGegen :
+            this->getStreckenelement()->nachfolgerElementeNorm;
     }
 
     inline StreckenelementUndRichtung nachfolger(const size_t index = 0) const {
-        const auto anschluss_shift = index + (this->richtung == StreckenelementRichtung::Gegen ? 8 : 0);
-        return StreckenelementUndRichtung {
+        const auto anschluss_shift = index + (this->getRichtung() == StreckenelementRichtung::Gegen ? 8 : 0);
+        return StreckenelementUndRichtung(
             this->nachfolgerElemente().at(index),
-            ((this->streckenelement->Anschluss >> anschluss_shift) & 1) == 0 ?
-                StreckenelementRichtung::Norm : StreckenelementRichtung::Gegen };
+            ((this->getStreckenelement()->Anschluss >> anschluss_shift) & 1) == 0 ?
+                StreckenelementRichtung::Norm : StreckenelementRichtung::Gegen);
     }
 
     inline bool hatNachfolger(const size_t index = 0) const {
@@ -88,12 +112,12 @@ struct StreckenelementUndRichtung {
     }
 
     inline StreckenelementUndRichtung vorgaenger(const size_t index = 0) const {
-        const auto anschluss_shift = index + (this->richtung == StreckenelementRichtung::Norm ? 8 : 0);
+        const auto anschluss_shift = index + (this->getRichtung() == StreckenelementRichtung::Norm ? 8 : 0);
 
-        return StreckenelementUndRichtung {
+        return StreckenelementUndRichtung(
             this->vorgaengerElemente().at(index),
-            ((this->streckenelement->Anschluss >> anschluss_shift) & 1) == 0 ?
-                StreckenelementRichtung::Gegen : StreckenelementRichtung::Norm };
+            ((this->getStreckenelement()->Anschluss >> anschluss_shift) & 1) == 0 ?
+                StreckenelementRichtung::Gegen : StreckenelementRichtung::Norm);
     }
 
     inline bool hatVorgaenger(const size_t index = 0) const {
@@ -106,34 +130,34 @@ struct StreckenelementUndRichtung {
     }
 
     inline StreckenelementUndRichtung gegenrichtung() const {
-        return StreckenelementUndRichtung { this->streckenelement, umkehren(this->richtung) };
+        return StreckenelementUndRichtung(this->val ^ BoolMask);
     }
 
     inline const std::optional<StreckenelementRichtungsInfo>& richtungsInfo() const {
-        return this->richtung == StreckenelementRichtung::Norm ? this->streckenelement->InfoNormRichtung : this->streckenelement->InfoGegenRichtung;
+        return this->getRichtung() == StreckenelementRichtung::Norm ? this->getStreckenelement()->InfoNormRichtung : this->getStreckenelement()->InfoGegenRichtung;
     }
 
     inline const Vec3& endpunkt() const {
-        return this->richtung == StreckenelementRichtung::Norm ? this->streckenelement->b : this->streckenelement->g;
+        return this->getRichtung() == StreckenelementRichtung::Norm ? this->getStreckenelement()->b : this->getStreckenelement()->g;
     }
 
     inline bool operator==(const StreckenelementUndRichtung &other) const {
-      return this->streckenelement == other.streckenelement && this->richtung == other.richtung;
+      return this->val == other.val;
     }
     inline bool operator!=(const StreckenelementUndRichtung &other) const {
       return !(*this == other);
     }
 
     inline operator bool() const {
-        return this->streckenelement != nullptr;
+        return this->getStreckenelement() != nullptr;
     }
 
     inline const StrElement* operator->() const {
-        return this->streckenelement;
+        return this->getStreckenelement();
     }
 
     inline const StrElement& operator*() const {
-        return *(this->streckenelement);
+        return *(this->getStreckenelement());
     }
 };
 
