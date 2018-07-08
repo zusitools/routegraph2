@@ -4,7 +4,7 @@
 
 #include "view/zwerte.h"
 
-StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung &start,
+StreckensegmentItem::StreckensegmentItem(const StreckenelementUndRichtung start,
                                          const Segmentierer& segmentierer, float offset,
                                          QGraphicsItem *parent) :
     MinBreiteGraphicsItem<QGraphicsPathItem>(parent, 1.0f), start_(start)

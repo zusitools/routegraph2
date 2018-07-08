@@ -11,7 +11,7 @@ namespace {
     constexpr static qreal maxUeberhoehung = 0.124;  // im Bogenmass, entspricht 7.1 Grad (max. Ueberhoehung Regelspur gem. EBO)
 }
 
-bool UeberhoehungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
+bool UeberhoehungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const
 {
     const bool gleisfunktionGleich = (hatFktFlag(*vorgaenger, StreckenelementFlag::KeineGleisfunktion) ==
             hatFktFlag(*nachfolger, StreckenelementFlag::KeineGleisfunktion));

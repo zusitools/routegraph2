@@ -13,7 +13,7 @@
 class UeberhoehungSegmentierer : public Segmentierer
 {
 protected:
-    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const override;
+    virtual bool istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const override;
 };
 
 class UeberhoehungVisualisierung : public Visualisierung

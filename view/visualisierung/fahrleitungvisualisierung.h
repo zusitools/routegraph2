@@ -22,7 +22,7 @@ enum class FahrleitungTyp : decltype(StrElement::Volt) {
 class FahrleitungSegmentierer : public Segmentierer
 {
 protected:
-    virtual bool istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const override;
+    virtual bool istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const override;
 };
 
 class FahrleitungVisualisierung : public Visualisierung

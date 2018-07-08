@@ -21,7 +21,7 @@ public:
      * @param offset Verschiebung der grafischen Darstellung nach rechts (in Laufrichtung gesehen)
      * @param parent Das übergeordnete GraphicsItem.
      */
-    explicit StreckensegmentItem(const StreckenelementUndRichtung& start,
+    explicit StreckensegmentItem(const StreckenelementUndRichtung start,
         const Segmentierer& segmentierer, float offset,
         QGraphicsItem *parent = 0);
 

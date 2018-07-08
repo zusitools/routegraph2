@@ -141,10 +141,10 @@ public:
         return this->getRichtung() == StreckenelementRichtung::Norm ? this->getStreckenelement()->b : this->getStreckenelement()->g;
     }
 
-    inline bool operator==(const StreckenelementUndRichtung &other) const {
+    inline bool operator==(const StreckenelementUndRichtung other) const {
       return this->val == other.val;
     }
-    inline bool operator!=(const StreckenelementUndRichtung &other) const {
+    inline bool operator!=(const StreckenelementUndRichtung other) const {
       return !(*this == other);
     }
 

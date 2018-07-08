@@ -17,7 +17,7 @@ namespace {
     constexpr static qreal minRadiusKruemmung = 1.0/minRadius;
 }
 
-bool KruemmungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
+bool KruemmungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const
 {
     const bool gleisfunktionGleich = (hatFktFlag(*vorgaenger, StreckenelementFlag::KeineGleisfunktion) ==
             hatFktFlag(*nachfolger, StreckenelementFlag::KeineGleisfunktion));

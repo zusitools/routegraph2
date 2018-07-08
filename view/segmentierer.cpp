@@ -1,11 +1,11 @@
 #include "segmentierer.h"
 
-bool Segmentierer::istSegmentGrenze(const StreckenelementUndRichtung&, const StreckenelementUndRichtung&) const
+bool Segmentierer::istSegmentGrenze(const StreckenelementUndRichtung, const StreckenelementUndRichtung) const
 {
     return false;
 }
 
-bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndRichtung) const
+bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung elementUndRichtung) const
 {
     if (!elementUndRichtung.hatVorgaenger())
     {
@@ -18,7 +18,7 @@ bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung &elementUndR
             istSegmentGrenze(vorgaenger, elementUndRichtung);
 }
 
-bool Segmentierer::istSegmentEnde(const StreckenelementUndRichtung &elementUndRichtung) const
+bool Segmentierer::istSegmentEnde(const StreckenelementUndRichtung elementUndRichtung) const
 {
     return istSegmentStart(elementUndRichtung.gegenrichtung());
 }
@@ -28,7 +28,7 @@ bool Segmentierer::beideRichtungen() const
     return false;
 }
 
-bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
+bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const
 {
     const auto& vorgaengerRichtungsInfo = vorgaenger.richtungsInfo();
     const auto& nachfolgerRichtungsInfo = nachfolger.richtungsInfo();
@@ -39,7 +39,7 @@ bool RichtungsInfoSegmentierer::istSegmentGrenze(const StreckenelementUndRichtun
     }
 }
 
-bool RichtungsInfoSegmentierer::istSegmentEnde(const StreckenelementUndRichtung &elementUndRichtung) const
+bool RichtungsInfoSegmentierer::istSegmentEnde(const StreckenelementUndRichtung elementUndRichtung) const
 {
     if (!elementUndRichtung.hatNachfolger())
     {
@@ -57,7 +57,7 @@ bool RichtungsInfoSegmentierer::beideRichtungen() const
     return true;
 }
 
-bool GleisfunktionSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
+bool GleisfunktionSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const
 {
     return hatFktFlag(*vorgaenger, StreckenelementFlag::KeineGleisfunktion) !=
             hatFktFlag(*nachfolger, StreckenelementFlag::KeineGleisfunktion);

@@ -10,7 +10,7 @@
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/label.h"
 
-bool FahrleitungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
+bool FahrleitungSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const
 {
     return vorgaenger->Volt != nachfolger->Volt || ((vorgaenger->Drahthoehe == 0) != (nachfolger->Drahthoehe == 0));
 }

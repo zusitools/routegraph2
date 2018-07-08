@@ -10,7 +10,7 @@
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/label.h"
 
-bool OberbauSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung &vorgaenger, const StreckenelementUndRichtung &nachfolger) const
+bool OberbauSegmentierer::istSegmentGrenze(const StreckenelementUndRichtung vorgaenger, const StreckenelementUndRichtung nachfolger) const
 {
     return vorgaenger->Oberbau != nachfolger->Oberbau;
 }
