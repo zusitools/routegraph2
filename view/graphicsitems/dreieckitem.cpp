@@ -26,23 +26,6 @@ DreieckItem::DreieckItem(qreal phi, const QString text, const QColor farbe, QGra
 
     this->setToolTip(this->m_text);
     this->setZValue(ZWERT_MARKIERUNG);
-
-    this->m_label.reset(new Label(this->m_text, this));
-    this->m_label->setPen(QPen(this->m_farbe));
-    this->m_label->setBrush(QBrush(this->m_farbe));
-    this->m_label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-
-    this->m_label->setPos(this->m_points[0]); // Spitze
-
-    // TODO: optimiert auf Zusi-3-Strecken
-    if (phi <= -M_PI_2 || phi >= M_PI_2)
-    {
-        this->m_label->setAlignment(Qt::AlignRight);
-    }
-    if (phi < 0)
-    {
-        this->m_label->setAlignment(this->m_label->alignment() | Qt::AlignTop);
-    }
 }
 
 QRectF DreieckItem::boundingRect() const
@@ -55,10 +38,38 @@ void DreieckItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *optio
     Q_UNUSED(widget);
 
     qreal lod = option->levelOfDetailFromTransform(painter->worldTransform());
-    this->m_label->setVisible(lod > 0.5);
+    if (lod > 0.5) {
+        this->getLabel().setVisible(true);
+    } else if (this->m_label) {
+        this->m_label->setVisible(false);
+    }
     if (lod <= 0.1) return;
 
     painter->setPen(Qt::NoPen);
     painter->setBrush(this->m_farbe);
     painter->drawConvexPolygon(this->m_points, 3);
+}
+
+Label& DreieckItem::getLabel()
+{
+    if (!this->m_label)
+    {
+        this->m_label.reset(new Label(this->m_text, this));
+        this->m_label->setPen(QPen(this->m_farbe));
+        this->m_label->setBrush(QBrush(this->m_farbe));
+        this->m_label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+
+        this->m_label->setPos(this->m_points[0]); // Spitze
+
+        // TODO: optimiert auf Zusi-3-Strecken
+        if (this->m_phi <= -M_PI_2 || this->m_phi >= M_PI_2)
+        {
+            this->m_label->setAlignment(Qt::AlignRight);
+        }
+        if (this->m_phi < 0)
+        {
+            this->m_label->setAlignment(this->m_label->alignment() | Qt::AlignTop);
+        }
+    }
+    return *this->m_label.get();
 }

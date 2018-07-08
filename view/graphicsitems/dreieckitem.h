@@ -9,8 +9,6 @@
 
 #include "label.h"
 
-using namespace std;
-
 /**
  * Eine Markierung (mit Text) in Form eines gleichseitigen Dreiecks.
  * Der Ursprung liegt in einer der Seiten; das Dreieck zeigt in die Richtung,
@@ -30,7 +28,8 @@ private:
     QColor m_farbe;
     QPointF m_points[3];
 
-    unique_ptr<Label> m_label;
+    std::unique_ptr<Label> m_label;
+    Label& getLabel();
 };
 
 #endif // DREIECKITEM_H
