@@ -188,7 +188,11 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 {
     QTime timer;
     timer.start();
+#ifdef _GLIBCXX_HAS_GTHREADS
     std::vector<std::future<std::unique_ptr<Strecke>>> futures;
+#else
+    std::vector<std::unique_ptr<Strecke>> strecken;
+#endif
 
 #if 0
     Q_UNUSED(dateinamen);
@@ -262,7 +266,15 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 #endif
         if (dateiname.endsWith("st3", Qt::CaseInsensitive))
         {
+#ifdef _GLIBCXX_HAS_GTHREADS
             futures.push_back(std::async([&dateiname]{ return std::move(zusixml::parseFile(dateiname.toStdString())->Strecke); }));
+#else
+            try {
+                strecken.push_back(std::move(zusixml::parseFile(dateiname.toStdString())->Strecke));
+            } catch (const std::exception& e) {
+                QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
+            }
+#endif
         }
         else if (dateiname.endsWith("fpn", Qt::CaseInsensitive))
         {
@@ -271,9 +283,18 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
             {
                 for (const auto& modul : fahrplan->children_StrModul) {
                     const auto& modulDateiname = modul->Datei.Dateiname;
+#ifdef _GLIBCXX_HAS_GTHREADS
                     futures.push_back(std::async([modulDateiname, &dateiname]{
                         return std::move(zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()))->Strecke);
                     }));
+#else
+                    try {
+                        strecken.push_back(std::move(zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()))->Strecke));
+                    } catch (const std::exception& e) {
+                        QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
+                    }
+#endif
+                }
             }
         }
         else
@@ -282,9 +303,13 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
         }
     }
 
+#ifdef _GLIBCXX_HAS_GTHREADS
     for (auto& fut : futures) {
         try {
             auto strecke = fut.get();
+#else
+    for (auto& strecke : strecken) {
+#endif
             // Strecke verknuepfen (zur Zeit nur innerhalb desselben Moduls)
             const auto anzahlStreckenelemente = strecke->children_StrElement.size();
             for (auto& streckenelement : strecke->children_StrElement) {
@@ -302,9 +327,11 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
             }
 
             this->m_strecken.push_back(std::move(strecke));
+#ifdef _GLIBCXX_HAS_GTHREADS
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
         }
+#endif
     }
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
