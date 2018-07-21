@@ -6,8 +6,7 @@
 #include <QTimer>
 #include <QVarLengthArray>
 
-StreckeView::StreckeView(QWidget *parent) :
-    QGraphicsView(parent), m_rechteMaustasteGedrueckt(false), m_linkeMaustasteGedrueckt(false), m_dragStart(QPoint())
+StreckeView::StreckeView(QWidget *parent) : QGraphicsView(parent)
 {
     this->setDragMode(QGraphicsView::ScrollHandDrag);
     this->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -77,31 +76,36 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 
     if (this->m_linkeMaustasteGedrueckt)
     {
-        this->m_dragStart = event->pos();
-        QPoint oldDragStart = this->m_dragStart;
-
         // Unendliches Scrollen. Die Cursorposition wird an die gegenüberliegende Kante gesetzt,
         // wenn der Cursor den Rand des Widgets erreicht hat. (Nutze 1-Pixel-Rand, da das Fenster eventuell
         // im Vollbildmodus ist und der Cursor nicht über die Grenzen des Widgets hinaus bewegt werden kann.)
-        this->m_dragStart = QPoint(
-          event->pos().x() <= 0 ? this->width() - 2 :
-            event->pos().x() >= this->width() - 1 ? 1 : this->m_dragStart.x(),
-          event->pos().y() <= 0 ? this->height() - 2 :
-            event->pos().y() >= this->height() - 1 ? 1 : this->m_dragStart.y());
-
-        if (this->m_dragStart != oldDragStart)
+        if (!this->m_resetDragPos && ((event->pos().x() <= 0) || (event->pos().y() <= 0) || (event->pos().x() >= this->width() - 1) || (event->pos().y() >= this->height() - 1)))
         {
-            this->mouseReleaseEvent(event);
-            QCursor::setPos(mapToGlobal(this->m_dragStart));
+            this->m_resetDragPos = true;
 
             // Sende Event ueber QTimer, damit es nach allen anderen Events, die noch in der Queue stecken, abgearbeitet wird.
-            auto event_type = event->type();
-            auto button = event->button();
-            auto buttons = event->buttons();
-            auto modifiers = event->modifiers();
-            QTimer::singleShot(0, [=] {
-                auto mouseEvent = std::make_unique<QMouseEvent>(event_type, this->m_dragStart, button, buttons, modifiers);
-                this->mousePressEvent(mouseEvent.get());
+            QTimer::singleShot(0, [this, button = event->button(), buttons = event->buttons(), modifiers = event->modifiers()] {
+                this->m_resetDragPos = false;
+                if (!this->m_linkeMaustasteGedrueckt) {
+                    return;
+                }
+
+                const auto pos = this->mapFromGlobal(QCursor::pos());
+                QMouseEvent releaseEvent(QEvent::MouseButtonRelease, pos, button, buttons, modifiers);
+                this->mouseReleaseEvent(&releaseEvent);
+
+                this->m_dragStart = QPoint(
+                  pos.x() <= 0 ? this->width() - 2 :
+                    pos.x() >= this->width() - 1 ? 1 : pos.x(),
+                  pos.y() <= 0 ? this->height() - 2 :
+                    pos.y() >= this->height() - 1 ? 1 : pos.y());
+                QCursor::setPos(this->mapToGlobal(this->m_dragStart));
+
+                // QCursor::pos() hier nochmals abfragen, falls das System
+                // das Setzen der Cursorposition nicht unterstuetzt und der Cursor
+                // deshalb nicht verschoben wurde.
+                QMouseEvent pressEvent(QEvent::MouseButtonPress, this->mapFromGlobal(QCursor::pos()), button, buttons, modifiers);
+                this->mousePressEvent(&pressEvent);
             });
         }
     }

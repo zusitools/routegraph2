@@ -25,10 +25,11 @@ protected:
     void drawBackground(QPainter *painter, const QRectF &rect) override;
 
 private:
-    bool m_rechteMaustasteGedrueckt;
-    bool m_linkeMaustasteGedrueckt;
-    QPoint m_dragStart;
-    QTransform m_defaultTransform;
+    bool m_rechteMaustasteGedrueckt { false };
+    bool m_linkeMaustasteGedrueckt { false };
+    QPoint m_dragStart { };
+    bool m_resetDragPos { false };
+    QTransform m_defaultTransform { };
 
 signals:
 
