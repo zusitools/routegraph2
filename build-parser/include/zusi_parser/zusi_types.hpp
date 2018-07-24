@@ -3,6 +3,7 @@
 #include <vector>  // for std::vector
 #include <memory>  // for std::unique_ptr
 #include <optional>// for std::optional
+#include <cmath>   // for fabs, sqrt
 #include <ctime>   // for struct tm
 struct ArgbColor {
   uint8_t a, r, g, b;
@@ -323,6 +324,19 @@ struct StrElement {
 
   std::vector<StrElement*> nachfolgerElementeNorm = {};
   std::vector<StrElement*> nachfolgerElementeGegen = {};
+
+  float Neigung() const {
+    if (!_neigungCache) {
+      // TODO: ugly in the face of concurrent access
+      const auto xdiff = this->b.X - this->g.X;
+      const auto ydiff = this->b.Y - this->g.Y;
+      const auto zdiff = this->b.Z - this->g.Z;
+      return std::fabs(zdiff) < 0.001 ? 0 : zdiff / std::sqrt(xdiff * xdiff + ydiff * ydiff);
+    }
+    return *_neigungCache;
+  }
+private:
+  mutable std::optional<float> _neigungCache;
 };
 struct Strecke {
   int32_t RekTiefe;

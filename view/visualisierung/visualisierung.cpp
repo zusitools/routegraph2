@@ -5,7 +5,7 @@
 void Visualisierung::neuesLegendeElement(QGraphicsScene& scene, Segmentierer& segmentierer, StrElement &streckenelement, QString legende)
 {
     streckenelement.g.X = scene.sceneRect().right() + 5.0;
-    streckenelement.b.X = streckenelement.g.X + 25.0;
+    streckenelement.b.X = streckenelement.g.X + Visualisierung::legendeElementLaenge;
     // TODO: Referenz auf Stackvariable (streckenelement)!
     auto segmentItem = std::make_unique<StreckensegmentItem>(
                         richtung(streckenelement, StreckenelementRichtung::Norm),

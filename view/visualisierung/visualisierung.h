@@ -10,6 +10,7 @@ class Visualisierung
 {
 protected:
     void neuesLegendeElement(QGraphicsScene& scene, Segmentierer& segmentierer, StrElement &streckenelement, QString legende);
+    static constexpr qreal legendeElementLaenge = 25.0;
 public:
     virtual void setzeDarstellung(StreckensegmentItem&) { }
     virtual std::unique_ptr<Segmentierer> segmentierer() const { return std::make_unique<GleisfunktionSegmentierer>(); }
