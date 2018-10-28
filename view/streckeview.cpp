@@ -140,20 +140,22 @@ void StreckeView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void StreckeView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    const int gridSize = 1000;
+    constexpr int gridSize = 1000;
 
     qreal left = int(rect.left()) - (int(rect.left()) % gridSize);
     qreal top = int(rect.top()) - (int(rect.top()) % gridSize);
 
     QVarLengthArray<QPointF> points;
 
-    for (qreal x = left; x < rect.right(); x += gridSize)
+    for (int i = 0; left + i * gridSize < rect.right(); ++i)
     {
+        const qreal x = left + i * gridSize;
         points.append(QPointF(x, rect.top()));
         points.append(QPointF(x, rect.bottom()));
     }
-    for (qreal y = top; y < rect.bottom(); y += gridSize)
+    for (int i = 0; top + i * gridSize < rect.bottom(); ++i)
     {
+        const qreal y = top + i * gridSize;
         points.append(QPointF(rect.left(), y));
         points.append(QPointF(rect.right(), y));
     }

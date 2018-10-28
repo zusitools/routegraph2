@@ -12,7 +12,7 @@
 #include <cmath>
 #include <unordered_map>
 
-StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualisierung& visualisierung, QObject *parent) :
+StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken, Visualisierung& visualisierung, QObject *parent) :
     QGraphicsScene(parent)
 {
     this->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -21,21 +21,21 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
     double utmRefWe = 0.0;
     double utmRefNs = 0.0;
-    for (const unique_ptr<Strecke>& strecke : strecken)
+    for (const auto& strecke : strecken)
     {
         if (strecke->UTM) {
-            utmRefWe += strecke->UTM->UTM_WE / float(strecken.size());
-            utmRefNs += strecke->UTM->UTM_NS / float(strecken.size());
+            utmRefWe += strecke->UTM->UTM_WE / static_cast<double>(strecken.size());
+            utmRefNs += strecke->UTM->UTM_NS / static_cast<double>(strecken.size());
         }
     }
     this->m_utmRefPunkt.UTM_WE = static_cast<int>(utmRefWe);
     this->m_utmRefPunkt.UTM_NS = static_cast<int>(utmRefNs);
 
-    unique_ptr<Segmentierer> segmentierer = visualisierung.segmentierer();
+    std::unique_ptr<Segmentierer> segmentierer = visualisierung.segmentierer();
     const auto richtungen_zusi2 = { StreckenelementRichtung::Norm };
     const auto richtungen_zusi3 = { StreckenelementRichtung::Norm, StreckenelementRichtung::Gegen };
 
-    for (const unique_ptr<Strecke>& strecke : strecken)
+    for (const std::unique_ptr<Strecke>& strecke : strecken)
     {
         const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
         const auto utm_dx = 1000 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
@@ -47,7 +47,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
 
         bool istZusi2 = false;
         auto richtungen = istZusi2 ? richtungen_zusi2 : richtungen_zusi3;
-        float offset = (segmentierer->beideRichtungen() || istZusi2) ? 0.49 : 0.0;
+        float offset = (segmentierer->beideRichtungen() || istZusi2) ? 0.49f : 0.0f;
 
         for (const auto& streckenelement : strecke->children_StrElement)
         {
@@ -153,7 +153,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
                 Vec3 vec = elementRichtung(*refpunkt).endpunkt() - elementRichtung(*refpunkt).gegenrichtung().endpunkt();
                 qreal phi = atan2(-vec.Y, vec.X);
 
-                assert(refpunkt->Info.data() != NULL);
+                assert(refpunkt->Info.data() != nullptr);
                 auto si = std::make_unique<DreieckItem>(phi,
                         QString::fromUtf8(refpunkt->Info.data(), refpunkt->Info.size()), Qt::magenta);
                 si->setPos(elementRichtung(*refpunkt).endpunkt().X, elementRichtung(*refpunkt).endpunkt().Y);
@@ -170,7 +170,7 @@ StreckeScene::StreckeScene(const vector<unique_ptr<Strecke>>& strecken, Visualis
             ri->moveBy(1000 * (strecke->utmPunkt.UTM_WE - this->m_utmRefPunkt.UTM_WE), 1000 * (strecke->utmPunkt.UTM_NS - this->m_utmRefPunkt.UTM_NS));
 #endif
 
-            auto ti = unique_ptr<Label>(new Label(QString::fromUtf8(betriebsstelle.data(), betriebsstelle.size())));
+            auto ti = std::unique_ptr<Label>(new Label(QString::fromUtf8(betriebsstelle.data(), betriebsstelle.size())));
             ti->setAlignment(Qt::AlignCenter | Qt::AlignHCenter);
             ti->setPos((p.second.left() + p.second.right()) / 2.0, (p.second.top() + p.second.bottom()) / 2.0);
             ti->moveBy(utm_dx, utm_dy);

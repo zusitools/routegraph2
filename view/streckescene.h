@@ -7,14 +7,15 @@
 
 #include "zusi_parser/zusi_types.hpp"
 
-using namespace std;
+#include <vector>
+#include <memory>
 
 class StreckeScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit StreckeScene(const vector<unique_ptr<Strecke>>& strecken,
-                          Visualisierung& visualisierung, QObject *parent = 0);
+    explicit StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken,
+                          Visualisierung& visualisierung, QObject *parent = nullptr);
 
 signals:
 

@@ -60,7 +60,7 @@ void MainWindow::setzeAnsichtZurueck()
     // Zusi 2&3
     ui->streckeView->resetTransform();
     ui->streckeView->rotate(-90);
-    ui->streckeView->scale(1.0f, -1.0f);
+    ui->streckeView->scale(1.0, -1.0);
 
     // Zusi 3
     ui->streckeView->rotate(-90);

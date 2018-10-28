@@ -19,6 +19,8 @@ public:
 
     Segmentierer() {}
     Segmentierer(Segmentierer& other) = delete;
+
+    virtual ~Segmentierer() = default;
 };
 
 class RichtungsInfoSegmentierer : public Segmentierer
