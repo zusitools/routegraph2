@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 
-#include <QTimer>
+#include <QCoreApplication>
 #include <QVarLengthArray>
 
 StreckeView::StreckeView(QWidget *parent) : QGraphicsView(parent)
@@ -83,30 +83,42 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
         {
             this->m_resetDragPos = true;
 
-            // Sende Event ueber QTimer, damit es nach allen anderen Events, die noch in der Queue stecken, abgearbeitet wird.
-            QTimer::singleShot(0, [this, button = event->button(), buttons = event->buttons(), modifiers = event->modifiers()] {
-                this->m_resetDragPos = false;
-                if (!this->m_linkeMaustasteGedrueckt) {
-                    return;
-                }
+            // Arbeite alle anderen (Maus-)Events ab, die noch in der Queue stecken.
+            // So wird einigermassen sichergestellt, dass nach dem Verschieben des
+            // Cursors keine Events mehr mit der alten Cursorposition eintreffen, was zu
+            // Springen der Ansicht fuehrt.
+            QCoreApplication::processEvents();
 
-                const auto pos = this->mapFromGlobal(QCursor::pos());
-                QMouseEvent releaseEvent(QEvent::MouseButtonRelease, pos, button, buttons, modifiers);
-                this->mouseReleaseEvent(&releaseEvent);
+            // In der Zwischenzeit kann ein Release-Event gekommen sein.
+            if (!this->m_linkeMaustasteGedrueckt) {
+                return;
+            }
 
-                this->m_dragStart = QPoint(
-                  pos.x() <= 0 ? this->width() - 2 :
-                    pos.x() >= this->width() - 1 ? 1 : pos.x(),
-                  pos.y() <= 0 ? this->height() - 2 :
-                    pos.y() >= this->height() - 1 ? 1 : pos.y());
-                QCursor::setPos(this->mapToGlobal(this->m_dragStart));
+            const auto button = event->button();
+            const auto buttons = event->buttons();
+            const auto modifiers = event->modifiers();
 
-                // QCursor::pos() hier nochmals abfragen, falls das System
-                // das Setzen der Cursorposition nicht unterstuetzt und der Cursor
-                // deshalb nicht verschoben wurde.
-                QMouseEvent pressEvent(QEvent::MouseButtonPress, this->mapFromGlobal(QCursor::pos()), button, buttons, modifiers);
-                this->mousePressEvent(&pressEvent);
-            });
+            const auto pos = this->mapFromGlobal(QCursor::pos());
+            QMouseEvent releaseEvent(QEvent::MouseButtonRelease, pos, button, buttons, modifiers);
+            this->mouseReleaseEvent(&releaseEvent);
+
+            this->m_dragStart = QPoint(
+              pos.x() <= 0 ? this->width() - 2 :
+                pos.x() >= this->width() - 1 ? 1 : pos.x(),
+              pos.y() <= 0 ? this->height() - 2 :
+                pos.y() >= this->height() - 1 ? 1 : pos.y());
+            QCursor::setPos(this->mapToGlobal(this->m_dragStart));
+
+            // QCursor::pos() hier nochmals abfragen, falls das System
+            // das Setzen der Cursorposition nicht unterstuetzt und der Cursor
+            // deshalb nicht verschoben wurde.
+            QMouseEvent pressEvent(QEvent::MouseButtonPress, this->mapFromGlobal(QCursor::pos()), button, buttons, modifiers);
+            this->mousePressEvent(&pressEvent);
+
+            // Nochmaliger Versuch, alte Maus-Events abzuarbeiten, die zwischen dem vorherigen
+            // processEvents und dieser Zeile aufgelaufen sind.
+            QCoreApplication::processEvents();
+            this->m_resetDragPos = false;
         }
     }
 }
