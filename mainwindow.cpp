@@ -268,7 +268,14 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
         if (dateiname.endsWith("st3", Qt::CaseInsensitive))
         {
 #ifdef _GLIBCXX_HAS_GTHREADS
-            futures.push_back(std::async([&dateiname]{ return std::move(zusixml::parseFile(dateiname.toStdString())->Strecke); }));
+            futures.push_back(std::async([&dateiname]() -> std::unique_ptr<Strecke> {
+                const auto& st3 = zusixml::parseFile(dateiname.toStdString());
+                if (st3 && st3->Strecke) {
+                    return std::move(st3->Strecke);
+                } else {
+                    return nullptr;
+                }
+            }));
 #else
             try {
                 strecken.push_back(std::move(zusixml::parseFile(dateiname.toStdString())->Strecke));
@@ -285,8 +292,13 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 for (const auto& modul : fahrplan->children_StrModul) {
                     const auto& modulDateiname = modul->Datei.Dateiname;
 #ifdef _GLIBCXX_HAS_GTHREADS
-                    futures.push_back(std::async([modulDateiname, &dateiname]{
-                        return std::move(zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()))->Strecke);
+                    futures.push_back(std::async([modulDateiname, &dateiname]() -> std::unique_ptr<Strecke> {
+                        const auto& st3 = zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()));
+                        if (st3 && st3->Strecke) {
+                            return std::move(st3->Strecke);
+                        } else {
+                            return nullptr;
+                        }
                     }));
 #else
                     try {
