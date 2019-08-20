@@ -261,7 +261,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
          "Routes\\Deutschland\\32U_0006_0057\\000563_005706_Rosdorf\\Rosdorf_1998.st3",
          "Routes\\Deutschland\\32U_0006_0057\\000564_005713_Goettingen_Gbf\\Goettingen_Gbf_2000.st3",
     }) {
-        QString dateiname = QString::fromStdString(zusi_file_lib::pfade::zusiPfadZuOsPfad(zusiPfad));
+        QString dateiname = QString::fromStdString(zusixml::ZusiPfad::vonZusiPfad(zusiPfad).alsOsPfad());
 #else
     for (auto dateiname : dateinamen) {
 #endif
@@ -289,11 +289,13 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
             auto fahrplan = std::move(zusixml::parseFile(dateiname.toStdString())->Fahrplan);
             if (fahrplan)
             {
+                const auto& fpnZusiPfad = zusixml::ZusiPfad::vonOsPfad(dateiname.toStdString());
                 for (const auto& modul : fahrplan->children_StrModul) {
-                    const auto& modulDateiname = modul->Datei.Dateiname;
+                    if (!modul) { continue; }
+                    const auto& modulDateiname = zusixml::ZusiPfad::vonZusiPfad(modul->Datei.Dateiname, fpnZusiPfad);
 #ifdef _GLIBCXX_HAS_GTHREADS
-                    futures.push_back(std::async([modulDateiname, &dateiname]() -> std::unique_ptr<Strecke> {
-                        const auto& st3 = zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()));
+                    futures.push_back(std::async([modulDateiname]() -> std::unique_ptr<Strecke> {
+                        const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
                         if (st3 && st3->Strecke) {
                             return std::move(st3->Strecke);
                         } else {
@@ -302,7 +304,10 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                     }));
 #else
                     try {
-                        strecken.push_back(std::move(zusixml::parseFile(zusixml::zusiPfadZuOsPfad(modulDateiname, dateiname.toStdString()))->Strecke));
+                        const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
+                        if (st3 && st3->Strecke) {
+                            strecken.push_back(std::move(st3->Strecke));
+                        }
                     } catch (const std::exception& e) {
                         QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
                     }
@@ -323,6 +328,10 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 #else
     for (auto& strecke : strecken) {
 #endif
+            if (!strecke) {
+                continue;
+            }
+
             // Strecke verknuepfen (zur Zeit nur innerhalb desselben Moduls)
             const auto anzahlStreckenelemente = strecke->children_StrElement.size();
             for (auto& streckenelement : strecke->children_StrElement) {
