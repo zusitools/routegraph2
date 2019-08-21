@@ -18,6 +18,13 @@ StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken
     this->setItemIndexMethod(QGraphicsScene::NoIndex);
     size_t anzahlSegmente = 0, anzahlStreckenelemente = 0;
 
+    // Berechne Bounding-Rect der Szene aus den Koordinaten der Streckenelemente (plus etwas konstantem Puffer)
+    // Das genuegt als Annaeherung und spart das aufwaendige, detaillierte Berechnen des Bounding-Rects durch Qt.
+    float minX = std::numeric_limits<float>::max();
+    float minY = std::numeric_limits<float>::max();
+    float maxX = std::numeric_limits<float>::min();
+    float maxY = std::numeric_limits<float>::min();
+
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
     double utmRefWe = 0.0;
     double utmRefNs = 0.0;
@@ -53,6 +60,15 @@ StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken
         {
             if (streckenelement)
             {
+                minX = std::min(minX, streckenelement->g.X + utm_dx);
+                minX = std::min(minX, streckenelement->b.X + utm_dx);
+                maxX = std::max(maxX, streckenelement->g.X + utm_dx);
+                maxX = std::max(maxX, streckenelement->b.X + utm_dx);
+                minY = std::min(minY, streckenelement->g.Y + utm_dy);
+                minY = std::min(minY, streckenelement->b.Y + utm_dy);
+                maxY = std::max(maxY, streckenelement->g.Y + utm_dy);
+                maxY = std::max(maxY, streckenelement->b.Y + utm_dy);
+
                 anzahlStreckenelemente++;
                 for (StreckenelementRichtung richtung : richtungen)
                 {
@@ -184,4 +200,6 @@ StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken
     // TODO: Kreise ohne jegliche Weichen werden nicht als Segmente erkannt.
 
     qDebug() << anzahlSegmente << "Segmente für" << anzahlStreckenelemente << "Streckenelemente";
+
+    this->setSceneRect(QRectF(QPointF(std::min(minX, maxX) - 10, std::min(minY, maxY) - 10), QPointF(std::max(minX, maxX) + 10, std::max(minY, maxY) + 10)));
 }
