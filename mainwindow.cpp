@@ -75,7 +75,7 @@ void MainWindow::actionOeffnenTriggered()
 
     if (dateinamen.size() > 0)
     {
-        this->m_strecken.clear();
+        this->m_streckennetz.clear();
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
@@ -110,7 +110,7 @@ void MainWindow::actionOrdnerOeffnenTriggered()
 
     if (dateinamen.size() > 0)
     {
-        this->m_strecken.clear();
+        this->m_streckennetz.clear();
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
@@ -161,7 +161,7 @@ void MainWindow::dropEvent(QDropEvent *e)
     }
     if (dateien.size() > 0) {
         if (!(e->keyboardModifiers() & Qt::ShiftModifier)) {
-            this->m_strecken.clear();
+            this->m_streckennetz.clear();
         }
         this->oeffneStrecken(dateien);
         this->aktualisiereDarstellung();
@@ -190,9 +190,9 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
     QTime timer;
     timer.start();
 #ifdef _GLIBCXX_HAS_GTHREADS
-    std::vector<std::future<std::unique_ptr<Strecke>>> futures;
+    std::vector<std::pair<zusixml::ZusiPfad, std::future<std::unique_ptr<Strecke>>>> futures;
 #else
-    std::vector<std::unique_ptr<Strecke>> strecken;
+    std::vector<std::pair<zusixml::ZusiPfad, std::unique_ptr<Strecke>>> strecken;
 #endif
 
 #if 0
@@ -268,14 +268,17 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
         if (dateiname.endsWith("st3", Qt::CaseInsensitive))
         {
 #ifdef _GLIBCXX_HAS_GTHREADS
-            futures.push_back(std::async([&dateiname]() -> std::unique_ptr<Strecke> {
-                const auto& st3 = zusixml::parseFile(dateiname.toStdString());
-                if (st3 && st3->Strecke) {
-                    return std::move(st3->Strecke);
-                } else {
-                    return nullptr;
-                }
-            }));
+            auto dateinameStdString = dateiname.toStdString();
+            futures.emplace_back(
+                zusixml::ZusiPfad::vonOsPfad(dateinameStdString),
+                std::async([dateinameStdString]() -> std::unique_ptr<Strecke> {
+                    const auto& st3 = zusixml::parseFile(dateinameStdString);
+                    if (st3 && st3->Strecke) {
+                        return std::move(st3->Strecke);
+                    } else {
+                        return nullptr;
+                    }
+                }));
 #else
             try {
                 strecken.push_back(std::move(zusixml::parseFile(dateiname.toStdString())->Strecke));
@@ -294,14 +297,16 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                     if (!modul) { continue; }
                     const auto& modulDateiname = zusixml::ZusiPfad::vonZusiPfad(modul->Datei.Dateiname, fpnZusiPfad);
 #ifdef _GLIBCXX_HAS_GTHREADS
-                    futures.push_back(std::async([modulDateiname]() -> std::unique_ptr<Strecke> {
-                        const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
-                        if (st3 && st3->Strecke) {
-                            return std::move(st3->Strecke);
-                        } else {
-                            return nullptr;
-                        }
-                    }));
+                    futures.emplace_back(
+                        modulDateiname,
+                        std::async([modulDateiname]() -> std::unique_ptr<Strecke> {
+                            const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
+                            if (st3 && st3->Strecke) {
+                                return std::move(st3->Strecke);
+                            } else {
+                                return nullptr;
+                            }
+                        }));
 #else
                     try {
                         const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
@@ -324,7 +329,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 #ifdef _GLIBCXX_HAS_GTHREADS
     for (auto& fut : futures) {
         try {
-            auto strecke = fut.get();
+            auto strecke = fut.second.get();
 #else
     for (auto& strecke : strecken) {
 #endif
@@ -348,7 +353,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 }
             }
 
-            this->m_strecken.push_back(std::move(strecke));
+            this->m_streckennetz.add(fut.first, std::move(strecke));
 #ifdef _GLIBCXX_HAS_GTHREADS
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
@@ -358,8 +363,8 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
 
-    ui->actionModulOeffnen->setEnabled(this->m_strecken.size() > 0);
-    ui->actionOrdnerAnfuegen->setEnabled(this->m_strecken.size() > 0);
+    ui->actionModulOeffnen->setEnabled(!this->m_streckennetz.empty());
+    ui->actionOrdnerAnfuegen->setEnabled(!this->m_streckennetz.empty());
 }
 
 void MainWindow::aktualisiereDarstellung()
@@ -387,7 +392,7 @@ void MainWindow::aktualisiereDarstellung()
 
     QTime timer;
     timer.start();
-    this->m_streckeScene.reset(new StreckeScene(this->m_strecken, *visualisierung));
+    this->m_streckeScene.reset(new StreckeScene(this->m_streckennetz, *visualisierung));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
     ui->streckeView->setScene(this->m_streckeScene.get());
 
@@ -407,7 +412,7 @@ QStringList MainWindow::zeigeStreckeOeffnenDialog()
 {
     QDir startverzeichnis(QString::fromStdString(zusixml::getZusiDatenpfad()));
     return QFileDialog::getOpenFileNames(this, tr("Strecke öffnen"),
-                                        this->m_strecken.size() == 0? startverzeichnis.absolutePath() + "/Routes" : QString(""),
+                                        this->m_streckennetz.empty() ? startverzeichnis.absolutePath() + "/Routes" : QString(""),
                                         QString(tr("Strecken- und Fahrplandateien (*.st3 *.ST3 *.fpn *.FPN);;Alle Dateien(*.*)")));
 }
 
@@ -415,7 +420,7 @@ QStringList MainWindow::zeigeOrdnerOeffnenDialog()
 {
     QDir startverzeichnis { QString::fromStdString(zusixml::getZusiDatenpfad()) };
     QDir dir { QFileDialog::getExistingDirectory(this, "",
-                                                 this->m_strecken.size() == 0? startverzeichnis.absolutePath() + "/Routes" : QString(""),
+                                                 this->m_streckennetz.empty() ? startverzeichnis.absolutePath() + "/Routes" : QString(""),
                                                  QFileDialog::ShowDirsOnly) };
     QStringList dateinamen;
     QStringList filter { "*.ST3" };

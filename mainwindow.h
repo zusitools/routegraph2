@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "streckennetz.h"
+
 #include <memory>
 #include <vector>
 
@@ -38,7 +40,7 @@ protected:
 private:
     Ui::MainWindow *ui;
 
-    std::vector<std::unique_ptr<Strecke>> m_strecken;
+    Streckennetz m_streckennetz;
     std::unique_ptr<StreckeScene> m_streckeScene;
     std::unique_ptr<QGraphicsScene> m_legendeScene;
 

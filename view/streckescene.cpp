@@ -1,5 +1,7 @@
 #include "streckescene.h"
 
+#include "streckennetz.h"
+
 #include "model/streckenelement.h"
 
 #include "view/graphicsitems/streckensegmentitem.h"
@@ -12,7 +14,7 @@
 #include <cmath>
 #include <unordered_map>
 
-StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken, Visualisierung& visualisierung, QObject *parent) :
+StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, QObject *parent) :
     QGraphicsScene(parent)
 {
     this->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -28,11 +30,16 @@ StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
     double utmRefWe = 0.0;
     double utmRefNs = 0.0;
-    for (const auto& strecke : strecken)
+
+    const auto& begin = streckennetz.cbegin();
+    const auto& end = streckennetz.cend();
+    const auto& anzahlStrecken = std::distance(begin, end);  // TODO .size()
+    for (auto it = begin; it != end; ++it)
     {
+        const auto& strecke = it->second;
         if (strecke->UTM) {
-            utmRefWe += strecke->UTM->UTM_WE / static_cast<double>(strecken.size());
-            utmRefNs += strecke->UTM->UTM_NS / static_cast<double>(strecken.size());
+            utmRefWe += strecke->UTM->UTM_WE / static_cast<double>(anzahlStrecken);
+            utmRefNs += strecke->UTM->UTM_NS / static_cast<double>(anzahlStrecken);
         }
     }
     this->m_utmRefPunkt.UTM_WE = static_cast<int>(utmRefWe);
@@ -42,8 +49,9 @@ StreckeScene::StreckeScene(const std::vector<std::unique_ptr<Strecke>>& strecken
     const auto richtungen_zusi2 = { StreckenelementRichtung::Norm };
     const auto richtungen_zusi3 = { StreckenelementRichtung::Norm, StreckenelementRichtung::Gegen };
 
-    for (const std::unique_ptr<Strecke>& strecke : strecken)
+    for (auto it = begin; it != end; ++it)
     {
+        const auto& strecke = it->second;
         const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
         const auto utm_dx = 1000 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
         const auto utm_dy = 1000 * (strecke_utm.UTM_NS - this->m_utmRefPunkt.UTM_NS);

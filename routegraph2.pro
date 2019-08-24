@@ -9,6 +9,7 @@ CONFIG += c++1z rtti_off
 
 SOURCES += main.cpp\
         mainwindow.cpp \
+    streckennetz.cpp \
     view/streckeview.cpp \
     view/streckescene.cpp \
     view/graphicsitems/streckensegmentitem.cpp \
@@ -26,6 +27,7 @@ SOURCES += main.cpp\
     view/visualisierung/neigungvisualisierung.cpp
 
 HEADERS  += mainwindow.h \
+    streckennetz.h \
     view/streckeview.h \
     view/streckescene.h \
     view/graphicsitems/minbreitegraphicsitem.h \
