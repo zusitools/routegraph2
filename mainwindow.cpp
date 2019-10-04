@@ -337,7 +337,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 continue;
             }
 
-            // Strecke verknuepfen (zur Zeit nur innerhalb desselben Moduls)
+            // Strecke verknuepfen (innerhalb desselben Moduls)
             const auto anzahlStreckenelemente = strecke->children_StrElement.size();
             for (auto& streckenelement : strecke->children_StrElement) {
                 if (!streckenelement) {

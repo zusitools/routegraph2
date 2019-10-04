@@ -120,6 +120,18 @@ public:
                 StreckenelementRichtung::Gegen : StreckenelementRichtung::Norm);
     }
 
+    inline bool nachfolgerElementeSindInAnderemModul() const {
+        return this->getRichtung() == StreckenelementRichtung::Norm ?
+            this->getStreckenelement()->nachfolgerElementeNormSindInAnderemModul :
+            this->getStreckenelement()->nachfolgerElementeGegenSindInAnderemModul;
+    }
+
+    inline bool vorgaengerElementeSindInAnderemModul() const {
+        return this->getRichtung() == StreckenelementRichtung::Norm ?
+            this->getStreckenelement()->nachfolgerElementeGegenSindInAnderemModul :
+            this->getStreckenelement()->nachfolgerElementeNormSindInAnderemModul;
+    }
+
     inline bool hatVorgaenger(const size_t index = 0) const {
         const auto& vorgaenger = this->vorgaengerElemente();
         return (index < vorgaenger.size()) && (vorgaenger[index] != nullptr);

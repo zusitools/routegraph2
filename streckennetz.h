@@ -1,14 +1,14 @@
 #ifndef STRECKENNETZ_H
 #define STRECKENNETZ_H
 
+#include "zusi_parser/utils.hpp"
+
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 class Strecke;
 class StrElement;
-namespace zusixml {
-    class ZusiPfad;
-}
 
 class Streckennetz
 {
@@ -20,7 +20,7 @@ public:
 
 private:
     std::unordered_map<std::string, std::unique_ptr<Strecke>> m_strecken;
-    std::vector<StrElement*> m_elementeMitUnaufgeloestemNachfolger;
+    std::vector<std::pair<zusixml::ZusiPfad, StrElement*>> m_elementeMitUnaufgeloestemNachfolger;
 
 public:
     typename decltype(m_strecken)::const_iterator cbegin() const { return m_strecken.cbegin(); }

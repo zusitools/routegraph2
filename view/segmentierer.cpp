@@ -7,13 +7,13 @@ bool Segmentierer::istSegmentGrenze(const StreckenelementUndRichtung, const Stre
 
 bool Segmentierer::istSegmentStart(const StreckenelementUndRichtung elementUndRichtung) const
 {
-    if (!elementUndRichtung.hatVorgaenger())
+    if (!elementUndRichtung.hatVorgaenger() || elementUndRichtung.vorgaengerElementeSindInAnderemModul())
     {
         return true;
     }
 
     const auto& vorgaenger = elementUndRichtung.vorgaenger();
-    return !vorgaenger.hatNachfolger(0) ||
+    return !vorgaenger.hatNachfolger(0) || vorgaenger.nachfolgerElementeSindInAnderemModul() ||
             (vorgaenger.nachfolger(0) != elementUndRichtung) ||
             istSegmentGrenze(vorgaenger, elementUndRichtung);
 }
@@ -47,7 +47,7 @@ bool RichtungsInfoSegmentierer::istSegmentEnde(const StreckenelementUndRichtung 
     }
 
     auto nachfolger = elementUndRichtung.nachfolger();
-    return !nachfolger.hatVorgaenger() ||
+    return !nachfolger.hatVorgaenger() || nachfolger.vorgaengerElementeSindInAnderemModul() ||
             (nachfolger.vorgaenger(0) != elementUndRichtung) ||
             istSegmentGrenze(elementUndRichtung, nachfolger);
 }
