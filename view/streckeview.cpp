@@ -3,12 +3,14 @@
 #include <cmath>
 #include <memory>
 
-#include <QCoreApplication>
+#include <QApplication>
+#include <QDesktopWidget>
 #include <QVarLengthArray>
+#include <QScrollBar>
 
 StreckeView::StreckeView(QWidget *parent) : QGraphicsView(parent)
 {
-    this->setDragMode(QGraphicsView::ScrollHandDrag);
+    this->setCursor(Qt::OpenHandCursor);
     this->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     this->setRenderHint(QPainter::Antialiasing);
 }
@@ -47,17 +49,18 @@ void StreckeView::wheelEvent(QWheelEvent *event)
 
 void StreckeView::mousePressEvent(QMouseEvent *event)
 {
+    this->setCursor(Qt::ClosedHandCursor);
     if (event->buttons().testFlag(Qt::RightButton))
     {
         this->m_rechteMaustasteGedrueckt = true;
         this->m_linkeMaustasteGedrueckt = false;
-        this->m_dragStart = event->pos();
+        this->m_dragStart = event->globalPos();
     }
     if (event->buttons().testFlag(Qt::LeftButton))
     {
         this->m_rechteMaustasteGedrueckt = false;
         this->m_linkeMaustasteGedrueckt = true;
-        this->m_dragStart = event->pos();
+        this->m_dragStart = event->globalPos();
     }
 
     QGraphicsView::mousePressEvent(event);
@@ -77,49 +80,60 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
     if (this->m_linkeMaustasteGedrueckt)
     {
         // Unendliches Scrollen. Die Cursorposition wird an die gegenüberliegende Kante gesetzt,
-        // wenn der Cursor den Rand des Widgets erreicht hat. (Nutze 1-Pixel-Rand, da das Fenster eventuell
-        // im Vollbildmodus ist und der Cursor nicht über die Grenzen des Widgets hinaus bewegt werden kann.)
-        if (!this->m_resetDragPos && ((event->pos().x() <= 0) || (event->pos().y() <= 0) || (event->pos().x() >= this->width() - 1) || (event->pos().y() >= this->height() - 1)))
+        // wenn der Cursor den Rand des Bildschirms erreicht hat.
+        // Adapted from Okular source code (ui/pageview.cpp).
+        QPoint mousePos = event->globalPos();
+        QPoint delta = this->m_dragStart - mousePos;
+
+        const QRect mouseContainer = QApplication::desktop()->screenGeometry(this);
+        // If the delta is huge it probably means we just wrapped in that direction
+        const QPoint absDelta(abs(delta.x()), abs(delta.y()));
+        if (absDelta.y() > mouseContainer.height() / 2)
         {
-            this->m_resetDragPos = true;
-
-            // Arbeite alle anderen (Maus-)Events ab, die noch in der Queue stecken.
-            // So wird einigermassen sichergestellt, dass nach dem Verschieben des
-            // Cursors keine Events mehr mit der alten Cursorposition eintreffen, was zu
-            // Springen der Ansicht fuehrt.
-            QCoreApplication::processEvents();
-
-            // In der Zwischenzeit kann ein Release-Event gekommen sein.
-            if (!this->m_linkeMaustasteGedrueckt) {
-                return;
-            }
-
-            const auto button = event->button();
-            const auto buttons = event->buttons();
-            const auto modifiers = event->modifiers();
-
-            const auto pos = this->mapFromGlobal(QCursor::pos());
-            QMouseEvent releaseEvent(QEvent::MouseButtonRelease, pos, button, buttons, modifiers);
-            this->mouseReleaseEvent(&releaseEvent);
-
-            this->m_dragStart = QPoint(
-              pos.x() <= 0 ? this->width() - 2 :
-                pos.x() >= this->width() - 1 ? 1 : pos.x(),
-              pos.y() <= 0 ? this->height() - 2 :
-                pos.y() >= this->height() - 1 ? 1 : pos.y());
-            QCursor::setPos(this->mapToGlobal(this->m_dragStart));
-
-            // QCursor::pos() hier nochmals abfragen, falls das System
-            // das Setzen der Cursorposition nicht unterstuetzt und der Cursor
-            // deshalb nicht verschoben wurde.
-            QMouseEvent pressEvent(QEvent::MouseButtonPress, this->mapFromGlobal(QCursor::pos()), button, buttons, modifiers);
-            this->mousePressEvent(&pressEvent);
-
-            // Nochmaliger Versuch, alte Maus-Events abzuarbeiten, die zwischen dem vorherigen
-            // processEvents und dieser Zeile aufgelaufen sind.
-            QCoreApplication::processEvents();
-            this->m_resetDragPos = false;
+            delta.setY(mouseContainer.height() - absDelta.y());
         }
+        if (absDelta.x() > mouseContainer.width() / 2)
+        {
+            delta.setX(mouseContainer.width() - absDelta.x());
+        }
+
+        // TODO: If we wrap both left/right and top/bottom, do not call QCursor::setPos() twice
+        // wrap mouse from top to bottom
+        if (mousePos.y() <= mouseContainer.top() + 4 &&
+             verticalScrollBar()->value() < verticalScrollBar()->maximum() - 10)
+        {
+            mousePos.setY(mouseContainer.bottom() - 5);
+            QCursor::setPos(mousePos);
+        }
+        // wrap mouse from bottom to top
+        else if (mousePos.y() >= mouseContainer.bottom() - 4 &&
+                  verticalScrollBar()->value() > 10)
+        {
+            mousePos.setY(mouseContainer.top() + 5);
+            QCursor::setPos(mousePos);
+        }
+        // wrap mouse from left to right
+        if (mousePos.x() <= mouseContainer.left() + 4 &&
+             horizontalScrollBar()->value() < horizontalScrollBar()->maximum() - 10)
+        {
+            mousePos.setX(mouseContainer.right() - 5);
+            QCursor::setPos(mousePos);
+        }
+        // wrap mouse from right to left
+        else if (mousePos.x() >= mouseContainer.right() - 4 &&
+                  horizontalScrollBar()->value() > 10)
+        {
+            mousePos.setX(mouseContainer.left() + 5);
+            QCursor::setPos(mousePos);
+        }
+
+        // remember last position
+        this->m_dragStart = mousePos;
+
+        // scroll page by position increment
+        // TODO: Does this trigger two draw events?
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() + delta.x());
+        verticalScrollBar()->setValue(verticalScrollBar()->value() + delta.y());
     }
 }
 
@@ -127,6 +141,7 @@ void StreckeView::mouseReleaseEvent(QMouseEvent *event)
 {
     this->m_rechteMaustasteGedrueckt = false;
     this->m_linkeMaustasteGedrueckt = false;
+    this->setCursor(Qt::OpenHandCursor);
     QGraphicsView::mouseReleaseEvent(event);
 }
 

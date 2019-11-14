@@ -17,7 +17,6 @@
 StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, QObject *parent) :
     QGraphicsScene(parent)
 {
-    this->setItemIndexMethod(QGraphicsScene::NoIndex);
     size_t anzahlSegmente = 0, anzahlStreckenelemente = 0;
 
     // Berechne Bounding-Rect der Szene aus den Koordinaten der Streckenelemente (plus etwas konstantem Puffer)
