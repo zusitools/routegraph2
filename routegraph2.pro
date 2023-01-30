@@ -59,6 +59,6 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE *= -O3 -flto
 
 win32 {
-    LIBS += -ladvapi32 -lpthread -lboost_system-mt -lboost_filesystem-mt
+    LIBS += -ladvapi32 -lpthread -lboost_system-mt-x32 -lboost_filesystem-mt-x32 -lboost_nowide-mt-x32
     QMAKE_CXXFLAGS += -DZUSI_PARSER_USE_BOOST_FILESYSTEM
 }

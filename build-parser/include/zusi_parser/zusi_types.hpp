@@ -1,11 +1,13 @@
 #pragma once
 #include "zusi_parser/zusi_types_fwd.hpp"
 #include "boost/container/small_vector.hpp"
+#include <array>   // for std::array
+#include <cmath>   // for std::hypot
 #include <vector>  // for std::vector
 #include <memory>  // for std::unique_ptr
 #include <optional>// for std::optional
+#include <string>  // for std::string
 #include <ctime>   // for struct tm
-#include <cmath>   // for std::hypot
 struct ArgbColor {
   uint8_t a, r, g, b;
 };
@@ -15,17 +17,6 @@ namespace zusixml {
   template <typename T>
   using deleter = std::default_delete<T>;
 }
-struct ReferenzElement {
-  int32_t ReferenzNr;
-  int32_t StrElement;
-  bool StrNorm;
-  int32_t RefTyp;
-  std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> Info;
-};
-struct UTM {
-  int32_t UTM_WE;
-  int32_t UTM_NS;
-};
 struct Dateiverknuepfung {
   /** Dateipfade sind entweder
 - Pfade relativ zum Zusi-Datenverzeichnis (RollingStock\Deutschland\Lok.ls3), wobei ein führender Backslash erlaubt ist und ignoriert wird, oder
@@ -33,9 +24,22 @@ struct Dateiverknuepfung {
 Insbesondere können Dateien, die auf einem anderen Laufwerk als das Zusi-Datenverzeichnis liegen, nicht referenziert werden.*/
   std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> Dateiname;
 };
+struct StrModul {
+ struct Dateiverknuepfung Datei; // inlined
+};
+struct Fahrplan {
+  std::vector<std::unique_ptr<struct StrModul, zusixml::deleter<struct StrModul>>, zusixml::allocator<std::unique_ptr<struct StrModul, zusixml::deleter<struct StrModul>>>> children_StrModul;
+};
+struct ReferenzElement {
+  int32_t ReferenzNr;
+  int32_t StrElement;
+  bool StrNorm;
+  int32_t RefTyp;
+  std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> Info;
+};
 struct NachfolgerAnderesModul {
   int64_t Nr;
-  struct Dateiverknuepfung Datei; // inlined
+ struct Dateiverknuepfung Datei; // inlined
 };
 struct NachfolgerSelbesModul {
   int32_t Nr;
@@ -64,8 +68,8 @@ struct StrElement {
   std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> Oberbau;
   int32_t Volt;
   float Drahthoehe;
-  struct Vec3 g; // inlined
-  struct Vec3 b; // inlined
+ struct Vec3 g; // inlined
+ struct Vec3 b; // inlined
   std::optional<struct StreckenelementRichtungsInfo> InfoNormRichtung;
   std::optional<struct StreckenelementRichtungsInfo> InfoGegenRichtung;
   boost::container::small_vector<struct NachfolgerSelbesModul, 2> children_NachNorm;
@@ -83,16 +87,14 @@ struct StrElement {
     }
     return *NeigungCache;
   }};
+struct UTM {
+  int32_t UTM_WE;
+  int32_t UTM_NS;
+};
 struct Strecke {
   std::unique_ptr<struct UTM, zusixml::deleter<struct UTM>> UTM;
   std::vector<std::unique_ptr<struct ReferenzElement, zusixml::deleter<struct ReferenzElement>>, zusixml::allocator<std::unique_ptr<struct ReferenzElement, zusixml::deleter<struct ReferenzElement>>>> children_ReferenzElemente;
   std::vector<std::unique_ptr<struct StrElement, zusixml::deleter<struct StrElement>>, zusixml::allocator<std::unique_ptr<struct StrElement, zusixml::deleter<struct StrElement>>>> children_StrElement;
-};
-struct StrModul {
-  struct Dateiverknuepfung Datei; // inlined
-};
-struct Fahrplan {
-  std::vector<std::unique_ptr<struct StrModul, zusixml::deleter<struct StrModul>>, zusixml::allocator<std::unique_ptr<struct StrModul, zusixml::deleter<struct StrModul>>>> children_StrModul;
 };
 struct Zusi {
   std::unique_ptr<struct Fahrplan, zusixml::deleter<struct Fahrplan>> Fahrplan;

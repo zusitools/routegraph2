@@ -4,6 +4,7 @@
 #include <array>
 #include <cstring>  // for memcmp
 #include <cfloat>   // Workaround for https://svn.boost.org/trac10/ticket/12642
+#include <iostream> // for cerr
 #include <string_view>
 #include <boost/spirit/include/qi_real.hpp>
 #include <boost/spirit/include/qi_int.hpp>
@@ -252,460 +253,6 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
   RAPIDXML_PARSE_ERROR("value too long", text);
 }
 
-
-  static void parse_element_NachfolgerAnderesModul(const Ch *& text, struct NachfolgerAnderesModul* parseResult) {
-
-      // For all attributes
-      while (attribute_name_pred::test(*text))
-      {
-          // Extract attribute name
-          const Ch *name = text;
-          ++text;     // Skip first character of attribute name
-          skip<attribute_name_pred>(text);
-          const size_t name_size [[maybe_unused]] = text - name;
-
-          // Skip whitespace after attribute name
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip =
-          if (*text != Ch('='))
-              parse_error_expected_equals(text);
-          ++text;
-
-          // Skip whitespace after =
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip quote and remember if it was ' or "
-          Ch quote = *text;
-          if (quote != Ch('\'') && quote != Ch('"'))
-              parse_error_expected_quote(text);
-          ++text;
-
-          // Extract attribute value
-                  skip_unlikely<whitespace_pred>(text);
-        if (false) { (void)parseResult; }
-        else if (name_size == 2 && !memcmp(name, "Nr", 2)) {
-          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::long_long, parseResult->Nr);
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else {
-          skip_attribute_value(text, quote);
-        }
-
-
-          // Make sure that end quote is present
-          if (*text != quote)
-              parse_error_expected_quote(text);
-          ++text;     // Skip quote
-
-          // Skip whitespace after attribute value
-          skip<whitespace_pred>(text);
-      }
-
-      // Determine ending type
-      if (*text == Ch('>'))
-      {
-          ++text;
-          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct NachfolgerAnderesModul* parseResult = static_cast<struct NachfolgerAnderesModul*>(parseResultUntyped);
-              // Extract element name
-              const Ch *name = text;
-              skip<node_name_pred>(text);
-              if (text == name)
-                  parse_error_expected_element_name(text);
-              const size_t name_size [[maybe_unused]] = text - name;
-
-              // Skip whitespace between element name and attributes or >
-              skip<whitespace_pred>(text);
-
-              if (false) { (void)parseResult; }
-            else if (name_size == 5 && !memcmp(name, "Datei", 5)) {
-                  parse_element_Dateiverknuepfung(text, &parseResult->Datei);
-            }
-            else {
-              skip_element(text);
-            }
-
-          }, parseResult);
-      }
-      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
-      {
-          text += 2;
-      }
-      else
-          parse_error_expected_tag_end(text);
-    }
-  static void parse_element_ReferenzElement(const Ch *& text, struct ReferenzElement* parseResult) {
-
-      // For all attributes
-      while (attribute_name_pred::test(*text))
-      {
-          // Extract attribute name
-          const Ch *name = text;
-          ++text;     // Skip first character of attribute name
-          skip<attribute_name_pred>(text);
-          const size_t name_size [[maybe_unused]] = text - name;
-
-          // Skip whitespace after attribute name
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip =
-          if (*text != Ch('='))
-              parse_error_expected_equals(text);
-          ++text;
-
-          // Skip whitespace after =
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip quote and remember if it was ' or "
-          Ch quote = *text;
-          if (quote != Ch('\'') && quote != Ch('"'))
-              parse_error_expected_quote(text);
-          ++text;
-
-          // Extract attribute value
-                  if (false) { (void)parseResult; }
-        else if (name_size == 10 && !memcmp(name, "ReferenzNr", 10)) {
-          skip_unlikely<whitespace_pred>(text);
-          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->ReferenzNr);
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else if (name_size == 10 && !memcmp(name, "StrElement", 10)) {
-          skip_unlikely<whitespace_pred>(text);
-          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->StrElement);
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else if (name_size == 7 && !memcmp(name, "StrNorm", 7)) {
-          skip_unlikely<whitespace_pred>(text);
-          parseResult->StrNorm = (text[0] == '1');
-          ++text;
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else if (name_size == 6 && !memcmp(name, "RefTyp", 6)) {
-          skip_unlikely<whitespace_pred>(text);
-          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->RefTyp);
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else if (name_size == 4 && !memcmp(name, "Info", 4)) {
-          parse_string(text, parseResult->Info, quote);
-        }
-        else {
-          skip_attribute_value(text, quote);
-        }
-
-
-          // Make sure that end quote is present
-          if (*text != quote)
-              parse_error_expected_quote(text);
-          ++text;     // Skip quote
-
-          // Skip whitespace after attribute value
-          skip<whitespace_pred>(text);
-      }
-
-      // Determine ending type
-      if (unlikely(*text == Ch('>')))
-      {
-          ++text;
-          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct ReferenzElement* parseResult = static_cast<struct ReferenzElement*>(parseResultUntyped);
-              // Extract element name
-              const Ch *name = text;
-              skip<node_name_pred>(text);
-              if (text == name)
-                  parse_error_expected_element_name(text);
-              const size_t name_size [[maybe_unused]] = text - name;
-
-              // Skip whitespace between element name and attributes or >
-              skip<whitespace_pred>(text);
-
-              if (false) { (void)parseResult; }
-            else {
-              skip_element(text);
-            }
-
-          }, parseResult);
-      }
-      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
-      {
-          text += 2;
-      }
-      else
-          parse_error_expected_tag_end(text);
-    }
-  static void parse_element_NachfolgerSelbesModul(const Ch *& text, struct NachfolgerSelbesModul* parseResult) {
-
-      // For all attributes
-      while (attribute_name_pred::test(*text))
-      {
-          // Extract attribute name
-          const Ch *name = text;
-          ++text;     // Skip first character of attribute name
-          skip<attribute_name_pred>(text);
-          const size_t name_size [[maybe_unused]] = text - name;
-
-          // Skip whitespace after attribute name
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip =
-          if (*text != Ch('='))
-              parse_error_expected_equals(text);
-          ++text;
-
-          // Skip whitespace after =
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip quote and remember if it was ' or "
-          Ch quote = *text;
-          if (quote != Ch('\'') && quote != Ch('"'))
-              parse_error_expected_quote(text);
-          ++text;
-
-          // Extract attribute value
-                  skip_unlikely<whitespace_pred>(text);
-        if (false) { (void)parseResult; }
-        else if (name_size == 2 && !memcmp(name, "Nr", 2)) {
-          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->Nr);
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else {
-          skip_attribute_value(text, quote);
-        }
-
-
-          // Make sure that end quote is present
-          if (*text != quote)
-              parse_error_expected_quote(text);
-          ++text;     // Skip quote
-
-          // Skip whitespace after attribute value
-          skip<whitespace_pred>(text);
-      }
-
-      // Determine ending type
-      if (unlikely(*text == Ch('>')))
-      {
-          ++text;
-          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct NachfolgerSelbesModul* parseResult = static_cast<struct NachfolgerSelbesModul*>(parseResultUntyped);
-              // Extract element name
-              const Ch *name = text;
-              skip<node_name_pred>(text);
-              if (text == name)
-                  parse_error_expected_element_name(text);
-              const size_t name_size [[maybe_unused]] = text - name;
-
-              // Skip whitespace between element name and attributes or >
-              skip<whitespace_pred>(text);
-
-              if (false) { (void)parseResult; }
-            else {
-              skip_element(text);
-            }
-
-          }, parseResult);
-      }
-      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
-      {
-          text += 2;
-      }
-      else
-          parse_error_expected_tag_end(text);
-    }
-  static void parse_element_Strecke(const Ch *& text, struct Strecke* parseResult) {
-
-      // For all attributes
-      while (attribute_name_pred::test(*text))
-      {
-          // Extract attribute name
-          const Ch *name = text;
-          ++text;     // Skip first character of attribute name
-          skip<attribute_name_pred>(text);
-          const size_t name_size [[maybe_unused]] = text - name;
-
-          // Skip whitespace after attribute name
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip =
-          if (*text != Ch('='))
-              parse_error_expected_equals(text);
-          ++text;
-
-          // Skip whitespace after =
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip quote and remember if it was ' or "
-          Ch quote = *text;
-          if (quote != Ch('\'') && quote != Ch('"'))
-              parse_error_expected_quote(text);
-          ++text;
-
-          // Extract attribute value
-                  skip_unlikely<whitespace_pred>(text);
-        if (false) { (void)parseResult; }
-        else {
-          skip_attribute_value(text, quote);
-        }
-
-
-          // Make sure that end quote is present
-          if (*text != quote)
-              parse_error_expected_quote(text);
-          ++text;     // Skip quote
-
-          // Skip whitespace after attribute value
-          skip<whitespace_pred>(text);
-      }
-
-      // Determine ending type
-      if (*text == Ch('>'))
-      {
-          ++text;
-          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct Strecke* parseResult = static_cast<struct Strecke*>(parseResultUntyped);
-              // Extract element name
-              const Ch *name = text;
-              skip<node_name_pred>(text);
-              if (text == name)
-                  parse_error_expected_element_name(text);
-              const size_t name_size [[maybe_unused]] = text - name;
-
-              // Skip whitespace between element name and attributes or >
-              skip<whitespace_pred>(text);
-
-              if (false) { (void)parseResult; }
-            else if (name_size == 3 && !memcmp(name, "UTM", 3)) {
-                  std::unique_ptr<struct UTM, zusixml::deleter<struct UTM>> childResult(new struct UTM());
-  parseResult->UTM.swap(childResult);
-  parse_element_UTM(text, parseResult->UTM.get());
-            }
-            else if (name_size == 16 && !memcmp(name, "ReferenzElemente", 16)) {
-                  std::unique_ptr<ReferenzElement> childResult(new ReferenzElement());
-  parse_element_ReferenzElement(text, childResult.get());
-  size_t index = childResult->ReferenzNr;
-  if (index == parseResult->children_ReferenzElemente.size()) {
-    parseResult->children_ReferenzElemente.push_back(std::move(childResult));
-  } else {
-    if (index > parseResult->children_ReferenzElemente.size()) {
-      parseResult->children_ReferenzElemente.resize(index + 1);
-    } else if (parseResult->children_ReferenzElemente[index]) {
-      std::cerr << "Ignoriere doppelten Eintrag fuer ReferenzElemente: " << index << "\n";
-    }
-    parseResult->children_ReferenzElemente[index] = std::move(childResult);
-  }
-            }
-            else if (name_size == 10 && !memcmp(name, "StrElement", 10)) {
-                  std::unique_ptr<StrElement> childResult(new StrElement());
-  parse_element_StrElement(text, childResult.get());
-  size_t index = childResult->Nr;
-  if (index == parseResult->children_StrElement.size()) {
-    parseResult->children_StrElement.push_back(std::move(childResult));
-  } else {
-    if (index > parseResult->children_StrElement.size()) {
-      parseResult->children_StrElement.resize(index + 1);
-    } else if (parseResult->children_StrElement[index]) {
-      std::cerr << "Ignoriere doppelten Eintrag fuer StrElement: " << index << "\n";
-    }
-    parseResult->children_StrElement[index] = std::move(childResult);
-  }
-            }
-            else {
-              skip_element(text);
-            }
-
-          }, parseResult);
-      }
-      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
-      {
-          text += 2;
-      }
-      else
-          parse_error_expected_tag_end(text);
-    }
-  static void parse_element_StreckenelementRichtungsInfo(const Ch *& text, struct StreckenelementRichtungsInfo* parseResult) {
-
-      // For all attributes
-      while (attribute_name_pred::test(*text))
-      {
-          // Extract attribute name
-          const Ch *name = text;
-          ++text;     // Skip first character of attribute name
-          skip<attribute_name_pred>(text);
-          const size_t name_size [[maybe_unused]] = text - name;
-
-          // Skip whitespace after attribute name
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip =
-          if (*text != Ch('='))
-              parse_error_expected_equals(text);
-          ++text;
-
-          // Skip whitespace after =
-          skip_unlikely<whitespace_pred>(text);
-
-          // Skip quote and remember if it was ' or "
-          Ch quote = *text;
-          if (quote != Ch('\'') && quote != Ch('"'))
-              parse_error_expected_quote(text);
-          ++text;
-
-          // Extract attribute value
-                  skip_unlikely<whitespace_pred>(text);
-        if (false) { (void)parseResult; }
-        else if (name_size == 4 && !memcmp(name, "vMax", 4)) {
-          parse_float(text, parseResult->vMax);
-          skip_unlikely<whitespace_pred>(text);
-        }
-        else {
-          skip_attribute_value(text, quote);
-        }
-
-
-          // Make sure that end quote is present
-          if (*text != quote)
-              parse_error_expected_quote(text);
-          ++text;     // Skip quote
-
-          // Skip whitespace after attribute value
-          skip<whitespace_pred>(text);
-      }
-
-      // Determine ending type
-      if (*text == Ch('>'))
-      {
-          ++text;
-          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct StreckenelementRichtungsInfo* parseResult = static_cast<struct StreckenelementRichtungsInfo*>(parseResultUntyped);
-              // Extract element name
-              const Ch *name = text;
-              skip<node_name_pred>(text);
-              if (text == name)
-                  parse_error_expected_element_name(text);
-              const size_t name_size [[maybe_unused]] = text - name;
-
-              // Skip whitespace between element name and attributes or >
-              skip<whitespace_pred>(text);
-
-              if (false) { (void)parseResult; }
-            else if (name_size == 6 && !memcmp(name, "Signal", 6)) {
-                  std::unique_ptr<struct Signal, zusixml::deleter<struct Signal>> childResult(new struct Signal());
-  parseResult->Signal.swap(childResult);
-  parse_element_Signal(text, parseResult->Signal.get());
-            }
-            else {
-              skip_element(text);
-            }
-
-          }, parseResult);
-      }
-      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
-      {
-          text += 2;
-      }
-      else
-          parse_error_expected_tag_end(text);
-    }
   static void parse_element_StrModul(const Ch *& text, struct StrModul* parseResult) {
 
       // For all attributes
@@ -949,6 +496,83 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       else
           parse_error_expected_tag_end(text);
     }
+  static void parse_element_Dateiverknuepfung(const Ch *& text, struct Dateiverknuepfung* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  if (false) { (void)parseResult; }
+        else if (name_size == 9 && !memcmp(name, "Dateiname", 9)) {
+          parse_string(text, parseResult->Dateiname, quote);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (unlikely(*text == Ch('>')))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct Dateiverknuepfung* parseResult = static_cast<struct Dateiverknuepfung*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
   static void parse_element_Signal(const Ch *& text, struct Signal* parseResult) {
 
       // For all attributes
@@ -1037,7 +661,7 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       else
           parse_error_expected_tag_end(text);
     }
-  static void parse_element_Dateiverknuepfung(const Ch *& text, struct Dateiverknuepfung* parseResult) {
+  static void parse_element_Fahrplan(const Ch *& text, struct Fahrplan* parseResult) {
 
       // For all attributes
       while (attribute_name_pred::test(*text))
@@ -1066,9 +690,89 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
           ++text;
 
           // Extract attribute value
-                  if (false) { (void)parseResult; }
-        else if (name_size == 9 && !memcmp(name, "Dateiname", 9)) {
-          parse_string(text, parseResult->Dateiname, quote);
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct Fahrplan* parseResult = static_cast<struct Fahrplan*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 8 && !memcmp(name, "StrModul", 8)) {
+                  parse_element_StrModul(text, parseResult->children_StrModul.emplace_back(new struct StrModul()).get());
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
+  static void parse_element_NachfolgerSelbesModul(const Ch *& text, struct NachfolgerSelbesModul* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else if (name_size == 2 && !memcmp(name, "Nr", 2)) {
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->Nr);
+          skip_unlikely<whitespace_pred>(text);
         }
         else {
           skip_attribute_value(text, quote);
@@ -1089,7 +793,7 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       {
           ++text;
           parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct Dateiverknuepfung* parseResult = static_cast<struct Dateiverknuepfung*>(parseResultUntyped);
+              struct NachfolgerSelbesModul* parseResult = static_cast<struct NachfolgerSelbesModul*>(parseResultUntyped);
               // Extract element name
               const Ch *name = text;
               skip<node_name_pred>(text);
@@ -1174,6 +878,298 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
           ++text;
           parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
               struct UTM* parseResult = static_cast<struct UTM*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
+  static void parse_element_StreckenelementRichtungsInfo(const Ch *& text, struct StreckenelementRichtungsInfo* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else if (name_size == 4 && !memcmp(name, "vMax", 4)) {
+          parse_float(text, parseResult->vMax);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct StreckenelementRichtungsInfo* parseResult = static_cast<struct StreckenelementRichtungsInfo*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 6 && !memcmp(name, "Signal", 6)) {
+                  std::unique_ptr<struct Signal, zusixml::deleter<struct Signal>> childResult(new struct Signal());
+  parseResult->Signal.swap(childResult);
+  parse_element_Signal(text, parseResult->Signal.get());
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
+  static void parse_element_Strecke(const Ch *& text, struct Strecke* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct Strecke* parseResult = static_cast<struct Strecke*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 3 && !memcmp(name, "UTM", 3)) {
+                  std::unique_ptr<struct UTM, zusixml::deleter<struct UTM>> childResult(new struct UTM());
+  parseResult->UTM.swap(childResult);
+  parse_element_UTM(text, parseResult->UTM.get());
+            }
+            else if (name_size == 16 && !memcmp(name, "ReferenzElemente", 16)) {
+                  std::unique_ptr<ReferenzElement> childResult(new ReferenzElement());
+  parse_element_ReferenzElement(text, childResult.get());
+  size_t index = childResult->ReferenzNr;
+  if (index == parseResult->children_ReferenzElemente.size()) {
+    parseResult->children_ReferenzElemente.push_back(std::move(childResult));
+  } else {
+    if (index > parseResult->children_ReferenzElemente.size()) {
+      parseResult->children_ReferenzElemente.resize(index + 1);
+    } else if (parseResult->children_ReferenzElemente[index]) {
+      std::cerr << "Ignoriere doppelten Eintrag fuer ReferenzElemente: " << index << "\n";
+    }
+    parseResult->children_ReferenzElemente[index] = std::move(childResult);
+  }
+            }
+            else if (name_size == 10 && !memcmp(name, "StrElement", 10)) {
+                  std::unique_ptr<StrElement> childResult(new StrElement());
+  parse_element_StrElement(text, childResult.get());
+  size_t index = childResult->Nr;
+  if (index == parseResult->children_StrElement.size()) {
+    parseResult->children_StrElement.push_back(std::move(childResult));
+  } else {
+    if (index > parseResult->children_StrElement.size()) {
+      parseResult->children_StrElement.resize(index + 1);
+    } else if (parseResult->children_StrElement[index]) {
+      std::cerr << "Ignoriere doppelten Eintrag fuer StrElement: " << index << "\n";
+    }
+    parseResult->children_StrElement[index] = std::move(childResult);
+  }
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
+  static void parse_element_ReferenzElement(const Ch *& text, struct ReferenzElement* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  if (false) { (void)parseResult; }
+        else if (name_size == 10 && !memcmp(name, "ReferenzNr", 10)) {
+          skip_unlikely<whitespace_pred>(text);
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->ReferenzNr);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else if (name_size == 10 && !memcmp(name, "StrElement", 10)) {
+          skip_unlikely<whitespace_pred>(text);
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->StrElement);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else if (name_size == 7 && !memcmp(name, "StrNorm", 7)) {
+          skip_unlikely<whitespace_pred>(text);
+          parseResult->StrNorm = (text[0] == '1');
+          ++text;
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else if (name_size == 6 && !memcmp(name, "RefTyp", 6)) {
+          skip_unlikely<whitespace_pred>(text);
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->RefTyp);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else if (name_size == 4 && !memcmp(name, "Info", 4)) {
+          parse_string(text, parseResult->Info, quote);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (unlikely(*text == Ch('>')))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct ReferenzElement* parseResult = static_cast<struct ReferenzElement*>(parseResultUntyped);
               // Extract element name
               const Ch *name = text;
               skip<node_name_pred>(text);
@@ -1356,7 +1352,7 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       else
           parse_error_expected_tag_end(text);
     }
-  static void parse_element_Fahrplan(const Ch *& text, struct Fahrplan* parseResult) {
+  static void parse_element_NachfolgerAnderesModul(const Ch *& text, struct NachfolgerAnderesModul* parseResult) {
 
       // For all attributes
       while (attribute_name_pred::test(*text))
@@ -1387,6 +1383,10 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
           // Extract attribute value
                   skip_unlikely<whitespace_pred>(text);
         if (false) { (void)parseResult; }
+        else if (name_size == 2 && !memcmp(name, "Nr", 2)) {
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::long_long, parseResult->Nr);
+          skip_unlikely<whitespace_pred>(text);
+        }
         else {
           skip_attribute_value(text, quote);
         }
@@ -1406,7 +1406,7 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       {
           ++text;
           parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
-              struct Fahrplan* parseResult = static_cast<struct Fahrplan*>(parseResultUntyped);
+              struct NachfolgerAnderesModul* parseResult = static_cast<struct NachfolgerAnderesModul*>(parseResultUntyped);
               // Extract element name
               const Ch *name = text;
               skip<node_name_pred>(text);
@@ -1418,8 +1418,8 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
               skip<whitespace_pred>(text);
 
               if (false) { (void)parseResult; }
-            else if (name_size == 8 && !memcmp(name, "StrModul", 8)) {
-                  parse_element_StrModul(text, parseResult->children_StrModul.emplace_back(new struct StrModul()).get());
+            else if (name_size == 5 && !memcmp(name, "Datei", 5)) {
+                  parse_element_Dateiverknuepfung(text, &parseResult->Datei);
             }
             else {
               skip_element(text);
