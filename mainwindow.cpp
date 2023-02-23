@@ -281,7 +281,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 }));
 #else
             try {
-                strecken.push_back(std::move(zusixml::parseFile(dateiname.toStdString())->Strecke));
+                strecken.emplace_back(zusixml::ZusiPfad::vonOsPfad(dateiname.toStdString()), std::move(zusixml::parseFile(dateiname.toStdString())->Strecke));
             } catch (const std::exception& e) {
                 QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
             }
@@ -295,7 +295,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 const auto& fpnZusiPfad = zusixml::ZusiPfad::vonOsPfad(dateiname.toStdString());
                 for (const auto& modul : fahrplan->children_StrModul) {
                     if (!modul) { continue; }
-                    const auto& modulDateiname = zusixml::ZusiPfad::vonZusiPfad(modul->Datei.Dateiname, fpnZusiPfad);
+                    auto modulDateiname = zusixml::ZusiPfad::vonZusiPfad(modul->Datei.Dateiname, fpnZusiPfad);
 #ifdef _GLIBCXX_HAS_GTHREADS
                     futures.emplace_back(
                         modulDateiname,
@@ -311,7 +311,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                     try {
                         const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
                         if (st3 && st3->Strecke) {
-                            strecken.push_back(std::move(st3->Strecke));
+                            strecken.emplace_back(std::move(modulDateiname), std::move(st3->Strecke));
                         }
                     } catch (const std::exception& e) {
                         QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
@@ -329,9 +329,10 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 #ifdef _GLIBCXX_HAS_GTHREADS
     for (auto& fut : futures) {
         try {
+            auto dateiname = fut.first;
             auto strecke = fut.second.get();
 #else
-    for (auto& strecke : strecken) {
+    for (auto& [dateiname, strecke] : strecken) {
 #endif
             if (!strecke) {
                 continue;
@@ -353,7 +354,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 }
             }
 
-            this->m_streckennetz.add(fut.first, std::move(strecke));
+            this->m_streckennetz.add(dateiname, std::move(strecke));
 #ifdef _GLIBCXX_HAS_GTHREADS
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
