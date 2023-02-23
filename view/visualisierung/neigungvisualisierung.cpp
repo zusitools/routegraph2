@@ -49,8 +49,8 @@ std::unique_ptr<QGraphicsScene> NeigungVisualisierung::legende()
 {
     auto result = std::make_unique<QGraphicsScene>();
     auto segmentierer = this->segmentierer();
-    StrElement streckenelement {};
     for (int i = 0; i < anzahlNeigungsStufen; ++i) {
+        StrElement streckenelement {}; // nicht wiederverwenden wegen Neigungs-Cache
         streckenelement.b.Z = /* Rundungsfehler-Ausgleich */ 1.01 * i * neigungAbstufung * Visualisierung::legendeElementLaenge;
         this->neuesLegendeElement(*result, *segmentierer, streckenelement,
             i == anzahlNeigungsStufen - 1 ?
