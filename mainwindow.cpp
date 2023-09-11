@@ -139,6 +139,19 @@ void MainWindow::actionVisualisierungTriggered()
     this->ui->streckeView->centerOn(centerPoint);
 }
 
+void MainWindow::actionAnsichtBetriebsstellennamenToggled(bool checked)
+{
+    m_zeigeBetriebsstellen = checked;
+
+    // Transformation und Scroll-Position speichern und wiederherstellen
+    const auto& transform = this->ui->streckeView->transform();
+    const auto& viewport = this->ui->streckeView->viewport();
+    const auto& centerPoint = this->ui->streckeView->mapToScene(viewport->width() / 2, viewport->height() / 2);
+    aktualisiereDarstellung();
+    this->ui->streckeView->setTransform(transform);
+    this->ui->streckeView->centerOn(centerPoint);
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)
 {
     if (e->mimeData()->hasUrls()) {
@@ -393,7 +406,7 @@ void MainWindow::aktualisiereDarstellung()
 
     QTime timer;
     timer.start();
-    this->m_streckeScene.reset(new StreckeScene(this->m_streckennetz, *visualisierung));
+    this->m_streckeScene.reset(new StreckeScene(this->m_streckennetz, *visualisierung, m_zeigeBetriebsstellen));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
     ui->streckeView->setScene(this->m_streckeScene.get());
 

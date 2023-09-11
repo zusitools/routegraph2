@@ -14,7 +14,7 @@
 #include <cmath>
 #include <unordered_map>
 
-StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, QObject *parent) :
+StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, bool zeigeBetriebsstellen, QObject *parent) :
     QGraphicsScene(parent)
 {
     size_t anzahlSegmente = 0, anzahlStreckenelemente = 0;
@@ -138,7 +138,7 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
                             si->moveBy(utm_dx, utm_dy);
                             this->addItem(si.release());
 
-                            if (static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Vorsignal && !signal->NameBetriebsstelle.empty())
+                            if (zeigeBetriebsstellen && (static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Vorsignal) && !signal->NameBetriebsstelle.empty())
                             {
                                 if (betriebsstellenKoordinaten.find(signal->NameBetriebsstelle) == betriebsstellenKoordinaten.end())
                                 {

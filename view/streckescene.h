@@ -17,7 +17,7 @@ class StreckeScene : public QGraphicsScene
     Q_OBJECT
 public:
     explicit StreckeScene(const Streckennetz& streckennetz,
-                          Visualisierung& visualisierung, QObject *parent = nullptr);
+                          Visualisierung& visualisierung, bool zeigeBetriebsstellen, QObject *parent = nullptr);
 
 signals:
 

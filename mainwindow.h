@@ -30,6 +30,7 @@ public slots:
     void actionOrdnerOeffnenTriggered();
     void actionOrdnerAnfuegenTriggered();
     void actionVisualisierungTriggered();
+    void actionAnsichtBetriebsstellennamenToggled(bool checked);
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent *e) override;
@@ -43,6 +44,8 @@ private:
     Streckennetz m_streckennetz;
     std::unique_ptr<StreckeScene> m_streckeScene;
     std::unique_ptr<QGraphicsScene> m_legendeScene;
+
+    bool m_zeigeBetriebsstellen{true};
 
     void setzeAnsichtZurueck();
 
