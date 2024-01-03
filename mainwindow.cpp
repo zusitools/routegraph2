@@ -14,6 +14,7 @@
 
 #include "view/streckescene.h"
 #include "view/visualisierung/visualisierung.h"
+#include "view/visualisierung/etcstrustedareavisualisierung.h"
 #include "view/visualisierung/gleisfunktionvisualisierung.h"
 #include "view/visualisierung/kruemmungvisualisierung.h"
 #include "view/visualisierung/ueberhoehungvisualisierung.h"
@@ -397,6 +398,8 @@ void MainWindow::aktualisiereDarstellung()
         visualisierung = std::make_unique<UeberhoehungVisualisierung>();
     } else if (ui->actionVisualisierungNeigung->isChecked()) {
         visualisierung = std::make_unique<NeigungVisualisierung>();
+    } else if (ui->actionVisualisierungEtcsTrustedAreas->isChecked()) {
+        visualisierung = std::make_unique<EtcsTrustedAreaVisualisierung>();
     } else {
         visualisierung = std::make_unique<GleisfunktionVisualisierung>();
     }

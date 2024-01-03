@@ -47,6 +47,7 @@ enum class StreckenelementFlag : uint32_t {
     Weichenbausatz = 1 << 2,
     KeineSchulterRechts = 1 << 3,
     KeineSchulterLinks = 1 << 4,
+    EtcsTrustedArea = 1 << 5,
 };
 
 // Ein Verweis auf eine Richtung eines Streckenelements.

@@ -17,6 +17,7 @@ SOURCES += main.cpp\
     view/graphicsitems/dreieckitem.cpp \
     view/graphicsitems/label.cpp \
     view/segmentierer.cpp \
+    view/visualisierung/etcstrustedareavisualisierung.cpp \
     view/visualisierung/gleisfunktionvisualisierung.cpp \
     view/visualisierung/geschwindigkeitvisualisierung.cpp \
     view/visualisierung/oberbauvisualisierung.cpp \
@@ -38,6 +39,7 @@ HEADERS  += mainwindow.h \
     view/zwerte.h \
     view/segmentierer.h \
     view/visualisierung/visualisierung.h \
+    view/visualisierung/etcstrustedareavisualisierung.h \
     view/visualisierung/gleisfunktionvisualisierung.h \
     view/visualisierung/geschwindigkeitvisualisierung.h \
     view/visualisierung/oberbauvisualisierung.h \

@@ -97,6 +97,7 @@
     <addaction name="actionVisualisierungGeschwindigkeiten"/>
     <addaction name="actionVisualisierungOberbau"/>
     <addaction name="actionVisualisierungFahrleitung"/>
+    <addaction name="actionVisualisierungEtcsTrustedAreas"/>
    </widget>
    <widget class="QMenu" name="menu_Ansicht">
     <property name="title">
@@ -231,6 +232,14 @@
     </property>
     <property name="text">
      <string>&amp;Fahrleitung</string>
+    </property>
+   </action>
+   <action name="actionVisualisierungEtcsTrustedAreas">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>E&amp;TCS Trusted Areas</string>
     </property>
    </action>
   </actiongroup>
