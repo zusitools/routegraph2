@@ -24,9 +24,10 @@ static QColor farbe(int geschwindigkeit)
 void GeschwindigkeitVisualisierung::setzeDarstellung(StreckensegmentItem& item)
 {
     QPen pen = item.pen();
-    const auto& richtungsInfo = item.start().richtungsInfo();
+    const auto& start = item.start();
+    const auto& richtungsInfo = start.richtungsInfo();
     const auto geschwindigkeit = richtungsInfo.has_value() ? richtungsInfo->vMax : 0;
-    if (hatFktFlag(*item.start(), StreckenelementFlag::KeineGleisfunktion)) {
+    if (hatFktFlag(*start, StreckenelementFlag::KeineGleisfunktion)) {
         pen.setColor(QColor::fromRgb(240, 240, 240));
     } else {
         pen.setColor(farbe(std::round(geschwindigkeit * 3.6)));
