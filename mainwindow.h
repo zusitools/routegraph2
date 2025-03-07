@@ -14,7 +14,10 @@ class MainWindow;
 
 class Strecke;
 class StreckeScene;
+
+class QDir;
 class QGraphicsScene;
+class QStringList;
 
 class MainWindow : public QMainWindow
 {
@@ -60,6 +63,8 @@ private:
 
     /** Zeigt einen Dialog zum Oeffnen eines Streckenordners und liefert eine Liste von ST3-Dateien in diesem Verzeichnis zurueck. */
     QStringList zeigeOrdnerOeffnenDialog();
+
+    QStringList findeSt3Rekursiv(QDir& dir, const QStringList& filter);
 };
 
 #endif // MAINWINDOW_H

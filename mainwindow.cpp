@@ -11,6 +11,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QProgressDialog>
 
 #include "view/streckescene.h"
 #include "view/visualisierung/visualisierung.h"
@@ -91,17 +92,6 @@ void MainWindow::actionModulOeffnenTriggered()
     {
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
-    }
-}
-
-static void findeSt3Rekursiv(QDir& dir, QStringList& filter, QStringList& result) {
-    for (const QString& dateiname : dir.entryList(filter, QDir::Files)) {
-        result.append(dir.path() + QLatin1Char('/') + dateiname);
-    }
-    for (const QString& subdir : dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-        dir.cd(subdir);
-        findeSt3Rekursiv(dir, filter, result);
-        dir.cdUp();
     }
 }
 
@@ -454,12 +444,50 @@ QStringList MainWindow::zeigeOrdnerOeffnenDialog()
     QDir dir { QFileDialog::getExistingDirectory(this, "",
                                                  this->m_streckennetz.empty() ? startverzeichnis.absolutePath() + "/Routes" : QString(""),
                                                  QFileDialog::ShowDirsOnly) };
-    QStringList dateinamen;
-    QStringList filter { "*.ST3" };
+    const QStringList filter { "*.ST3" };
+    return this->findeSt3Rekursiv(dir, filter);
+}
 
+namespace {
+
+void findeSt3RekursivIntern(QDir& dir, const QStringList& filter, QStringList& result, QProgressDialog& progressDialog, QElapsedTimer& progressTimer) {
+    if (progressDialog.wasCanceled()) {
+        return;
+    }
+    if (progressTimer.hasExpired(100)) {
+        progressDialog.setLabelText(dir.path());
+        QApplication::processEvents();
+        progressTimer.restart();
+    }
+    for (const QString& dateiname : dir.entryList(filter, QDir::Files)) {
+        result.append(dir.path() + QLatin1Char('/') + dateiname);
+    }
+    for (const QString& subdir : dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        dir.cd(subdir);
+        findeSt3RekursivIntern(dir, filter, result, progressDialog, progressTimer);
+        dir.cdUp();
+    }
+}
+
+}
+
+QStringList MainWindow::findeSt3Rekursiv(QDir& dir, const QStringList& filter) {
     QElapsedTimer timer;
     timer.start();
-    findeSt3Rekursiv(dir, filter, dateinamen);
+
+    QProgressDialog progressDialog("", "Abbrechen", 0, 0, this);
+    progressDialog.setWindowTitle("Suche ST3-Dateien");
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setAutoClose(false);
+    progressDialog.setValue(0);
+    QElapsedTimer progressTimer;
+    progressTimer.start();
+
+    QStringList result;
+    findeSt3RekursivIntern(dir, filter, result, progressDialog, progressTimer);
+    if (progressDialog.wasCanceled()) {
+        return {};
+    }
     qDebug() << timer.elapsed() << "ms zum Auflisten aller Streckendateien";
-    return dateinamen;
+    return result;
 }
