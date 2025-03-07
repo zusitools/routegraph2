@@ -208,6 +208,8 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 #else
     std::vector<std::pair<zusixml::ZusiPfad, std::unique_ptr<Strecke>>> strecken;
 #endif
+    std::vector<std::pair<zusixml::ZusiPfad, std::unique_ptr<Strecke>>> streckenOhneUtmPunkt;
+    bool hatStreckeMitUtmPunkt = false;
 
 #if 0
     Q_UNUSED(dateinamen);
@@ -368,12 +370,25 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 }
             }
 
-            this->m_streckennetz.add(dateiname, std::move(strecke));
+            if (!strecke->UTM || (strecke->UTM->UTM_NS == 0 && strecke->UTM->UTM_WE == 0)) {
+                streckenOhneUtmPunkt.emplace_back(dateiname, std::move(strecke));
+            } else {
+                hatStreckeMitUtmPunkt = true;
+                this->m_streckennetz.add(dateiname, std::move(strecke));
+            }
 #ifdef _GLIBCXX_HAS_GTHREADS
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
         }
 #endif
+    }
+
+    if (hatStreckeMitUtmPunkt) {
+        qDebug() << "Ignoriere" << streckenOhneUtmPunkt.size() << "Module ohne UTM-Punkt";
+    } else {
+        for (auto& [dateiname, strecke] : streckenOhneUtmPunkt) {
+            this->m_streckennetz.add(dateiname, std::move(strecke));
+        }
     }
 
     qDebug() << timer.elapsed() << "ms zum Lesen der Strecken";
