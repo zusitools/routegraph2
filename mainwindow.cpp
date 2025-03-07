@@ -5,12 +5,12 @@
 #include <thread>
 
 #include <QActionGroup>
+#include <QDebug>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QMimeData>
-#include <QTime>
-#include <QDebug>
 
 #include "view/streckescene.h"
 #include "view/visualisierung/visualisierung.h"
@@ -201,7 +201,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 {
-    QTime timer;
+    QElapsedTimer timer;
     timer.start();
 #ifdef _GLIBCXX_HAS_GTHREADS
     std::vector<std::pair<zusixml::ZusiPfad, std::future<std::unique_ptr<Strecke>>>> futures;
@@ -422,7 +422,7 @@ void MainWindow::aktualisiereDarstellung()
     ui->streckeView->setScene(nullptr);
     this->m_streckeScene.reset(nullptr);
 
-    QTime timer;
+    QElapsedTimer timer;
     timer.start();
     this->m_streckeScene.reset(new StreckeScene(this->m_streckennetz, *visualisierung, m_zeigeBetriebsstellen));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
@@ -457,7 +457,7 @@ QStringList MainWindow::zeigeOrdnerOeffnenDialog()
     QStringList dateinamen;
     QStringList filter { "*.ST3" };
 
-    QTime timer;
+    QElapsedTimer timer;
     timer.start();
     findeSt3Rekursiv(dir, filter, dateinamen);
     qDebug() << timer.elapsed() << "ms zum Auflisten aller Streckendateien";
