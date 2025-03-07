@@ -144,10 +144,6 @@ Strecke* Streckennetz::get(const zusixml::ZusiPfad& pfad) const {
     return nullptr;
 }
 
-void Streckennetz::clear() {
-    m_strecken.clear();
-}
-
 bool Streckennetz::empty() {
     return m_strecken.empty();
 }

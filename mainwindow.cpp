@@ -76,7 +76,7 @@ void MainWindow::actionOeffnenTriggered()
 
     if (dateinamen.size() > 0)
     {
-        this->m_streckennetz.clear();
+        this->m_streckennetz = {};
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
@@ -111,7 +111,7 @@ void MainWindow::actionOrdnerOeffnenTriggered()
 
     if (dateinamen.size() > 0)
     {
-        this->m_streckennetz.clear();
+        this->m_streckennetz = {};
         this->oeffneStrecken(dateinamen);
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
@@ -175,7 +175,7 @@ void MainWindow::dropEvent(QDropEvent *e)
     }
     if (dateien.size() > 0) {
         if (!(e->keyboardModifiers() & Qt::ShiftModifier)) {
-            this->m_streckennetz.clear();
+            this->m_streckennetz = {};
         }
         this->oeffneStrecken(dateien);
         this->aktualisiereDarstellung();

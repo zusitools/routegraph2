@@ -15,7 +15,6 @@ class Streckennetz
 public:
     void add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> strecke);
     Strecke* get(const zusixml::ZusiPfad& pfad) const;
-    void clear();
     [[nodiscard]] bool empty();
 
 private:
