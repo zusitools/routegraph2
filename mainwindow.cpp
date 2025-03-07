@@ -95,10 +95,10 @@ void MainWindow::actionModulOeffnenTriggered()
 }
 
 static void findeSt3Rekursiv(QDir& dir, QStringList& filter, QStringList& result) {
-    for (const QString& dateiname : dir.entryList(filter, QDir::Files | QDir::NoSymLinks)) {
+    for (const QString& dateiname : dir.entryList(filter, QDir::Files)) {
         result.append(dir.path() + QLatin1Char('/') + dateiname);
     }
-    for (const QString& subdir : dir.entryList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot)) {
+    for (const QString& subdir : dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         dir.cd(subdir);
         findeSt3Rekursiv(dir, filter, result);
         dir.cdUp();
