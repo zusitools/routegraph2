@@ -13,6 +13,7 @@
 #define BOOST_STACKTRACE_USE_WINDBG
 #endif
 
+#include <boost/preprocessor/stringize.hpp>
 #include <boost/stacktrace.hpp>
 
 #ifdef WIN32
@@ -59,7 +60,7 @@ int main(int argc, char *argv[]) {
 
         std::ostringstream os;
         os << "Beim letzten Mal ist das Programm abgestürzt.\nBitte Strg+C drücken, um den Inhalt dieses Fensters zu kopieren,"
-           << " und diesen im Zusi-Forum einstellen.\n\n";
+           << " und diesen im Zusi-Forum einstellen.\n\nProgrammversion: " BOOST_PP_STRINGIZE(ROUTEGRAPH2_VERSION) "\n\n";
         os << stacktrace;
 
         QMessageBox messageBox;

@@ -2,6 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+VERSION = 0.1.14
 TARGET = routegraph2
 TEMPLATE = app
 
@@ -59,6 +60,8 @@ QMAKE_CXXFLAGS_RELEASE -= -O
 QMAKE_CXXFLAGS_RELEASE -= -O1
 QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE *= -O3 -flto
+
+QMAKE_CXXFLAGS += -DROUTEGRAPH2_VERSION=$$VERSION
 
 win32 {
     LIBS += -ladvapi32 -lpthread -lboost_system-mt-x64 -lboost_filesystem-mt-x64 -lboost_nowide-mt-x64 -ldbgeng
