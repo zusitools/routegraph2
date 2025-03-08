@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <QMainWindow>
+#include <QStringList>
 
 namespace Ui {
 class MainWindow;
@@ -17,7 +18,6 @@ class StreckeScene;
 
 class QDir;
 class QGraphicsScene;
-class QStringList;
 
 class MainWindow : public QMainWindow
 {

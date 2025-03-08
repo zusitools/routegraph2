@@ -12,7 +12,7 @@ template<typename T>
 class MinBreiteGraphicsItem : public T
 {
 public:
-    explicit MinBreiteGraphicsItem<T>(QGraphicsItem *parent = 0, qreal breite = 1.0f) : T(parent), m_breite(breite) {}
+    explicit MinBreiteGraphicsItem(QGraphicsItem *parent = 0, qreal breite = 1.0f) : T(parent), m_breite(breite) {}
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override
     {

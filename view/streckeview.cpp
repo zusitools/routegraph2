@@ -4,8 +4,8 @@
 #include <memory>
 
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QVarLengthArray>
+#include <QScreen>
 #include <QScrollBar>
 
 StreckeView::StreckeView(QWidget *parent) : QGraphicsView(parent)
@@ -39,7 +39,7 @@ void StreckeView::wheelEvent(QWheelEvent *event)
 {
      if (event->modifiers() == Qt::NoModifier)
      {
-        this->skalieren(std::pow(4.0 / 3.0, (event->delta() / 240.0)));
+        this->skalieren(std::pow(4.0 / 3.0, (event->angleDelta().y() / 240.0)));
      }
      else
      {
@@ -70,7 +70,7 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 {
     if (this->m_rechteMaustasteGedrueckt)
     {
-        QPoint dxy = event->pos() - this->m_dragStart;
+        const QPointF dxy = event->pos() - this->m_dragStart;
         this->m_dragStart = event->pos();
         this->rotate(dxy.y());
     }
@@ -82,10 +82,10 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
         // Unendliches Scrollen. Die Cursorposition wird an die gegenüberliegende Kante gesetzt,
         // wenn der Cursor den Rand des Bildschirms erreicht hat.
         // Adapted from Okular source code (ui/pageview.cpp).
-        QPoint mousePos = event->globalPos();
-        QPoint delta = this->m_dragStart - mousePos;
+        QPointF mousePos = event->globalPos();
+        QPointF delta = this->m_dragStart - mousePos;
 
-        const QRect mouseContainer = QApplication::desktop()->screenGeometry(this);
+        const QRectF mouseContainer = QGuiApplication::primaryScreen()->geometry();
         // If the delta is huge it probably means we just wrapped in that direction
         const QPoint absDelta(abs(delta.x()), abs(delta.y()));
         if (absDelta.y() > mouseContainer.height() / 2)
@@ -103,28 +103,28 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
              verticalScrollBar()->value() < verticalScrollBar()->maximum() - 10)
         {
             mousePos.setY(mouseContainer.bottom() - 5);
-            QCursor::setPos(mousePos);
+            QCursor::setPos(mousePos.toPoint());
         }
         // wrap mouse from bottom to top
         else if (mousePos.y() >= mouseContainer.bottom() - 4 &&
                   verticalScrollBar()->value() > 10)
         {
             mousePos.setY(mouseContainer.top() + 5);
-            QCursor::setPos(mousePos);
+            QCursor::setPos(mousePos.toPoint());
         }
         // wrap mouse from left to right
         if (mousePos.x() <= mouseContainer.left() + 4 &&
              horizontalScrollBar()->value() < horizontalScrollBar()->maximum() - 10)
         {
             mousePos.setX(mouseContainer.right() - 5);
-            QCursor::setPos(mousePos);
+            QCursor::setPos(mousePos.toPoint());
         }
         // wrap mouse from right to left
         else if (mousePos.x() >= mouseContainer.right() - 4 &&
                   horizontalScrollBar()->value() > 10)
         {
             mousePos.setX(mouseContainer.left() + 5);
-            QCursor::setPos(mousePos);
+            QCursor::setPos(mousePos.toPoint());
         }
 
         // remember last position

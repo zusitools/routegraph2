@@ -28,7 +28,7 @@ private:
     bool m_rechteMaustasteGedrueckt { false };
     bool m_linkeMaustasteGedrueckt { false };
     bool m_resetDragPos { false };
-    QPoint m_dragStart { };
+    QPointF m_dragStart { };
     QTransform m_defaultTransform { };
 
 signals:
