@@ -492,6 +492,6 @@ QStringList MainWindow::findeSt3Rekursiv(QDir& dir, const QStringList& filter) {
     if (progressDialog.wasCanceled()) {
         return {};
     }
-    qDebug() << timer.elapsed() << "ms zum Auflisten aller Streckendateien";
+    qDebug() << timer.elapsed() << "ms zum Auflisten aller" << result.size() << "Streckendateien";
     return result;
 }
