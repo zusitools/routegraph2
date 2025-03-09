@@ -7,6 +7,7 @@
 #include <QActionGroup>
 #include <QDebug>
 #include <QDir>
+#include <QLabel>
 #include <QElapsedTimer>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -476,6 +477,9 @@ QStringList MainWindow::findeSt3Rekursiv(QDir& dir, const QStringList& filter) {
     timer.start();
 
     QProgressDialog progressDialog("", "Abbrechen", 0, 0, this);
+    auto label = std::make_unique<QLabel>("", this);
+    label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    progressDialog.setLabel(label.release());
     progressDialog.setWindowTitle("Suche ST3-Dateien");
     progressDialog.setWindowModality(Qt::WindowModal);
     progressDialog.setAutoClose(false);
