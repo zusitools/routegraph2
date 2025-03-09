@@ -5,6 +5,11 @@
 #include <cassert>
 
 void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> strecke) {
+    std::string key { pfad.alsZusiPfad() };  // TODO: to upper case
+    if (m_strecken.find(key) != m_strecken.end()) {
+        return;
+    }
+
     decltype(this->m_elementeMitUnaufgeloestemNachfolger) elementeMitUnaufgeloestemNachfolgerNeu;
 
     // Neues Modul verknuepfen mit anderen geladenen Modulen
@@ -130,8 +135,6 @@ void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> s
                     std::make_move_iterator(elementeMitUnaufgeloestemNachfolgerNeu.end()));
     }
 
-    std::string key { pfad.alsZusiPfad() };
-    // TODO: to upper case
     m_strecken.emplace(std::move(key), std::move(strecke));
 }
 

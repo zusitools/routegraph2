@@ -18,7 +18,11 @@ public:
     [[nodiscard]] bool empty();
 
 private:
+    // Strecken dürfen nur hinzugefügt werden, nie entfernt.
+    // Durch die modulübergreifende Verknüpfung verweisen die Strecken aufeinander.
     std::unordered_map<std::string, std::unique_ptr<Strecke>> m_strecken;
+
+    // ZusiPfad ist der Pfad der Strecke, in der StrElement* liegt -- dient zum Auflösen relativer Pfade.
     std::vector<std::pair<zusixml::ZusiPfad, StrElement*>> m_elementeMitUnaufgeloestemNachfolger;
 
 public:
