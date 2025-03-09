@@ -858,6 +858,11 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
           boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->UTM_NS);
           skip_unlikely<whitespace_pred>(text);
         }
+        else if (name_size == 8 && !memcmp(name, "UTM_Zone", 8)) {
+          skip_unlikely<whitespace_pred>(text);
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->UTM_Zone);
+          skip_unlikely<whitespace_pred>(text);
+        }
         else {
           skip_attribute_value(text, quote);
         }

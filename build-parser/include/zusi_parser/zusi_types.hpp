@@ -90,6 +90,7 @@ struct StrElement {
 struct UTM {
   int32_t UTM_WE;
   int32_t UTM_NS;
+  int32_t UTM_Zone;
 };
 struct Strecke {
   std::unique_ptr<struct UTM, zusixml::deleter<struct UTM>> UTM;

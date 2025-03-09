@@ -63,6 +63,7 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
     ReferenzElement::ReferenzNr
     UTM::UTM_WE
     UTM::UTM_NS
+    UTM::UTM_Zone
     ETCSFunkmast::ETCSSenderadius
     ETCSFunkmast::ETCSRBCNummer
   IGNORE_UNKNOWN)

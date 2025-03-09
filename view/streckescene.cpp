@@ -8,14 +8,20 @@
 #include "view/graphicsitems/dreieckitem.h"
 #include "view/segmentierer.h"
 
+#include <proj/coordinateoperation.hpp>
+#include <proj/crs.hpp>
+#include <proj/io.hpp>
+
 #include <QDebug>
 
 #include <cassert>
 #include <cmath>
+#include <optional>
 #include <unordered_map>
 
-StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, bool zeigeBetriebsstellen, QObject *parent) :
-    QGraphicsScene(parent)
+StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, bool zeigeBetriebsstellen, QObject *parent)
+    : QGraphicsScene(parent)
+    , m_utmRefPunkt{}
 {
     size_t anzahlSegmente = 0, anzahlStreckenelemente = 0;
 
@@ -26,19 +32,85 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
     float maxX = std::numeric_limits<float>::min();
     float maxY = std::numeric_limits<float>::min();
 
+    auto databaseContext = osgeo::proj::io::DatabaseContext::create();
+    auto authorityFactory = osgeo::proj::io::AuthorityFactory::create(databaseContext, std::string());
+    auto coordinateOperationContext = osgeo::proj::operation::CoordinateOperationContext::create(authorityFactory, nullptr, 0.0);
+    auto authorityFactoryEPSG = osgeo::proj::io::AuthorityFactory::create(databaseContext, "EPSG");
+    std::optional<osgeo::proj::crs::CRSNNPtr> targetCRS {std::nullopt};
+
+    const auto& begin = streckennetz.cbegin();
+    const auto& end = streckennetz.cend();
+
+    // Transformiere Strecken in einheitliche UTM-Zone.
+    size_t anzahlStreckenMitUtmPunkt = 0;
+    for (auto it = begin; it != end; ++it)
+    {
+        const auto& strecke = it->second;
+        if (!strecke->UTM) {
+            continue;
+        }
+
+        ++anzahlStreckenMitUtmPunkt;
+        if (this->m_utmRefPunkt.UTM_Zone == 0) {
+            this->m_utmRefPunkt.UTM_Zone = strecke->UTM->UTM_Zone;
+        } else if (strecke->UTM->UTM_Zone != this->m_utmRefPunkt.UTM_Zone) {
+            qDebug() << "Transformiere Strecke von Zone" << strecke->UTM->UTM_Zone << "nach" << this->m_utmRefPunkt.UTM_Zone;
+            try {
+                if (!targetCRS.has_value()) {
+                    targetCRS = authorityFactoryEPSG->createCoordinateReferenceSystem(std::to_string(32600 + this->m_utmRefPunkt.UTM_Zone));
+                }
+                auto sourceCRS = authorityFactoryEPSG->createCoordinateReferenceSystem(std::to_string(32600 + strecke->UTM->UTM_Zone));
+                auto list = osgeo::proj::operation::CoordinateOperationFactory::create()->createOperations(sourceCRS, *targetCRS, coordinateOperationContext);
+                if (list.empty()) {
+                    qDebug() << "Keine Transformierung-Operation gefunden";
+                    continue;
+                }
+                auto transformer = list[0]->coordinateTransformer(nullptr);  // nullptr = default execution context
+
+                for (auto& streckenelement : strecke->children_StrElement)
+                {
+                    if (!streckenelement) {
+                        continue;
+                    }
+
+                    const auto gTransformed = transformer->transform(PJ_COORD{{
+                        (1000 * strecke->UTM->UTM_WE) + streckenelement->g.X,
+                        (1000 * strecke->UTM->UTM_NS) + streckenelement->g.Y,
+                        0.0,     // z ordinate. unused
+                        HUGE_VAL // time ordinate. unused
+                    }});
+                    streckenelement->g.X = gTransformed.xy.x - (1000 * strecke->UTM->UTM_WE);
+                    streckenelement->g.Y = gTransformed.xy.y - (1000 * strecke->UTM->UTM_NS);
+
+                    const auto bTransformed = transformer->transform(PJ_COORD{{
+                        (1000 * strecke->UTM->UTM_WE) + streckenelement->b.X,
+                        (1000 * strecke->UTM->UTM_NS) + streckenelement->b.Y,
+                        0.0,     // z ordinate. unused
+                        HUGE_VAL // time ordinate. unused
+                    }});
+                    streckenelement->b.X = bTransformed.xy.x - (1000 * strecke->UTM->UTM_WE);
+                    streckenelement->b.Y = bTransformed.xy.y - (1000 * strecke->UTM->UTM_NS);
+                }
+                strecke->UTM->UTM_Zone = this->m_utmRefPunkt.UTM_Zone;
+
+            } catch (const osgeo::proj::util::Exception& e) {
+                qDebug() << e.what();
+                continue;
+            }
+
+        }
+    }
+
     // Berechne UTM-Referenzpunkt als Mittelwert der Strecken-Referenzpunkte
     double utmRefWe = 0.0;
     double utmRefNs = 0.0;
 
-    const auto& begin = streckennetz.cbegin();
-    const auto& end = streckennetz.cend();
-    const auto& anzahlStrecken = std::distance(begin, end);  // TODO .size()
     for (auto it = begin; it != end; ++it)
     {
         const auto& strecke = it->second;
         if (strecke->UTM) {
-            utmRefWe += strecke->UTM->UTM_WE / static_cast<double>(anzahlStrecken);
-            utmRefNs += strecke->UTM->UTM_NS / static_cast<double>(anzahlStrecken);
+            utmRefWe += strecke->UTM->UTM_WE / static_cast<double>(anzahlStreckenMitUtmPunkt);
+            utmRefNs += strecke->UTM->UTM_NS / static_cast<double>(anzahlStreckenMitUtmPunkt);
         }
     }
     this->m_utmRefPunkt.UTM_WE = static_cast<int>(utmRefWe);
