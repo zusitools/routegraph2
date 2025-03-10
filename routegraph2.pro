@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     view/visualisierung/fahrleitungvisualisierung.cpp \
     view/visualisierung/kruemmungvisualisierung.cpp \
     view/visualisierung/ueberhoehungvisualisierung.cpp \
-    view/visualisierung/neigungvisualisierung.cpp
+    view/visualisierung/neigungvisualisierung.cpp \
+    utm/utm.c
 
 HEADERS  += mainwindow.h \
     streckennetz.h \
@@ -55,13 +56,12 @@ FORMS    += mainwindow.ui
 INCLUDEPATH += $$_PRO_FILE_PWD_/build-parser/include
 INCLUDEPATH += $$_PRO_FILE_PWD_/parser/include
 INCLUDEPATH += $$_PRO_FILE_PWD_/parser/rapidxml-mod
+INCLUDEPATH += $$_PRO_FILE_PWD_/utm/include
 
 QMAKE_CXXFLAGS_RELEASE -= -O
 QMAKE_CXXFLAGS_RELEASE -= -O1
 QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE *= -O3 -flto
-
-LIBS += -lproj -lsqlite3
 
 QMAKE_CXXFLAGS += -DROUTEGRAPH2_VERSION=$$VERSION
 

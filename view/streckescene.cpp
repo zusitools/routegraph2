@@ -8,9 +8,7 @@
 #include "view/graphicsitems/dreieckitem.h"
 #include "view/segmentierer.h"
 
-#include <proj/coordinateoperation.hpp>
-#include <proj/crs.hpp>
-#include <proj/io.hpp>
+#include <utm/utm.h>
 
 #include <QDebug>
 
@@ -18,6 +16,35 @@
 #include <cmath>
 #include <optional>
 #include <unordered_map>
+
+namespace {
+    Vec3 konvertiereUtmZone(const Vec3& in, const UTM& src, const UTM& dest) {
+        auto destZone = static_cast<int>(dest.UTM_Zone);
+
+        double lat, lon;
+        utm_to_lat_lon(
+            in.X + 1000.0 * src.UTM_WE,
+            in.Y + 1000.0 * src.UTM_NS,
+            static_cast<int>(src.UTM_Zone),
+            /*southhemi=*/0,
+            &lat,
+            &lon);
+
+        double easting, northing;
+        lat_lon_to_utm(
+            lat,
+            lon,
+            &destZone,
+            &easting,
+            &northing);
+
+        return {
+            static_cast<decltype(Vec3::X)>(easting) - static_cast<decltype(Vec3::X)>(1000) * dest.UTM_WE,
+            static_cast<decltype(Vec3::Y)>(northing) - static_cast<decltype(Vec3::Y)>(1000) * dest.UTM_NS,
+            in.Z
+        };
+    }
+}
 
 StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, bool zeigeBetriebsstellen, QObject *parent)
     : QGraphicsScene(parent)
@@ -31,12 +58,6 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
     float minY = std::numeric_limits<float>::max();
     float maxX = std::numeric_limits<float>::min();
     float maxY = std::numeric_limits<float>::min();
-
-    auto databaseContext = osgeo::proj::io::DatabaseContext::create();
-    auto authorityFactory = osgeo::proj::io::AuthorityFactory::create(databaseContext, std::string());
-    auto coordinateOperationContext = osgeo::proj::operation::CoordinateOperationContext::create(authorityFactory, nullptr, 0.0);
-    auto authorityFactoryEPSG = osgeo::proj::io::AuthorityFactory::create(databaseContext, "EPSG");
-    std::optional<osgeo::proj::crs::CRSNNPtr> targetCRS {std::nullopt};
 
     const auto& begin = streckennetz.cbegin();
     const auto& end = streckennetz.cend();
@@ -55,49 +76,25 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
             this->m_utmRefPunkt.UTM_Zone = strecke->UTM->UTM_Zone;
         } else if (strecke->UTM->UTM_Zone != this->m_utmRefPunkt.UTM_Zone) {
             qDebug() << "Transformiere Strecke von Zone" << strecke->UTM->UTM_Zone << "nach" << this->m_utmRefPunkt.UTM_Zone;
-            try {
-                if (!targetCRS.has_value()) {
-                    targetCRS = authorityFactoryEPSG->createCoordinateReferenceSystem(std::to_string(32600 + this->m_utmRefPunkt.UTM_Zone));
-                }
-                auto sourceCRS = authorityFactoryEPSG->createCoordinateReferenceSystem(std::to_string(32600 + strecke->UTM->UTM_Zone));
-                auto list = osgeo::proj::operation::CoordinateOperationFactory::create()->createOperations(sourceCRS, *targetCRS, coordinateOperationContext);
-                if (list.empty()) {
-                    qDebug() << "Keine Transformierung-Operation gefunden";
+
+            const Vec3 utmRefPunktKonvertiert = konvertiereUtmZone(Vec3 {0, 0, 0}, *strecke->UTM, this->m_utmRefPunkt);
+            const UTM utmNeu {
+                static_cast<decltype(UTM::UTM_WE)>(utmRefPunktKonvertiert.X / 1000),
+                static_cast<decltype(UTM::UTM_NS)>(utmRefPunktKonvertiert.Y / 1000),
+                this->m_utmRefPunkt.UTM_Zone,
+            };
+
+            for (auto& streckenelement : strecke->children_StrElement)
+            {
+                if (!streckenelement) {
                     continue;
                 }
-                auto transformer = list[0]->coordinateTransformer(nullptr);  // nullptr = default execution context
 
-                for (auto& streckenelement : strecke->children_StrElement)
-                {
-                    if (!streckenelement) {
-                        continue;
-                    }
-
-                    const auto gTransformed = transformer->transform(PJ_COORD{{
-                        (1000 * strecke->UTM->UTM_WE) + streckenelement->g.X,
-                        (1000 * strecke->UTM->UTM_NS) + streckenelement->g.Y,
-                        0.0,     // z ordinate. unused
-                        HUGE_VAL // time ordinate. unused
-                    }});
-                    streckenelement->g.X = gTransformed.xy.x - (1000 * strecke->UTM->UTM_WE);
-                    streckenelement->g.Y = gTransformed.xy.y - (1000 * strecke->UTM->UTM_NS);
-
-                    const auto bTransformed = transformer->transform(PJ_COORD{{
-                        (1000 * strecke->UTM->UTM_WE) + streckenelement->b.X,
-                        (1000 * strecke->UTM->UTM_NS) + streckenelement->b.Y,
-                        0.0,     // z ordinate. unused
-                        HUGE_VAL // time ordinate. unused
-                    }});
-                    streckenelement->b.X = bTransformed.xy.x - (1000 * strecke->UTM->UTM_WE);
-                    streckenelement->b.Y = bTransformed.xy.y - (1000 * strecke->UTM->UTM_NS);
-                }
-                strecke->UTM->UTM_Zone = this->m_utmRefPunkt.UTM_Zone;
-
-            } catch (const osgeo::proj::util::Exception& e) {
-                qDebug() << e.what();
-                continue;
+                streckenelement->g = konvertiereUtmZone(streckenelement->g, *strecke->UTM, utmNeu);
+                streckenelement->b = konvertiereUtmZone(streckenelement->b, *strecke->UTM, utmNeu);
             }
 
+            *strecke->UTM = utmNeu;
         }
     }
 
