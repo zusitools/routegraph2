@@ -1,5 +1,7 @@
 #include "streckeview.h"
 
+#include "cursorwraphelper.h"
+
 #include <cmath>
 #include <memory>
 
@@ -55,12 +57,14 @@ void StreckeView::mousePressEvent(QMouseEvent *event)
         this->m_rechteMaustasteGedrueckt = true;
         this->m_linkeMaustasteGedrueckt = false;
         this->m_dragStart = event->globalPos();
+        CursorWrapHelper::startDrag();
     }
-    if (event->buttons().testFlag(Qt::LeftButton))
+    else if (event->buttons().testFlag(Qt::LeftButton))
     {
         this->m_rechteMaustasteGedrueckt = false;
         this->m_linkeMaustasteGedrueckt = true;
         this->m_dragStart = event->globalPos();
+        CursorWrapHelper::startDrag();
     }
 
     QGraphicsView::mousePressEvent(event);
@@ -70,65 +74,35 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 {
     if (this->m_rechteMaustasteGedrueckt)
     {
-        const QPointF dxy = event->pos() - this->m_dragStart;
-        this->m_dragStart = event->pos();
-        this->rotate(dxy.y());
+        auto deltaY = this->m_dragStart.y() - event->globalPos().y();
+        this->m_dragStart = event->globalPos();
+
+        Qt::Edges wrapEdges;
+        wrapEdges.setFlag(Qt::TopEdge, true);
+        wrapEdges.setFlag(Qt::BottomEdge, true);
+
+        deltaY += CursorWrapHelper::wrapCursor(event->globalPos(), wrapEdges).y();
+
+        this->rotate(deltaY);
     }
 
     QGraphicsView::mouseMoveEvent(event);
 
     if (this->m_linkeMaustasteGedrueckt)
     {
+        auto delta = this->m_dragStart - event->globalPos();
+        this->m_dragStart = event->globalPos();
+
         // Unendliches Scrollen. Die Cursorposition wird an die gegenüberliegende Kante gesetzt,
         // wenn der Cursor den Rand des Bildschirms erreicht hat.
         // Adapted from Okular source code (ui/pageview.cpp).
-        QPointF mousePos = event->globalPos();
-        QPointF delta = this->m_dragStart - mousePos;
+        Qt::Edges wrapEdges;
+        wrapEdges.setFlag(Qt::TopEdge, true);
+        wrapEdges.setFlag(Qt::BottomEdge, true);
+        wrapEdges.setFlag(Qt::LeftEdge, true);
+        wrapEdges.setFlag(Qt::RightEdge, true);
 
-        const QRectF mouseContainer = QGuiApplication::primaryScreen()->geometry();
-        // If the delta is huge it probably means we just wrapped in that direction
-        const QPoint absDelta(abs(delta.x()), abs(delta.y()));
-        if (absDelta.y() > mouseContainer.height() / 2)
-        {
-            delta.setY(mouseContainer.height() - absDelta.y());
-        }
-        if (absDelta.x() > mouseContainer.width() / 2)
-        {
-            delta.setX(mouseContainer.width() - absDelta.x());
-        }
-
-        // TODO: If we wrap both left/right and top/bottom, do not call QCursor::setPos() twice
-        // wrap mouse from top to bottom
-        if (mousePos.y() <= mouseContainer.top() + 4 &&
-             verticalScrollBar()->value() < verticalScrollBar()->maximum() - 10)
-        {
-            mousePos.setY(mouseContainer.bottom() - 5);
-            QCursor::setPos(mousePos.toPoint());
-        }
-        // wrap mouse from bottom to top
-        else if (mousePos.y() >= mouseContainer.bottom() - 4 &&
-                  verticalScrollBar()->value() > 10)
-        {
-            mousePos.setY(mouseContainer.top() + 5);
-            QCursor::setPos(mousePos.toPoint());
-        }
-        // wrap mouse from left to right
-        if (mousePos.x() <= mouseContainer.left() + 4 &&
-             horizontalScrollBar()->value() < horizontalScrollBar()->maximum() - 10)
-        {
-            mousePos.setX(mouseContainer.right() - 5);
-            QCursor::setPos(mousePos.toPoint());
-        }
-        // wrap mouse from right to left
-        else if (mousePos.x() >= mouseContainer.right() - 4 &&
-                  horizontalScrollBar()->value() > 10)
-        {
-            mousePos.setX(mouseContainer.left() + 5);
-            QCursor::setPos(mousePos.toPoint());
-        }
-
-        // remember last position
-        this->m_dragStart = mousePos;
+        delta += CursorWrapHelper::wrapCursor(event->globalPos(), wrapEdges);
 
         // scroll page by position increment
         // TODO: Does this trigger two draw events?
