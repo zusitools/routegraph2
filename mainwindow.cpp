@@ -194,87 +194,13 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 {
     QElapsedTimer timer;
     timer.start();
-#ifdef _GLIBCXX_HAS_GTHREADS
     std::vector<std::pair<zusixml::ZusiPfad, std::future<std::unique_ptr<Strecke>>>> futures;
-#else
-    std::vector<std::pair<zusixml::ZusiPfad, std::unique_ptr<Strecke>>> strecken;
-#endif
     std::vector<std::pair<zusixml::ZusiPfad, std::unique_ptr<Strecke>>> streckenOhneUtmPunkt;
     bool hatStreckeMitUtmPunkt = false;
 
-#if 0
-    Q_UNUSED(dateinamen);
-    for (auto zusiPfad : {
-         "Routes\\Deutschland\\32U_0004_0057\\000442_005692_Freienohl\\Freienohl_1985.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000444_005689_Wennemen\\Wennemen_1973.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000449_005689_Meschede\\Meschede_1980.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000392_005690_Abzw_Rehsiepen\\Abzw_Rehsiepen_1982.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000392_005691_Hagen_Hbf\\Hagen_Hbf_1985.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000392_005694_Hagen_Gbf\\Hagen_Gbf_1985.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000394_005696_Hengstey\\Hengstey_1975.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000394_005696_Hengstey\\Hengstey_Bettungserstellung.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000395_005695_Kabel\\Kabel_1985.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000400_005700_Schwerte\\Schwerte_1985.st3",
-         "Routes\\Deutschland\\32U_0004_0057\\000402_005702_Schwerte_Ost\\Schwerte_Ost_1982.st3",
-
-         "Routes\\Deutschland\\32U_0005_0057\\000455_005689_Eversberg\\Eversberg_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000460_005690_Bestwig\\Bestwig_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000461_005691_Nuttlar\\Nuttlar_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000464_005690_Olsberg\\Olsberg_1973.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000466_005689_Elleringhausen\\Elleringhausen_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000471_005689_Brilon_Wald\\Brilon_Wald_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000475_005692_Hoppecke\\Hoppecke_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000480_005694_Messinghausen\\Messinghausen_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000483_005730_Paderborn\\Paderborn_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000486_005697_Bredelar\\Bredelar_1978.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000487_005731_Benhausen\\Benhausen_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000490_005701_Marsberg\\Marsberg_1978.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000495_005705_Westheim\\Westheim_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000496_005734_Altenbeken\\Altenbeken_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000497_005731_Buke\\Buke_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000498_005723_Neuenheerse\\Neuenheerse_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000499_005737_Langeland\\Langeland_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000500_005707_Wrexen\\Wrexen_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000500_005719_Willebadessen\\Willebadessen_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000500_005739_Himmighausen\\Himmighausen_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000503_005732_Driburg\\Driburg_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000504_005709_Scherfede\\Scherfede_1974.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000505_005712_Bonenburg\\Bonenburg_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000509_005707_Noerde\\Noerde_1985_Dummy.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000509_005707_Warburg\\Warburg_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000517_005705_Liebenau\\Liebenau_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000523_005708_Lamerden\\Lamerden_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000527_005706_Hofgeismar\\Hofgeismar_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000527_005709_Huemme\\Huemme_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000530_005701_Grebenstein\\Grebenstein_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000531_005684_Kassel_Wilhelmshoehe\\Kassel_Wilhelmshoehe_1988.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000531_005690_Obervellmar\\Obervellmar_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000531_005696_Immenhausen\\Immenhausen_1985.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000532_005686_Kassel_Bahndreieck\\Kassel_Bahndreieck_1990.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000532_005693_Moenchehof\\Moenchehof_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000533_005686_Kassel_Hbf\\Kassel_Hbf_1988.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000533_005687_Harleshausen\\Harleshausen_1980.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000533_005687_Kassel_Rbf\\Kassel_Rbf_1988.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000534_005686_Kassel_Unterstadt\\Kassel_Unterstadt_GF_Dummy.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000534_005689_Niedervellmar\\Niedervellmar_2000.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000537_005690_Ihringshausen\\Ihringshausen_2000.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000541_005691_Lutterberg\\Lutterberg_2000.st3",
-         "Routes\\Deutschland\\32U_0005_0057\\000548_005695_Lippoldshausen\\Lippoldshausen_2000.st3",
-
-         "Routes\\Deutschland\\32U_0005_0057\\000474_005726_Salzkotten\\Salzkotten_1994.st3",
-         "Routes\\Deutschland\\32U_0006_0057\\000558_005703_Juehnde\\Juehnde_2000.st3",
-         "Routes\\Deutschland\\32U_0006_0057\\000562_005708_Siekweg\\Siekweg_2000.st3",
-         "Routes\\Deutschland\\32U_0006_0057\\000564_005711_Goettingen_Pbf\\Goettingen_Pbf_2000.st3",
-         "Routes\\Deutschland\\32U_0006_0057\\000563_005706_Rosdorf\\Rosdorf_1998.st3",
-         "Routes\\Deutschland\\32U_0006_0057\\000564_005713_Goettingen_Gbf\\Goettingen_Gbf_2000.st3",
-    }) {
-        QString dateiname = QString::fromStdString(zusixml::ZusiPfad::vonZusiPfad(zusiPfad).alsOsPfad());
-#else
     for (auto dateiname : dateinamen) {
-#endif
         if (dateiname.endsWith("st3", Qt::CaseInsensitive))
         {
-#ifdef _GLIBCXX_HAS_GTHREADS
             auto dateinameStdString = dateiname.toStdString();
             futures.emplace_back(
                 zusixml::ZusiPfad::vonOsPfad(dateinameStdString),
@@ -286,13 +212,6 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                         return nullptr;
                     }
                 }));
-#else
-            try {
-                strecken.emplace_back(zusixml::ZusiPfad::vonOsPfad(dateiname.toStdString()), std::move(zusixml::parseFile(dateiname.toStdString())->Strecke));
-            } catch (const std::exception& e) {
-                QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
-            }
-#endif
         }
         else if (dateiname.endsWith("fpn", Qt::CaseInsensitive))
         {
@@ -303,7 +222,6 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 for (const auto& modul : fahrplan->children_StrModul) {
                     if (!modul) { continue; }
                     auto modulDateiname = zusixml::ZusiPfad::vonZusiPfad(modul->Datei.Dateiname, fpnZusiPfad);
-#ifdef _GLIBCXX_HAS_GTHREADS
                     futures.emplace_back(
                         modulDateiname,
                         std::async([modulDateiname]() -> std::unique_ptr<Strecke> {
@@ -314,16 +232,6 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                                 return nullptr;
                             }
                         }));
-#else
-                    try {
-                        const auto& st3 = zusixml::parseFile(modulDateiname.alsOsPfad());
-                        if (st3 && st3->Strecke) {
-                            strecken.emplace_back(std::move(modulDateiname), std::move(st3->Strecke));
-                        }
-                    } catch (const std::exception& e) {
-                        QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
-                    }
-#endif
                 }
             }
         }
@@ -333,14 +241,10 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
         }
     }
 
-#ifdef _GLIBCXX_HAS_GTHREADS
     for (auto& fut : futures) {
         try {
             auto dateiname = fut.first;
             auto strecke = fut.second.get();
-#else
-    for (auto& [dateiname, strecke] : strecken) {
-#endif
             if (!strecke) {
                 continue;
             }
@@ -367,11 +271,9 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
                 hatStreckeMitUtmPunkt = true;
                 this->m_streckennetz.add(dateiname, std::move(strecke));
             }
-#ifdef _GLIBCXX_HAS_GTHREADS
         } catch (const std::exception& e) {
             QMessageBox::warning(this, "Fehler beim Laden der Strecke", e.what());
         }
-#endif
     }
 
     if (hatStreckeMitUtmPunkt) {
