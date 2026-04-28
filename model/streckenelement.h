@@ -50,6 +50,16 @@ enum class StreckenelementFlag : uint32_t {
     EtcsTrustedArea = 1 << 5,
 };
 
+// Numerische Ereignis-Typen, wie sie im Attribut "Er" eines <Ereignis>-Elements stehen.
+enum class EreignisTyp : int32_t {
+    BahnsteiganfangRechts = 1000007,
+    BahnsteigmitteRechts  = 1000008,
+    BahnsteigendeRechts   = 1000009,
+    BahnsteiganfangLinks  = 1000010,
+    BahnsteigmitteLinks   = 1000011,
+    BahnsteigendeLinks    = 1000012,
+};
+
 // Ein Verweis auf eine Richtung eines Streckenelements.
 // Auf die Properties und Methoden des Streckenelements kann mit dem Operator -> zugegriffen werden.
 struct StreckenelementUndRichtung {
@@ -183,6 +193,15 @@ inline Vec3 operator-(const Vec3& left, const Vec3& right)
 // TODO
 inline bool hatFktFlag(const StrElement& element, StreckenelementFlag flag) {
     return (element.Fkt & static_cast<uint32_t>(flag)) != 0;
+}
+
+inline bool hatEreignis(const StreckenelementRichtungsInfo& info, EreignisTyp typ) {
+    for (const auto& ereignis : info.children_Ereignis) {
+        if (ereignis && ereignis->Er == static_cast<int32_t>(typ)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // TODO

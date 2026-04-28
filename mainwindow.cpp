@@ -144,6 +144,18 @@ void MainWindow::actionAnsichtBetriebsstellennamenToggled(bool checked)
     this->ui->streckeView->centerOn(centerPoint);
 }
 
+void MainWindow::actionAnsichtBahnsteigeToggled(bool checked)
+{
+    m_zeigeBahnsteige = checked;
+
+    const auto& transform = this->ui->streckeView->transform();
+    const auto& viewport = this->ui->streckeView->viewport();
+    const auto& centerPoint = this->ui->streckeView->mapToScene(viewport->width() / 2, viewport->height() / 2);
+    aktualisiereDarstellung();
+    this->ui->streckeView->setTransform(transform);
+    this->ui->streckeView->centerOn(centerPoint);
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)
 {
     if (e->mimeData()->hasUrls()) {
@@ -317,7 +329,7 @@ void MainWindow::aktualisiereDarstellung()
 
     QElapsedTimer timer;
     timer.start();
-    this->m_streckeScene.reset(new StreckeScene(this->m_streckennetz, *visualisierung, m_zeigeBetriebsstellen));
+    this->m_streckeScene.reset(new StreckeScene(this->m_streckennetz, *visualisierung, m_zeigeBetriebsstellen, m_zeigeBahnsteige));
     qDebug() << timer.elapsed() << "ms zum Erstellen der Segmente";
     ui->streckeView->setScene(this->m_streckeScene.get());
 

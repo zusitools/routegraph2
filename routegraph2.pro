@@ -11,6 +11,7 @@ CONFIG += c++1z rtti_off
 SOURCES += main.cpp\
         mainwindow.cpp \
     streckennetz.cpp \
+    view/bahnsteige.cpp \
     view/cursorwraphelper.cpp \
     view/streckeview.cpp \
     view/streckescene.cpp \
@@ -32,6 +33,7 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     streckennetz.h \
+    view/bahnsteige.h \
     view/cursorwraphelper.h \
     view/streckeview.h \
     view/streckescene.h \

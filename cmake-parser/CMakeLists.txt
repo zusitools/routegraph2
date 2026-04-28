@@ -39,6 +39,9 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
 
     StreckenelementRichtungsInfo::vMax
     StreckenelementRichtungsInfo::Signal
+    StreckenelementRichtungsInfo::Ereignis
+
+    Ereignis::Er
 
     NachfolgerSelbesModul::Nr
     NachfolgerAnderesModul::Nr

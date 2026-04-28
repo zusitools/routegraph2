@@ -44,6 +44,9 @@ struct NachfolgerAnderesModul {
 struct NachfolgerSelbesModul {
   int32_t Nr;
 };
+struct Ereignis {
+  int32_t Er;
+};
 struct Signal {
   std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> NameBetriebsstelle;
   std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> Stellwerk;
@@ -52,6 +55,7 @@ struct Signal {
 };
 struct StreckenelementRichtungsInfo {
   float vMax;
+  std::vector<std::unique_ptr<struct Ereignis, zusixml::deleter<struct Ereignis>>, zusixml::allocator<std::unique_ptr<struct Ereignis, zusixml::deleter<struct Ereignis>>>> children_Ereignis;
   std::unique_ptr<struct Signal, zusixml::deleter<struct Signal>> Signal;
 };
 struct Vec3 {
@@ -96,7 +100,7 @@ struct Strecke {
   std::unique_ptr<struct UTM, zusixml::deleter<struct UTM>> UTM;
   std::vector<std::unique_ptr<struct ReferenzElement, zusixml::deleter<struct ReferenzElement>>, zusixml::allocator<std::unique_ptr<struct ReferenzElement, zusixml::deleter<struct ReferenzElement>>>> children_ReferenzElemente;
   std::vector<std::unique_ptr<struct StrElement, zusixml::deleter<struct StrElement>>, zusixml::allocator<std::unique_ptr<struct StrElement, zusixml::deleter<struct StrElement>>>> children_StrElement;
-};
+ };
 struct Zusi {
   std::unique_ptr<struct Fahrplan, zusixml::deleter<struct Fahrplan>> Fahrplan;
   std::unique_ptr<struct Strecke, zusixml::deleter<struct Strecke>> Strecke;

@@ -6,6 +6,7 @@ namespace zusixml {
   static void parse_element_Zusi(const Ch *&, Zusi*);
   static void parse_element_Dateiverknuepfung(const Ch *&, Dateiverknuepfung*);
   static void parse_element_Signal(const Ch *&, Signal*);
+  static void parse_element_Ereignis(const Ch *&, Ereignis*);
   static void parse_element_Fahrplan(const Ch *&, Fahrplan*);
   static void parse_element_NachfolgerSelbesModul(const Ch *&, NachfolgerSelbesModul*);
   static void parse_element_UTM(const Ch *&, UTM*);

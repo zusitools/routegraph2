@@ -34,6 +34,7 @@ public slots:
     void actionOrdnerAnfuegenTriggered();
     void actionVisualisierungTriggered();
     void actionAnsichtBetriebsstellennamenToggled(bool checked);
+    void actionAnsichtBahnsteigeToggled(bool checked);
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent *e) override;
@@ -49,6 +50,7 @@ private:
     std::unique_ptr<QGraphicsScene> m_legendeScene;
 
     bool m_zeigeBetriebsstellen{true};
+    bool m_zeigeBahnsteige{false};
 
     void setzeAnsichtZurueck();
 

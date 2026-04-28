@@ -4,6 +4,7 @@
 
 #include "model/streckenelement.h"
 
+#include "view/bahnsteige.h"
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/dreieckitem.h"
 #include "view/segmentierer.h"
@@ -46,7 +47,7 @@ namespace {
     }
 }
 
-StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, bool zeigeBetriebsstellen, QObject *parent)
+StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& visualisierung, bool zeigeBetriebsstellen, bool zeigeBahnsteige, QObject *parent)
     : QGraphicsScene(parent)
     , m_utmRefPunkt{}
 {
@@ -116,6 +117,24 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
     std::unique_ptr<Segmentierer> segmentierer = visualisierung.segmentierer();
     const auto richtungen_zusi2 = { StreckenelementRichtung::Norm };
     const auto richtungen_zusi3 = { StreckenelementRichtung::Norm, StreckenelementRichtung::Gegen };
+
+    // Damit Bahnsteige sich über Modulgrenzen hinweg erstrecken können, wird einmalig
+    // pro Streckenelement der UTM-Versatz seiner Strecke gegenüber dem Szenen-Referenzpunkt
+    // berechnet und in einer Map abgelegt.
+    std::unordered_map<const StrElement*, std::pair<qreal, qreal>> elementToOffset;
+    if (zeigeBahnsteige) {
+        for (auto it = begin; it != end; ++it) {
+            const auto& strecke = it->second;
+            const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
+            const auto dx = 1000.0 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
+            const auto dy = 1000.0 * (strecke_utm.UTM_NS - this->m_utmRefPunkt.UTM_NS);
+            for (const auto& streckenelement : strecke->children_StrElement) {
+                if (streckenelement) {
+                    elementToOffset.emplace(streckenelement.get(), std::make_pair(dx, dy));
+                }
+            }
+        }
+    }
 
     for (auto it = begin; it != end; ++it)
     {
@@ -270,6 +289,10 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
             ti->setPen(QPen(Qt::black));
             ti->setBrush(QBrush(Qt::black));
             this->addItem(ti.release());
+        }
+
+        if (zeigeBahnsteige) {
+            zeichneBahnsteige(*this, *strecke, elementToOffset);
         }
     }
 

@@ -107,6 +107,7 @@
     <addaction name="actionVerkleinern"/>
     <addaction name="separator"/>
     <addaction name="actionAnsichtBetriebsstellennamen"/>
+    <addaction name="actionAnsichtBahnsteige"/>
    </widget>
    <addaction name="menuDatei"/>
    <addaction name="menuVisualisierung"/>
@@ -163,6 +164,17 @@
    </property>
    <property name="text">
     <string>&amp;Betriebsstellennamen</string>
+   </property>
+  </action>
+  <action name="actionAnsichtBahnsteige">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Bahn&amp;steige</string>
    </property>
   </action>
   <actiongroup name="actiongroupVisualisierung">
@@ -334,6 +346,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionAnsichtBahnsteige</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionAnsichtBahnsteigeToggled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>511</x>
+     <y>383</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>actionOeffnenTriggered()</slot>
@@ -341,5 +369,6 @@
   <slot>actionOrdnerOeffnenTriggered()</slot>
   <slot>actionOrdnerAnfuegenTriggered()</slot>
   <slot>actionAnsichtBetriebsstellennamenToggled(bool)</slot>
+  <slot>actionAnsichtBahnsteigeToggled(bool)</slot>
  </slots>
 </ui>

@@ -4,6 +4,7 @@ struct Vec3;
 struct Zusi;
 struct Dateiverknuepfung;
 struct Signal;
+struct Ereignis;
 struct Fahrplan;
 struct NachfolgerSelbesModul;
 struct UTM;
