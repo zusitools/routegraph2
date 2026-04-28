@@ -2,7 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-VERSION = 0.1.16
+VERSION = 0.1.17
 TARGET = routegraph2
 TEMPLATE = app
 
