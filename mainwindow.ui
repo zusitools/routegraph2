@@ -13,60 +13,100 @@
   <property name="windowTitle">
    <string>Streckenplan</string>
   </property>
-  <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
-    <property name="spacing">
-     <number>0</number>
-    </property>
-    <property name="leftMargin">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="rightMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
-     <number>0</number>
-    </property>
-    <item>
-     <widget class="QGraphicsView" name="legendeView">
-      <property name="enabled">
-       <bool>true</bool>
+ <widget class="QWidget" name="centralWidget">
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QSplitter" name="zentraleSplitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="childrenCollapsible">
+      <bool>false</bool>
+     </property>
+     <widget class="QWidget" name="streckeContainer">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QGraphicsView" name="legendeView">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="StreckeView" name="streckeView">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="FahrstrassenPanel" name="fahrstrassenPanel" native="true">
+      <property name="visible">
+       <bool>false</bool>
       </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="maximumSize">
+      <property name="minimumSize">
        <size>
-        <width>16777215</width>
+        <width>200</width>
         <height>0</height>
        </size>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
      </widget>
-    </item>
-    <item>
-     <widget class="StreckeView" name="streckeView">
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
@@ -108,6 +148,8 @@
     <addaction name="separator"/>
     <addaction name="actionAnsichtBetriebsstellennamen"/>
     <addaction name="actionAnsichtBahnsteige"/>
+    <addaction name="separator"/>
+    <addaction name="actionAnsichtFahrstrassen"/>
    </widget>
    <addaction name="menuDatei"/>
    <addaction name="menuVisualisierung"/>
@@ -175,6 +217,17 @@
    </property>
    <property name="text">
     <string>Bahn&amp;steige</string>
+   </property>
+  </action>
+  <action name="actionAnsichtFahrstrassen">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Fahrstraßen</string>
    </property>
   </action>
   <actiongroup name="actiongroupVisualisierung">
@@ -262,6 +315,12 @@
    <class>StreckeView</class>
    <extends>QGraphicsView</extends>
    <header>view/streckeview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>FahrstrassenPanel</class>
+   <extends>QWidget</extends>
+   <header>view/fahrstrassenpanel.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -362,6 +421,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionAnsichtFahrstrassen</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionAnsichtFahrstrassenToggled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>511</x>
+     <y>383</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>actionOeffnenTriggered()</slot>
@@ -370,5 +445,6 @@
   <slot>actionOrdnerAnfuegenTriggered()</slot>
   <slot>actionAnsichtBetriebsstellennamenToggled(bool)</slot>
   <slot>actionAnsichtBahnsteigeToggled(bool)</slot>
+  <slot>actionAnsichtFahrstrassenToggled(bool)</slot>
  </slots>
 </ui>

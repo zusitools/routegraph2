@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <algorithm>
 #include <future>
 #include <thread>
 
@@ -14,6 +15,7 @@
 #include <QMimeData>
 #include <QProgressDialog>
 
+#include "view/fahrstrassenpanel.h"
 #include "view/streckescene.h"
 #include "view/visualisierung/visualisierung.h"
 #include "view/visualisierung/etcstrustedareavisualisierung.h"
@@ -44,6 +46,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actiongroupVisualisierung, &QActionGroup::triggered, this, &MainWindow::actionVisualisierungTriggered);
     connect(ui->actionVergroessern, &QAction::triggered, this->ui->streckeView, &StreckeView::vergroessern);
     connect(ui->actionVerkleinern, &QAction::triggered, this->ui->streckeView, &StreckeView::verkleinern);
+
+    connect(ui->fahrstrassenPanel, &FahrstrassenPanel::fahrstrasseAusgewaehlt,
+            this, &MainWindow::onFahrstrasseAusgewaehlt);
+    connect(ui->fahrstrassenPanel, &FahrstrassenPanel::fahrstrasseDoppelklick,
+            this, &MainWindow::onFahrstrasseDoppelklick);
 
     ui->streckeView->installEventFilter(this);
     ui->streckeView->viewport()->installEventFilter(this); // http://stackoverflow.com/a/2501489
@@ -79,7 +86,10 @@ void MainWindow::actionOeffnenTriggered()
     if (dateinamen.size() > 0)
     {
         this->m_streckennetz = {};
+        this->m_aktiveFahrstrasse.reset();
+        this->ui->fahrstrassenPanel->setzeFahrstrassen({});
         this->oeffneStrecken(dateinamen);
+        this->fahrstrassenListeUngueltig();
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
     }
@@ -92,6 +102,7 @@ void MainWindow::actionModulOeffnenTriggered()
     if (dateinamen.size() > 0)
     {
         this->oeffneStrecken(dateinamen);
+        this->fahrstrassenListeUngueltig();
         this->aktualisiereDarstellung();
     }
 }
@@ -103,7 +114,10 @@ void MainWindow::actionOrdnerOeffnenTriggered()
     if (dateinamen.size() > 0)
     {
         this->m_streckennetz = {};
+        this->m_aktiveFahrstrasse.reset();
+        this->ui->fahrstrassenPanel->setzeFahrstrassen({});
         this->oeffneStrecken(dateinamen);
+        this->fahrstrassenListeUngueltig();
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
     }
@@ -116,6 +130,7 @@ void MainWindow::actionOrdnerAnfuegenTriggered()
     if (dateinamen.size() > 0)
     {
         this->oeffneStrecken(dateinamen);
+        this->fahrstrassenListeUngueltig();
         this->aktualisiereDarstellung();
     }
 }
@@ -156,6 +171,98 @@ void MainWindow::actionAnsichtBahnsteigeToggled(bool checked)
     this->ui->streckeView->centerOn(centerPoint);
 }
 
+void MainWindow::actionAnsichtFahrstrassenToggled(bool checked)
+{
+    ui->fahrstrassenPanel->setVisible(checked);
+    if (checked && !m_fahrstrassenListeAktuell) {
+        aktualisiereFahrstrassenListe();
+    }
+}
+
+void MainWindow::onFahrstrasseAusgewaehlt(int index)
+{
+    if (index < 0) {
+        m_aktiveFahrstrasse.reset();
+        if (m_streckeScene) {
+            m_streckeScene->verbirgFahrstrasse();
+        }
+        return;
+    }
+    if (static_cast<size_t>(index) >= ui->fahrstrassenPanel->fahrstrassen().size()) {
+        return;
+    }
+    m_aktiveFahrstrasse = index;
+    wendeFahrstrassenHervorhebungAn();
+}
+
+void MainWindow::onFahrstrasseDoppelklick(int index)
+{
+    if (index < 0 || static_cast<size_t>(index) >= ui->fahrstrassenPanel->fahrstrassen().size()) {
+        return;
+    }
+    m_aktiveFahrstrasse = index;
+    wendeFahrstrassenHervorhebungAn();
+
+    if (!m_streckeScene) {
+        return;
+    }
+    const auto& fs = ui->fahrstrassenPanel->fahrstrassen()[index];
+    QRectF bbox = m_streckeScene->boundingRectFuerPfad(fs.pfad);
+    if (bbox.isValid() && !bbox.isEmpty()) {
+        bbox = bbox.adjusted(-50, -50, 50, 50);
+        ui->streckeView->fitInView(bbox, Qt::KeepAspectRatio);
+    }
+}
+
+void MainWindow::aktualisiereFahrstrassenListe()
+{
+    auto fahrstrassen = ermittleFahrstrassen(m_streckennetz);
+    ui->fahrstrassenPanel->setzeFahrstrassen(std::move(fahrstrassen));
+    m_fahrstrassenListeAktuell = true;
+
+    // Aktiver Index könnte nicht mehr passen (Reihenfolge geändert oder Modul entfernt).
+    if (m_aktiveFahrstrasse) {
+        const auto& list = ui->fahrstrassenPanel->fahrstrassen();
+        if (static_cast<size_t>(*m_aktiveFahrstrasse) >= list.size() ||
+                !list[*m_aktiveFahrstrasse].fehler.empty()) {
+            m_aktiveFahrstrasse.reset();
+            if (m_streckeScene) {
+                m_streckeScene->verbirgFahrstrasse();
+            }
+        }
+    }
+}
+
+void MainWindow::fahrstrassenListeUngueltig()
+{
+    m_fahrstrassenListeAktuell = false;
+    if (ui->fahrstrassenPanel->isVisible()) {
+        aktualisiereFahrstrassenListe();
+    }
+}
+
+void MainWindow::wendeFahrstrassenHervorhebungAn()
+{
+    if (!m_streckeScene) {
+        return;
+    }
+    if (!m_aktiveFahrstrasse) {
+        m_streckeScene->verbirgFahrstrasse();
+        return;
+    }
+    const auto& list = ui->fahrstrassenPanel->fahrstrassen();
+    if (static_cast<size_t>(*m_aktiveFahrstrasse) >= list.size()) {
+        m_streckeScene->verbirgFahrstrasse();
+        return;
+    }
+    const auto& fs = list[*m_aktiveFahrstrasse];
+    if (!fs.fehler.empty() || fs.pfad.empty()) {
+        m_streckeScene->verbirgFahrstrasse();
+        return;
+    }
+    m_streckeScene->zeigeFahrstrasse(fs.pfad);
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)
 {
     if (e->mimeData()->hasUrls()) {
@@ -179,8 +286,11 @@ void MainWindow::dropEvent(QDropEvent *e)
     if (dateien.size() > 0) {
         if (!(e->keyboardModifiers() & Qt::ShiftModifier)) {
             this->m_streckennetz = {};
+            this->m_aktiveFahrstrasse.reset();
+            this->ui->fahrstrassenPanel->setzeFahrstrassen({});
         }
         this->oeffneStrecken(dateien);
+        this->fahrstrassenListeUngueltig();
         this->aktualisiereDarstellung();
         this->setzeAnsichtZurueck();
     }
@@ -343,6 +453,10 @@ void MainWindow::aktualisiereDarstellung()
     } else {
         ui->legendeView->setFixedHeight(0);
     }
+
+    // Hervorhebung der aktiven Fahrstraße über Visualisierungs-/Anzeigewechsel
+    // hinweg erhalten (die Szene wurde gerade neu gebaut).
+    wendeFahrstrassenHervorhebungAn();
 }
 
 QStringList MainWindow::zeigeStreckeOeffnenDialog()

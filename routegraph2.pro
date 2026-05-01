@@ -10,9 +10,11 @@ CONFIG += c++1z rtti_off
 
 SOURCES += main.cpp\
         mainwindow.cpp \
+    model/fahrstrasse.cpp \
     streckennetz.cpp \
     view/bahnsteige.cpp \
     view/cursorwraphelper.cpp \
+    view/fahrstrassenpanel.cpp \
     view/streckeview.cpp \
     view/streckescene.cpp \
     view/graphicsitems/streckensegmentitem.cpp \
@@ -35,6 +37,7 @@ HEADERS  += mainwindow.h \
     streckennetz.h \
     view/bahnsteige.h \
     view/cursorwraphelper.h \
+    view/fahrstrassenpanel.h \
     view/streckeview.h \
     view/streckescene.h \
     view/graphicsitems/minbreitegraphicsitem.h \
@@ -53,6 +56,7 @@ HEADERS  += mainwindow.h \
     view/visualisierung/kruemmungvisualisierung.h \
     view/visualisierung/ueberhoehungvisualisierung.h \
     view/visualisierung/neigungvisualisierung.h \
+    model/fahrstrasse.h \
     model/streckenelement.h
 
 FORMS    += mainwindow.ui

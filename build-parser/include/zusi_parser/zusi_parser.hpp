@@ -818,6 +818,174 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       else
           parse_error_expected_tag_end(text);
     }
+  static void parse_element_FahrstrStart(const Ch *& text, struct FahrstrStart* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else if (name_size == 3 && !memcmp(name, "Ref", 3)) {
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::long_long, parseResult->Ref);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct FahrstrStart* parseResult = static_cast<struct FahrstrStart*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 5 && !memcmp(name, "Datei", 5)) {
+                  parse_element_Dateiverknuepfung(text, &parseResult->Datei);
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
+  static void parse_element_FahrstrWeiche(const Ch *& text, struct FahrstrWeiche* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else if (name_size == 3 && !memcmp(name, "Ref", 3)) {
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::long_long, parseResult->Ref);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else if (name_size == 18 && !memcmp(name, "FahrstrWeichenlage", 18)) {
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::int_, parseResult->FahrstrWeichenlage);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct FahrstrWeiche* parseResult = static_cast<struct FahrstrWeiche*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 5 && !memcmp(name, "Datei", 5)) {
+                  parse_element_Dateiverknuepfung(text, &parseResult->Datei);
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
   static void parse_element_NachfolgerSelbesModul(const Ch *& text, struct NachfolgerSelbesModul* parseResult) {
 
       // For all attributes
@@ -1073,6 +1241,88 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
       else
           parse_error_expected_tag_end(text);
     }
+  static void parse_element_FahrstrZiel(const Ch *& text, struct FahrstrZiel* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  skip_unlikely<whitespace_pred>(text);
+        if (false) { (void)parseResult; }
+        else if (name_size == 3 && !memcmp(name, "Ref", 3)) {
+          boost::spirit::qi::parse(text, static_cast<const char*>(nullptr), boost::spirit::qi::long_long, parseResult->Ref);
+          skip_unlikely<whitespace_pred>(text);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct FahrstrZiel* parseResult = static_cast<struct FahrstrZiel*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 5 && !memcmp(name, "Datei", 5)) {
+                  parse_element_Dateiverknuepfung(text, &parseResult->Datei);
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
   static void parse_element_Strecke(const Ch *& text, struct Strecke* parseResult) {
 
       // For all attributes
@@ -1169,6 +1419,9 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
     }
     parseResult->children_StrElement[index] = std::move(childResult);
   }
+            }
+            else if (name_size == 11 && !memcmp(name, "Fahrstrasse", 11)) {
+                  parse_element_Fahrstrasse(text, parseResult->children_Fahrstrasse.emplace_back(new struct Fahrstrasse()).get());
             }
             else {
               skip_element(text);
@@ -1507,6 +1760,99 @@ static bool parse_datetime(const Ch*& text, struct tm& result) {
               if (false) { (void)parseResult; }
             else if (name_size == 5 && !memcmp(name, "Datei", 5)) {
                   parse_element_Dateiverknuepfung(text, &parseResult->Datei);
+            }
+            else {
+              skip_element(text);
+            }
+
+          }, parseResult);
+      }
+      else if ((text[0] == Ch('/')) && (text[1] == Ch('>')))
+      {
+          text += 2;
+      }
+      else
+          parse_error_expected_tag_end(text);
+    }
+  static void parse_element_Fahrstrasse(const Ch *& text, struct Fahrstrasse* parseResult) {
+
+      // For all attributes
+      while (attribute_name_pred::test(*text))
+      {
+          // Extract attribute name
+          const Ch *name = text;
+          ++text;     // Skip first character of attribute name
+          skip<attribute_name_pred>(text);
+          const size_t name_size [[maybe_unused]] = text - name;
+
+          // Skip whitespace after attribute name
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip =
+          if (*text != Ch('='))
+              parse_error_expected_equals(text);
+          ++text;
+
+          // Skip whitespace after =
+          skip_unlikely<whitespace_pred>(text);
+
+          // Skip quote and remember if it was ' or "
+          Ch quote = *text;
+          if (quote != Ch('\'') && quote != Ch('"'))
+              parse_error_expected_quote(text);
+          ++text;
+
+          // Extract attribute value
+                  if (false) { (void)parseResult; }
+        else if (name_size == 11 && !memcmp(name, "FahrstrName", 11)) {
+          parse_string(text, parseResult->FahrstrName, quote);
+        }
+        else if (name_size == 10 && !memcmp(name, "FahrstrTyp", 10)) {
+          parse_string(text, parseResult->FahrstrTyp, quote);
+        }
+        else {
+          skip_attribute_value(text, quote);
+        }
+
+
+          // Make sure that end quote is present
+          if (*text != quote)
+              parse_error_expected_quote(text);
+          ++text;     // Skip quote
+
+          // Skip whitespace after attribute value
+          skip<whitespace_pred>(text);
+      }
+
+      // Determine ending type
+      if (*text == Ch('>'))
+      {
+          ++text;
+          parse_node_contents(text, [](const Ch *&text, void* parseResultUntyped) {
+              struct Fahrstrasse* parseResult = static_cast<struct Fahrstrasse*>(parseResultUntyped);
+              // Extract element name
+              const Ch *name = text;
+              skip<node_name_pred>(text);
+              if (text == name)
+                  parse_error_expected_element_name(text);
+              const size_t name_size [[maybe_unused]] = text - name;
+
+              // Skip whitespace between element name and attributes or >
+              skip<whitespace_pred>(text);
+
+              if (false) { (void)parseResult; }
+            else if (name_size == 12 && !memcmp(name, "FahrstrStart", 12)) {
+                  std::unique_ptr<struct FahrstrStart, zusixml::deleter<struct FahrstrStart>> childResult(new struct FahrstrStart());
+  parseResult->FahrstrStart.swap(childResult);
+  parse_element_FahrstrStart(text, parseResult->FahrstrStart.get());
+            }
+            else if (name_size == 11 && !memcmp(name, "FahrstrZiel", 11)) {
+                  std::unique_ptr<struct FahrstrZiel, zusixml::deleter<struct FahrstrZiel>> childResult(new struct FahrstrZiel());
+  parseResult->FahrstrZiel.swap(childResult);
+  parse_element_FahrstrZiel(text, parseResult->FahrstrZiel.get());
+            }
+            else if (name_size == 13 && !memcmp(name, "FahrstrWeiche", 13)) {
+                  parse_element_FahrstrWeiche(text, parseResult->children_FahrstrWeiche.emplace_back(new struct FahrstrWeiche()).get());
             }
             else {
               skip_element(text);

@@ -19,6 +19,20 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
     Strecke::StrElement
     Strecke::UTM
     Strecke::ReferenzElemente
+    Strecke::Fahrstrasse
+
+    Fahrstrasse::FahrstrName
+    Fahrstrasse::FahrstrTyp
+    Fahrstrasse::FahrstrStart
+    Fahrstrasse::FahrstrZiel
+    Fahrstrasse::FahrstrWeiche
+    FahrstrStart::Ref
+    FahrstrStart::Datei
+    FahrstrZiel::Ref
+    FahrstrZiel::Datei
+    FahrstrWeiche::Ref
+    FahrstrWeiche::Datei
+    FahrstrWeiche::FahrstrWeichenlage
 
     StrElement::Fkt
     StrElement::Anschluss

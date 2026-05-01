@@ -2,8 +2,10 @@
 #define MAINWINDOW_H
 
 #include "streckennetz.h"
+#include "model/fahrstrasse.h"
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <QMainWindow>
@@ -35,6 +37,11 @@ public slots:
     void actionVisualisierungTriggered();
     void actionAnsichtBetriebsstellennamenToggled(bool checked);
     void actionAnsichtBahnsteigeToggled(bool checked);
+    void actionAnsichtFahrstrassenToggled(bool checked);
+
+private slots:
+    void onFahrstrasseAusgewaehlt(int index);
+    void onFahrstrasseDoppelklick(int index);
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent *e) override;
@@ -52,7 +59,17 @@ private:
     bool m_zeigeBetriebsstellen{true};
     bool m_zeigeBahnsteige{false};
 
+    // Fahrstraßen-Liste muss nach Modul-Ladevorgängen ggf. neu aufgebaut werden;
+    // bei unsichtbarer Seitenleiste wird das auf den nächsten Aktivierungszeitpunkt
+    // verschoben.
+    bool m_fahrstrassenListeAktuell{false};
+    std::optional<int> m_aktiveFahrstrasse;
+
     void setzeAnsichtZurueck();
+    void aktualisiereFahrstrassenListe();
+    void wendeFahrstrassenHervorhebungAn();
+    /** Markiert die Liste als veraltet und aktualisiert sie sofort, falls sichtbar. */
+    void fahrstrassenListeUngueltig();
 
     /** Oeffnet Streckendateien und fuegt sie zur Liste der offenen Strecken hinzu. */
     void oeffneStrecken(const QStringList& dateinamen);

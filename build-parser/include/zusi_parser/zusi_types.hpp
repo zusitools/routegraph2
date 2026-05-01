@@ -30,6 +30,26 @@ struct StrModul {
 struct Fahrplan {
   std::vector<std::unique_ptr<struct StrModul, zusixml::deleter<struct StrModul>>, zusixml::allocator<std::unique_ptr<struct StrModul, zusixml::deleter<struct StrModul>>>> children_StrModul;
 };
+struct FahrstrStart {
+  int64_t Ref;
+ struct Dateiverknuepfung Datei; // inlined
+};
+struct FahrstrWeiche {
+  int64_t Ref;
+  int32_t FahrstrWeichenlage;
+ struct Dateiverknuepfung Datei; // inlined
+};
+struct FahrstrZiel {
+  int64_t Ref;
+ struct Dateiverknuepfung Datei; // inlined
+};
+struct Fahrstrasse {
+  std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> FahrstrName;
+  std::basic_string<char, std::char_traits<char>, zusixml::allocator<char>> FahrstrTyp;
+  std::unique_ptr<struct FahrstrStart, zusixml::deleter<struct FahrstrStart>> FahrstrStart;
+  std::unique_ptr<struct FahrstrZiel, zusixml::deleter<struct FahrstrZiel>> FahrstrZiel;
+  std::vector<std::unique_ptr<struct FahrstrWeiche, zusixml::deleter<struct FahrstrWeiche>>, zusixml::allocator<std::unique_ptr<struct FahrstrWeiche, zusixml::deleter<struct FahrstrWeiche>>>> children_FahrstrWeiche;
+};
 struct ReferenzElement {
   int32_t ReferenzNr;
   int32_t StrElement;
@@ -100,6 +120,7 @@ struct Strecke {
   std::unique_ptr<struct UTM, zusixml::deleter<struct UTM>> UTM;
   std::vector<std::unique_ptr<struct ReferenzElement, zusixml::deleter<struct ReferenzElement>>, zusixml::allocator<std::unique_ptr<struct ReferenzElement, zusixml::deleter<struct ReferenzElement>>>> children_ReferenzElemente;
   std::vector<std::unique_ptr<struct StrElement, zusixml::deleter<struct StrElement>>, zusixml::allocator<std::unique_ptr<struct StrElement, zusixml::deleter<struct StrElement>>>> children_StrElement;
+  std::vector<std::unique_ptr<struct Fahrstrasse, zusixml::deleter<struct Fahrstrasse>>, zusixml::allocator<std::unique_ptr<struct Fahrstrasse, zusixml::deleter<struct Fahrstrasse>>>> children_Fahrstrasse;
  };
 struct Zusi {
   std::unique_ptr<struct Fahrplan, zusixml::deleter<struct Fahrplan>> Fahrplan;

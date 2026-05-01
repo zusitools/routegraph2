@@ -8,10 +8,14 @@
 #include "view/graphicsitems/streckensegmentitem.h"
 #include "view/graphicsitems/dreieckitem.h"
 #include "view/segmentierer.h"
+#include "view/zwerte.h"
 
 #include <utm/utm.h>
 
 #include <QDebug>
+#include <QGraphicsPathItem>
+#include <QPainterPath>
+#include <QPen>
 
 #include <cassert>
 #include <cmath>
@@ -118,20 +122,17 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
     const auto richtungen_zusi2 = { StreckenelementRichtung::Norm };
     const auto richtungen_zusi3 = { StreckenelementRichtung::Norm, StreckenelementRichtung::Gegen };
 
-    // Damit Bahnsteige sich über Modulgrenzen hinweg erstrecken können, wird einmalig
-    // pro Streckenelement der UTM-Versatz seiner Strecke gegenüber dem Szenen-Referenzpunkt
-    // berechnet und in einer Map abgelegt.
-    std::unordered_map<const StrElement*, std::pair<qreal, qreal>> elementToOffset;
-    if (zeigeBahnsteige) {
-        for (auto it = begin; it != end; ++it) {
-            const auto& strecke = it->second;
-            const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
-            const auto dx = 1000.0 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
-            const auto dy = 1000.0 * (strecke_utm.UTM_NS - this->m_utmRefPunkt.UTM_NS);
-            for (const auto& streckenelement : strecke->children_StrElement) {
-                if (streckenelement) {
-                    elementToOffset.emplace(streckenelement.get(), std::make_pair(dx, dy));
-                }
+    // Pro Streckenelement: UTM-Versatz seiner Strecke gegenüber dem Szenen-Referenzpunkt.
+    // Wird sowohl für die Darstellung von modulübergreifenden Bahnsteigen als auch für
+    // die Hervorhebung von Fahrstraßen benötigt.
+    for (auto it = begin; it != end; ++it) {
+        const auto& strecke = it->second;
+        const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
+        const auto dx = 1000.0 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
+        const auto dy = 1000.0 * (strecke_utm.UTM_NS - this->m_utmRefPunkt.UTM_NS);
+        for (const auto& streckenelement : strecke->children_StrElement) {
+            if (streckenelement) {
+                this->m_elementToOffset.emplace(streckenelement.get(), std::make_pair(dx, dy));
             }
         }
     }
@@ -292,7 +293,7 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
         }
 
         if (zeigeBahnsteige) {
-            zeichneBahnsteige(*this, *strecke, elementToOffset);
+            zeichneBahnsteige(*this, *strecke, this->m_elementToOffset);
         }
     }
 
@@ -301,4 +302,98 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
     qDebug() << anzahlSegmente << "Segmente für" << anzahlStreckenelemente << "Streckenelemente";
 
     this->setSceneRect(QRectF(QPointF(std::min(minX, maxX) - 10, std::min(minY, maxY) - 10), QPointF(std::max(minX, maxX) + 10, std::max(minY, maxY) + 10)));
+}
+
+void StreckeScene::zeigeFahrstrasse(const std::vector<StreckenelementUndRichtung>& pfad)
+{
+    this->verbirgFahrstrasse();
+    if (pfad.empty()) {
+        return;
+    }
+
+    QPainterPath path;
+    bool angefangen = false;
+
+    for (const auto& er : pfad) {
+        const auto* el = er.getStreckenelement();
+        if (!el) {
+            continue;
+        }
+        const auto offsetIt = this->m_elementToOffset.find(el);
+        if (offsetIt == this->m_elementToOffset.end()) {
+            continue;
+        }
+        const auto& [dx, dy] = offsetIt->second;
+        const auto& start = er.gegenrichtung().endpunkt();
+        const auto& ende = er.endpunkt();
+
+        if (!angefangen) {
+            path.moveTo(start.X + dx, start.Y + dy);
+            angefangen = true;
+        } else {
+            path.lineTo(start.X + dx, start.Y + dy);
+        }
+        path.lineTo(ende.X + dx, ende.Y + dy);
+    }
+
+    if (!angefangen) {
+        return;
+    }
+
+    auto* item = new QGraphicsPathItem(path);
+    QPen pen(QColor(255, 200, 0, 200));
+    pen.setWidth(8);
+    pen.setCosmetic(true);
+    pen.setCapStyle(Qt::FlatCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    item->setPen(pen);
+    // Über den Gleisen, aber unter den Signal-Dreiecken (ZWERT_MARKIERUNG = 101).
+    item->setZValue(ZWERT_GLEIS + 0.5);
+    this->addItem(item);
+    this->m_fahrstrasseHighlight = item;
+}
+
+void StreckeScene::verbirgFahrstrasse()
+{
+    if (this->m_fahrstrasseHighlight) {
+        this->removeItem(this->m_fahrstrasseHighlight);
+        delete this->m_fahrstrasseHighlight;
+        this->m_fahrstrasseHighlight = nullptr;
+    }
+}
+
+QRectF StreckeScene::boundingRectFuerPfad(const std::vector<StreckenelementUndRichtung>& pfad) const
+{
+    QRectF result;
+    bool ersterPunkt = true;
+
+    const auto erweitere = [&](qreal x, qreal y) {
+        if (ersterPunkt) {
+            result = QRectF(QPointF(x, y), QPointF(x, y));
+            ersterPunkt = false;
+        } else {
+            if (x < result.left())   result.setLeft(x);
+            if (x > result.right())  result.setRight(x);
+            if (y < result.top())    result.setTop(y);
+            if (y > result.bottom()) result.setBottom(y);
+        }
+    };
+
+    for (const auto& er : pfad) {
+        const auto* el = er.getStreckenelement();
+        if (!el) {
+            continue;
+        }
+        const auto offsetIt = this->m_elementToOffset.find(el);
+        if (offsetIt == this->m_elementToOffset.end()) {
+            continue;
+        }
+        const auto& [dx, dy] = offsetIt->second;
+        const auto& start = er.gegenrichtung().endpunkt();
+        const auto& ende = er.endpunkt();
+        erweitere(start.X + dx, start.Y + dy);
+        erweitere(ende.X + dx, ende.Y + dy);
+    }
+
+    return result;
 }
