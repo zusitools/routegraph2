@@ -22,7 +22,7 @@ namespace {
 
 constexpr qreal kBahnsteigBreite = 5.0;
 constexpr qreal kMittePunktDurchmesser = kBahnsteigBreite * 0.8;
-constexpr float kMaxLaenge = 500.0f;
+constexpr float kMaxLaenge = 1000.0f;
 
 enum class Seite : int {
     Rechts = +1,
