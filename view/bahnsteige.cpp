@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <QBrush>
-#include <QGraphicsEllipseItem>
 #include <QGraphicsPolygonItem>
 #include <QGraphicsScene>
 #include <QPen>
@@ -21,7 +20,8 @@
 namespace {
 
 constexpr qreal kBahnsteigBreite = 5.0;
-constexpr qreal kMittePunktDurchmesser = kBahnsteigBreite * 0.8;
+// Seitenlänge des gleichseitigen Dreiecks, das ein Bahnsteigmitte-Ereignis markiert.
+constexpr qreal kMitteDreieckSeite = kBahnsteigBreite * 0.8;
 constexpr float kMaxLaenge = 1000.0f;
 
 enum class Seite : int {
@@ -212,13 +212,36 @@ void zeichneMitte(
     // Ereignisse wirken am Ende des Elements: bei Norm-Richtung b, bei Gegen-Richtung g.
     const auto& p = er.endpunkt();
     const Vec3 dir = er.endpunkt() - er.gegenrichtung().endpunkt();
+    const qreal veclen = std::sqrt(static_cast<qreal>(dir.X) * dir.X + static_cast<qreal>(dir.Y) * dir.Y);
+    if (veclen < 1e-6) {
+        return;
+    }
+
+    // Einheitsvektor in Richtung Bahnsteigende (= Laufrichtung des Elements).
+    const qreal dx = static_cast<qreal>(dir.X) / veclen;
+    const qreal dy = static_cast<qreal>(dir.Y) / veclen;
+    // Senkrechte zur Laufrichtung; Vorzeichen ist hier egal, da symmetrisch verwendet.
+    const qreal px = dy;
+    const qreal py = -dx;
+
+    // Das Ereignis wirkt am Element-Ende (er.endpunkt()), seitlich um die halbe
+    // Bahnsteigbreite versetzt. Dort liegt die Basis-Mitte des Dreiecks; die
+    // Spitze ragt von dort aus in Richtung Bahnsteigende über das Element-Ende
+    // hinaus.
     const QPointF perp = perpVek(dir, seite, kBahnsteigBreite / 2.0);
+    const qreal bx = p.X + off.dx + perp.x();
+    const qreal by = p.Y + off.dy + perp.y();
 
-    const qreal cx = p.X + off.dx + perp.x();
-    const qreal cy = p.Y + off.dy + perp.y();
-    const qreal r = kMittePunktDurchmesser / 2.0;
+    // Gleichseitiges Dreieck mit Höhe h = s * sqrt(3)/2.
+    constexpr qreal kHoehe = kMitteDreieckSeite * 0.8660254037844386;  // sqrt(3)/2
+    constexpr qreal kHalbeBasis = kMitteDreieckSeite / 2.0;
 
-    auto item = std::make_unique<QGraphicsEllipseItem>(cx - r, cy - r, kMittePunktDurchmesser, kMittePunktDurchmesser);
+    QPolygonF dreieck;
+    dreieck << QPointF(bx + dx * kHoehe, by + dy * kHoehe);
+    dreieck << QPointF(bx + px * kHalbeBasis, by + py * kHalbeBasis);
+    dreieck << QPointF(bx - px * kHalbeBasis, by - py * kHalbeBasis);
+
+    auto item = std::make_unique<QGraphicsPolygonItem>(dreieck);
     item->setBrush(QBrush(Qt::darkGray));
     item->setPen(QPen(Qt::NoPen));
     item->setZValue(ZWERT_GLEIS);
