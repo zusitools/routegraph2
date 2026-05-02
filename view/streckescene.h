@@ -6,6 +6,7 @@
 #include "model/streckenelement.h"
 #include "view/visualisierung/visualisierung.h"
 
+#include "zusi_parser/utils.hpp"
 #include "zusi_parser/zusi_types.hpp"
 
 #include <vector>
@@ -41,6 +42,23 @@ public:
      */
     QRectF boundingRectFuerPfad(const std::vector<StreckenelementUndRichtung>& pfad) const;
 
+    /**
+     * Eine Modulgrenze in der Szene: ein Streckenelement-Endpunkt, an dem ein
+     * Nachfolger in einem anderen Modul referenziert wird.
+     */
+    struct Modulgrenze {
+        /** Position der Modulgrenze in Szenen-Koordinaten. */
+        QPointF szenePunkt;
+        /** Pfad des Nachbarmoduls, aufgelöst gegen das aktuelle Modul. */
+        zusixml::ZusiPfad nachbarModul;
+    };
+
+    /**
+     * Liefert alle Modulgrenzen, deren Szenen-Position innerhalb eines
+     * Quadrats mit der angegebenen Halbkantenlänge um @p szenePunkt liegt.
+     */
+    std::vector<Modulgrenze> modulgrenzenInUmgebung(const QPointF& szenePunkt, qreal radius) const;
+
 signals:
 
 public slots:
@@ -54,6 +72,10 @@ private:
     // Lebenszeit gehört der Szene (über addItem); der Zeiger wird in zeigeFahrstrasse
     // gesetzt und beim verbirgFahrstrasse / Aufräumen wieder zu nullptr.
     QGraphicsPathItem* m_fahrstrasseHighlight = nullptr;
+
+    // Alle Modulgrenzen, die beim Aufbau der Szene aus den geladenen Strecken
+    // ermittelt wurden. Wird für das Kontextmenü zum Nachladen benötigt.
+    std::vector<Modulgrenze> m_modulgrenzen;
 };
 
 #endif // STRECKESCENE_H

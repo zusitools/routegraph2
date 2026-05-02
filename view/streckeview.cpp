@@ -56,6 +56,8 @@ void StreckeView::mousePressEvent(QMouseEvent *event)
     {
         this->m_rechteMaustasteGedrueckt = true;
         this->m_linkeMaustasteGedrueckt = false;
+        this->m_rechteMausHatGedraggt = false;
+        this->m_rechtePressViewPos = event->pos();
         this->m_dragStart = event->globalPos();
         CursorWrapHelper::startDrag();
     }
@@ -74,6 +76,10 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 {
     if (this->m_rechteMaustasteGedrueckt)
     {
+        if (!this->m_rechteMausHatGedraggt &&
+                (event->pos() - this->m_rechtePressViewPos).manhattanLength() >= QApplication::startDragDistance()) {
+            this->m_rechteMausHatGedraggt = true;
+        }
         auto deltaY = this->m_dragStart.y() - event->globalPos().y();
         this->m_dragStart = event->globalPos();
 
@@ -113,10 +119,19 @@ void StreckeView::mouseMoveEvent(QMouseEvent *event)
 
 void StreckeView::mouseReleaseEvent(QMouseEvent *event)
 {
+    const bool warRechteOhneDrag = (event->button() == Qt::RightButton) &&
+            this->m_rechteMaustasteGedrueckt && !this->m_rechteMausHatGedraggt;
+    const QPoint klickPos = this->m_rechtePressViewPos;
+
     this->m_rechteMaustasteGedrueckt = false;
     this->m_linkeMaustasteGedrueckt = false;
+    this->m_rechteMausHatGedraggt = false;
     this->setCursor(Qt::OpenHandCursor);
     QGraphicsView::mouseReleaseEvent(event);
+
+    if (warRechteOhneDrag) {
+        emit kontextmenuAngefordert(klickPos);
+    }
 }
 
 void StreckeView::mouseDoubleClickEvent(QMouseEvent *event)

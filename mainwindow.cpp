@@ -2,7 +2,9 @@
 #include "ui_mainwindow.h"
 
 #include <algorithm>
+#include <cmath>
 #include <future>
+#include <map>
 #include <thread>
 
 #include <QActionGroup>
@@ -11,12 +13,14 @@
 #include <QLabel>
 #include <QElapsedTimer>
 #include <QFileDialog>
+#include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QProgressDialog>
 
 #include "view/fahrstrassenpanel.h"
 #include "view/streckescene.h"
+#include "view/streckeview.h"
 #include "view/visualisierung/visualisierung.h"
 #include "view/visualisierung/etcstrustedareavisualisierung.h"
 #include "view/visualisierung/gleisfunktionvisualisierung.h"
@@ -51,6 +55,9 @@ MainWindow::MainWindow(QWidget *parent) :
             this, &MainWindow::onFahrstrasseAusgewaehlt);
     connect(ui->fahrstrassenPanel, &FahrstrassenPanel::fahrstrasseDoppelklick,
             this, &MainWindow::onFahrstrasseDoppelklick);
+
+    connect(ui->streckeView, &StreckeView::kontextmenuAngefordert,
+            this, &MainWindow::onStreckeViewKontextmenuAngefordert);
 
     ui->streckeView->installEventFilter(this);
     ui->streckeView->viewport()->installEventFilter(this); // http://stackoverflow.com/a/2501489
@@ -212,6 +219,78 @@ void MainWindow::onFahrstrasseDoppelklick(int index)
         bbox = bbox.adjusted(-50, -50, 50, 50);
         ui->streckeView->fitInView(bbox, Qt::KeepAspectRatio);
     }
+}
+
+void MainWindow::onStreckeViewKontextmenuAngefordert(QPoint viewPos)
+{
+    if (!m_streckeScene) {
+        return;
+    }
+
+    // Toleranzradius in Szenen-Koordinaten anhand eines Pixel-Toleranzwerts
+    // ermitteln, damit die Trefferzone unabhängig vom Zoom-Faktor ist.
+    constexpr int pixelToleranz = 15;
+    const QPointF szenePunkt = ui->streckeView->mapToScene(viewPos);
+    const QPointF szenePunktVersetzt = ui->streckeView->mapToScene(viewPos + QPoint(pixelToleranz, pixelToleranz));
+    const qreal radius = std::max(std::abs(szenePunktVersetzt.x() - szenePunkt.x()),
+                                  std::abs(szenePunktVersetzt.y() - szenePunkt.y()));
+
+    auto grenzen = m_streckeScene->modulgrenzenInUmgebung(szenePunkt, radius);
+    if (grenzen.empty()) {
+        return;
+    }
+
+    // Pro Nachbarmodul den nächstgelegenen Eintrag wählen, damit jedes Modul
+    // nur einmal im Menü erscheint.
+    struct Eintrag {
+        zusixml::ZusiPfad pfad;
+        qreal abstandQuadrat;
+    };
+    std::map<std::string, Eintrag> uniqueModule;
+    for (const auto& g : grenzen) {
+        const QPointF d = g.szenePunkt - szenePunkt;
+        const qreal a2 = d.x() * d.x() + d.y() * d.y();
+        std::string key { g.nachbarModul.alsZusiPfad() };
+        auto it = uniqueModule.find(key);
+        if (it == uniqueModule.end()) {
+            uniqueModule.emplace(std::move(key), Eintrag{ g.nachbarModul, a2 });
+        } else if (a2 < it->second.abstandQuadrat) {
+            it->second = Eintrag{ g.nachbarModul, a2 };
+        }
+    }
+
+    // Nach Dateiname (ohne Pfad) sortieren -- das ist auch das, was der Nutzer
+    // im Menü zu sehen bekommt.
+    const auto basename = [](const std::string& zusiPfad) -> std::string {
+        const auto pos = zusiPfad.find_last_of('\\');
+        return (pos == std::string::npos) ? zusiPfad : zusiPfad.substr(pos + 1);
+    };
+    std::vector<std::pair<std::string, zusixml::ZusiPfad>> eintraege;
+    eintraege.reserve(uniqueModule.size());
+    for (const auto& [key, e] : uniqueModule) {
+        eintraege.emplace_back(basename(key), e.pfad);
+    }
+    std::sort(eintraege.begin(), eintraege.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    QMenu menu(this);
+    for (const auto& [dateiname, pfad] : eintraege) {
+        const QString itemText = tr("%1 laden")
+                .arg(QString::fromUtf8(dateiname.data(), static_cast<int>(dateiname.size())));
+        QAction* action = menu.addAction(itemText);
+        if (m_streckennetz.get(pfad) != nullptr) {
+            action->setEnabled(false);
+        } else {
+            const zusixml::ZusiPfad pfadKopie = pfad;
+            connect(action, &QAction::triggered, this, [this, pfadKopie]() {
+                this->oeffneStrecken({ QString::fromStdString(pfadKopie.alsOsPfad()) });
+                this->fahrstrassenListeUngueltig();
+                this->aktualisiereDarstellung();
+            });
+        }
+    }
+
+    menu.exec(ui->streckeView->mapToGlobal(viewPos));
 }
 
 void MainWindow::aktualisiereFahrstrassenListe()

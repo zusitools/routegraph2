@@ -139,10 +139,31 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
 
     for (auto it = begin; it != end; ++it)
     {
+        const auto& strecke_pfad = zusixml::ZusiPfad::vonZusiPfad(it->first);
         const auto& strecke = it->second;
         const UTM strecke_utm = (strecke->UTM ? *strecke->UTM : UTM());
         const auto utm_dx = 1000 * (strecke_utm.UTM_WE - this->m_utmRefPunkt.UTM_WE);
         const auto utm_dy = 1000 * (strecke_utm.UTM_NS - this->m_utmRefPunkt.UTM_NS);
+
+        // Modulgrenzen ermitteln: für jedes Streckenelement mit Nachfolgern im
+        // Nachbarmodul den jeweiligen Endpunkt in Szenen-Koordinaten merken.
+        for (const auto& streckenelement : strecke->children_StrElement) {
+            if (!streckenelement) {
+                continue;
+            }
+            for (const auto& nachfolger : streckenelement->children_NachNormModul) {
+                this->m_modulgrenzen.push_back({
+                    QPointF(streckenelement->b.X + utm_dx, streckenelement->b.Y + utm_dy),
+                    zusixml::ZusiPfad::vonZusiPfad(nachfolger.Datei.Dateiname, strecke_pfad)
+                });
+            }
+            for (const auto& nachfolger : streckenelement->children_NachGegenModul) {
+                this->m_modulgrenzen.push_back({
+                    QPointF(streckenelement->g.X + utm_dx, streckenelement->g.Y + utm_dy),
+                    zusixml::ZusiPfad::vonZusiPfad(nachfolger.Datei.Dateiname, strecke_pfad)
+                });
+            }
+        }
 
         // Die Betriebsstellen werden pro Streckenmodul beschriftet, da manche Betriebsstellennamen
         // (z.B. Sbk-Bezeichnungen) in mehreren Modulen vorkommen und dann falsch platziert wuerden.
@@ -395,5 +416,17 @@ QRectF StreckeScene::boundingRectFuerPfad(const std::vector<StreckenelementUndRi
         erweitere(ende.X + dx, ende.Y + dy);
     }
 
+    return result;
+}
+
+std::vector<StreckeScene::Modulgrenze> StreckeScene::modulgrenzenInUmgebung(const QPointF& szenePunkt, qreal radius) const
+{
+    std::vector<Modulgrenze> result;
+    for (const auto& mg : this->m_modulgrenzen) {
+        if (std::abs(mg.szenePunkt.x() - szenePunkt.x()) <= radius &&
+                std::abs(mg.szenePunkt.y() - szenePunkt.y()) <= radius) {
+            result.push_back(mg);
+        }
+    }
     return result;
 }

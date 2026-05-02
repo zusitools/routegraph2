@@ -28,10 +28,19 @@ private:
     bool m_rechteMaustasteGedrueckt { false };
     bool m_linkeMaustasteGedrueckt { false };
     bool m_resetDragPos { false };
+    bool m_rechteMausHatGedraggt { false };
+    QPoint m_rechtePressViewPos { };
     QPointF m_dragStart { };
     QTransform m_defaultTransform { };
 
 signals:
+    /**
+     * Wird beim Loslassen der rechten Maustaste emittiert, sofern der Cursor
+     * sich zwischen Press und Release nicht weiter als die Drag-Schwelle
+     * bewegt hat (also kein Rotations-Drag stattgefunden hat).
+     * @p viewPos ist die Klickposition in Widget-Koordinaten.
+     */
+    void kontextmenuAngefordert(QPoint viewPos);
 
 public slots:
 
