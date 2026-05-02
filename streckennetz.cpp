@@ -45,7 +45,7 @@ void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> s
                 }
                 nachfolgerVerknuepft.push_back(nachfolgerStrecke->children_StrElement[elementNr].get());
                 (istNorm ? streckenelement->nachfolgerElementeNormSindInAnderemModul : streckenelement->nachfolgerElementeGegenSindInAnderemModul) = true;
-                const auto anschluss_shift = nachfolgerVerknuepft.size() + (istNorm ? 0 : 8);
+                const auto anschluss_shift = (nachfolgerVerknuepft.size() - 1) + (istNorm ? 0 : 8);
                 if (referenzElement->StrNorm) {
                     // Element zeigt mit Normrichtung zur Modulgrenze
                     // -> Nachfolgerelement ist in Gegenrichtung
@@ -102,7 +102,7 @@ void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> s
                 }
                 nachfolgerVerknuepft[i] = nachfolgerStrecke->children_StrElement[elementNr].get();
                 (istNorm ? streckenelement->nachfolgerElementeNormSindInAnderemModul : streckenelement->nachfolgerElementeGegenSindInAnderemModul) = true;
-                const auto anschluss_shift = nachfolgerVerknuepft.size() + (istNorm ? 0 : 8);
+                const auto anschluss_shift = i + (istNorm ? 0 : 8);
                 if (referenzElement->StrNorm) {
                     // Element zeigt mit Normrichtung zur Modulgrenze
                     // -> Nachfolgerelement ist in Gegenrichtung
