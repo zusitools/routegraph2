@@ -1,18 +1,26 @@
-# Diese Datei dient dazu, den Zusi-Parser mit CMake zu bauen.
-# Der Rest des Programms wird mit qmake gebaut.
+# Ein gemeinsamer zusi_parser für ls3render und routegraph2:
+# ls3render/CMakeLists.txt erzeugt zusi_parser (Landschaft/LS3-Whitelist).
+# Routegraph-Einträge werden per WHITELIST APPEND ergänzt (kein zweites generate_zusi_parser).
 #
 # cd path/to/routegraph2/
 # mkdir build-parser
 # cd build-parser
 # cmake ../cmake-parser
 # cmake --build . --target zusi_parser_includes
+#
+# Generierte Header: <build-parser>/ls3render/zusi_parser/zusi_parser/zusi_types.hpp
+# (INCLUDEPATH = .../ls3render/zusi_parser, Include: "zusi_parser/zusi_types.hpp")
+#
+# Zusätzliche Quellen: ls3render/parser/include, ls3render/parser/rapidxml-mod
+# (in routegraph2.pro eintragen; nicht die alten parser/-Pfade aus dem Wurzel-parser.)
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 project(routegraph2_parser)
 
-add_subdirectory(../parser parser)
-generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
-  WHITELIST
+add_subdirectory(../ls3render ls3render)
+
+# Ohne Duplikate zu ls3render/CMakeLists.txt (u. a. Vec3::*, Dateiverknuepfung::Dateiname).
+set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     Zusi::Strecke
     Zusi::Fahrplan
 
@@ -26,6 +34,13 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
     Fahrstrasse::FahrstrStart
     Fahrstrasse::FahrstrZiel
     Fahrstrasse::FahrstrWeiche
+    Fahrstrasse::FahrstrRegister
+    Fahrstrasse::FahrstrAufloesung
+    Fahrstrasse::FahrstrTeilaufloesung
+    Fahrstrasse::FahrstrSigHaltfall
+    Fahrstrasse::FahrstrSignal
+    Fahrstrasse::FahrstrVSignal
+
     FahrstrStart::Ref
     FahrstrStart::Datei
     FahrstrZiel::Ref
@@ -33,6 +48,21 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
     FahrstrWeiche::Ref
     FahrstrWeiche::Datei
     FahrstrWeiche::FahrstrWeichenlage
+    FahrstrRegister::Ref
+    FahrstrRegister::Datei
+    FahrstrAufloesung::Ref
+    FahrstrAufloesung::Datei
+    FahrstrTeilaufloesung::Ref
+    FahrstrTeilaufloesung::Datei
+    FahrstrSigHaltfall::Ref
+    FahrstrSigHaltfall::Datei
+    FahrstrSignal::Ref
+    FahrstrSignal::Datei
+    FahrstrSignal::FahrstrSignalZeile
+    FahrstrSignal::FahrstrSignalErsatzsignal
+    FahrstrVSignal::Ref
+    FahrstrVSignal::Datei
+    FahrstrVSignal::FahrstrSignalSpalte
 
     StrElement::Fkt
     StrElement::Anschluss
@@ -63,16 +93,18 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
 
     Fahrplan::StrModul
     StrModul::Datei
-    Vec3::X
-    Vec3::Y
-    Vec3::Z
-
-    Dateiverknuepfung::Dateiname
 
     Signal::SignalTyp
     Signal::Signalname
     Signal::NameBetriebsstelle
     Signal::Stellwerk
+    Signal::SignalFrame
+
+    SignalFrame::Datei
+    SignalFrame::p
+    SignalFrame::phi
+    SignalFrame::sk
+
     ReferenzElement::RefTyp
     ReferenzElement::StrElement
     ReferenzElement::StrNorm
@@ -83,4 +115,4 @@ generate_zusi_parser(zusi_parser ${CMAKE_CURRENT_BINARY_DIR}/include
     UTM::UTM_Zone
     ETCSFunkmast::ETCSSenderadius
     ETCSFunkmast::ETCSRBCNummer
-  IGNORE_UNKNOWN)
+)

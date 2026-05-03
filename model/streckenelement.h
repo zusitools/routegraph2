@@ -185,12 +185,6 @@ public:
 };
 
 // TODO
-inline Vec3 operator-(const Vec3& left, const Vec3& right)
-{
-    return { left.X - right.X, left.Y - right.Y, left.Z - right.Z };
-}
-
-// TODO
 inline bool hatFktFlag(const StrElement& element, StreckenelementFlag flag) {
     return (element.Fkt & static_cast<uint32_t>(flag)) != 0;
 }

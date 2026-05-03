@@ -18,6 +18,7 @@
 #include <QMimeData>
 #include <QProgressDialog>
 
+#include "view/fahrstrassendetailswindow.h"
 #include "view/fahrstrassenpanel.h"
 #include "view/streckescene.h"
 #include "view/streckeview.h"
@@ -186,6 +187,21 @@ void MainWindow::actionAnsichtFahrstrassenToggled(bool checked)
     }
 }
 
+void MainWindow::actionAnsichtFahrstrassenDetailsTriggered()
+{
+    if (!m_fahrstrassenDetailsWindow) {
+        m_fahrstrassenDetailsWindow = new FahrstrassenDetailsWindow(this);
+        connect(m_fahrstrassenDetailsWindow, &FahrstrassenDetailsWindow::detailAusgewaehlt,
+                this, &MainWindow::onFahrstrassenDetailAusgewaehlt);
+        connect(m_fahrstrassenDetailsWindow, &FahrstrassenDetailsWindow::detailDoppelklick,
+                this, &MainWindow::onFahrstrassenDetailDoppelklick);
+    }
+    aktualisiereFahrstrassenDetailsFenster();
+    m_fahrstrassenDetailsWindow->show();
+    m_fahrstrassenDetailsWindow->raise();
+    m_fahrstrassenDetailsWindow->activateWindow();
+}
+
 void MainWindow::onFahrstrasseAusgewaehlt(int index)
 {
     if (index < 0) {
@@ -193,6 +209,7 @@ void MainWindow::onFahrstrasseAusgewaehlt(int index)
         if (m_streckeScene) {
             m_streckeScene->verbirgFahrstrasse();
         }
+        aktualisiereFahrstrassenDetailsFenster();
         return;
     }
     if (static_cast<size_t>(index) >= ui->fahrstrassenPanel->fahrstrassen().size()) {
@@ -200,6 +217,7 @@ void MainWindow::onFahrstrasseAusgewaehlt(int index)
     }
     m_aktiveFahrstrasse = index;
     wendeFahrstrassenHervorhebungAn();
+    aktualisiereFahrstrassenDetailsFenster();
 }
 
 void MainWindow::onFahrstrasseDoppelklick(int index)
@@ -209,6 +227,7 @@ void MainWindow::onFahrstrasseDoppelklick(int index)
     }
     m_aktiveFahrstrasse = index;
     wendeFahrstrassenHervorhebungAn();
+    aktualisiereFahrstrassenDetailsFenster();
 
     if (!m_streckeScene) {
         return;
@@ -219,6 +238,45 @@ void MainWindow::onFahrstrasseDoppelklick(int index)
         bbox = bbox.adjusted(-50, -50, 50, 50);
         ui->streckeView->fitInView(bbox, Qt::KeepAspectRatio);
     }
+}
+
+void MainWindow::onFahrstrassenDetailAusgewaehlt(int index)
+{
+    if (!m_streckeScene) {
+        return;
+    }
+    if (index < 0 || !m_fahrstrassenDetailsWindow) {
+        m_streckeScene->setzeFahrstrassenDetailMarker(std::nullopt);
+        return;
+    }
+    const auto* eintrag = m_fahrstrassenDetailsWindow->aktuellerEintrag();
+    if (!eintrag) {
+        m_streckeScene->setzeFahrstrassenDetailMarker(std::nullopt);
+        return;
+    }
+    auto punkt = m_streckeScene->punktInSzene(eintrag->elementUndRichtung);
+    m_streckeScene->setzeFahrstrassenDetailMarker(punkt);
+}
+
+void MainWindow::onFahrstrassenDetailDoppelklick(int /*index*/)
+{
+    if (!m_streckeScene || !m_fahrstrassenDetailsWindow) {
+        return;
+    }
+    const auto* eintrag = m_fahrstrassenDetailsWindow->aktuellerEintrag();
+    if (!eintrag) {
+        return;
+    }
+    auto punkt = m_streckeScene->punktInSzene(eintrag->elementUndRichtung);
+    if (!punkt.has_value()) {
+        return;
+    }
+    // Sichtbereich: Pixel-Toleranz wie beim Fahrstraßen-Doppelklick (50 Szeneneinheiten),
+    // damit das Element zentriert und mit Kontext angezeigt wird.
+    constexpr qreal rand = 50.0;
+    const QRectF bbox(punkt->x() - rand, punkt->y() - rand, 2 * rand, 2 * rand);
+    ui->streckeView->fitInView(bbox, Qt::KeepAspectRatio);
+    m_streckeScene->setzeFahrstrassenDetailMarker(punkt);
 }
 
 void MainWindow::onStreckeViewKontextmenuAngefordert(QPoint viewPos)
@@ -310,6 +368,9 @@ void MainWindow::aktualisiereFahrstrassenListe()
             }
         }
     }
+
+    // Detailfenster auf den aktuellen Stand bringen (bzw. leeren).
+    aktualisiereFahrstrassenDetailsFenster();
 }
 
 void MainWindow::fahrstrassenListeUngueltig()
@@ -317,6 +378,14 @@ void MainWindow::fahrstrassenListeUngueltig()
     m_fahrstrassenListeAktuell = false;
     if (ui->fahrstrassenPanel->isVisible()) {
         aktualisiereFahrstrassenListe();
+    } else {
+        // Auch ohne sichtbare Seitenleiste das Detailfenster auf den aktuellen Stand bringen,
+        // damit es keine veralteten Pointer auf nicht mehr existierende Strukturen anzeigt.
+        if (m_fahrstrassenDetailsWindow) {
+            // Pointer in der bisherigen Liste sind nach Modul-Reload möglicherweise tot;
+            // sicherheitshalber den Inhalt leeren, bis die Liste neu aufgebaut wird.
+            m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr);
+        }
     }
 }
 
@@ -340,6 +409,23 @@ void MainWindow::wendeFahrstrassenHervorhebungAn()
         return;
     }
     m_streckeScene->zeigeFahrstrasse(fs.pfad);
+}
+
+void MainWindow::aktualisiereFahrstrassenDetailsFenster()
+{
+    if (!m_fahrstrassenDetailsWindow) {
+        return;
+    }
+    if (!m_aktiveFahrstrasse) {
+        m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr);
+        return;
+    }
+    const auto& list = ui->fahrstrassenPanel->fahrstrassen();
+    if (static_cast<size_t>(*m_aktiveFahrstrasse) >= list.size()) {
+        m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr);
+        return;
+    }
+    m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, &list[*m_aktiveFahrstrasse]);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)

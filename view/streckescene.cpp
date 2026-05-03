@@ -12,7 +12,9 @@
 
 #include <utm/utm.h>
 
+#include <QBrush>
 #include <QDebug>
+#include <QGraphicsEllipseItem>
 #include <QGraphicsPathItem>
 #include <QPainterPath>
 #include <QPen>
@@ -28,8 +30,8 @@ namespace {
 
         double lat, lon;
         utm_to_lat_lon(
-            in.X + 1000.0 * src.UTM_WE,
-            in.Y + 1000.0 * src.UTM_NS,
+            in.x + 1000.0 * src.UTM_WE,
+            in.y + 1000.0 * src.UTM_NS,
             static_cast<int>(src.UTM_Zone),
             /*southhemi=*/0,
             &lat,
@@ -44,9 +46,9 @@ namespace {
             &northing);
 
         return {
-            static_cast<decltype(Vec3::X)>(easting) - static_cast<decltype(Vec3::X)>(1000) * dest.UTM_WE,
-            static_cast<decltype(Vec3::Y)>(northing) - static_cast<decltype(Vec3::Y)>(1000) * dest.UTM_NS,
-            in.Z
+            static_cast<decltype(Vec3::x)>(easting) - static_cast<decltype(Vec3::x)>(1000) * dest.UTM_WE,
+            static_cast<decltype(Vec3::y)>(northing) - static_cast<decltype(Vec3::y)>(1000) * dest.UTM_NS,
+            in.z
         };
     }
 }
@@ -84,8 +86,8 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
 
             const Vec3 utmRefPunktKonvertiert = konvertiereUtmZone(Vec3 {0, 0, 0}, *strecke->UTM, this->m_utmRefPunkt);
             const UTM utmNeu {
-                static_cast<decltype(UTM::UTM_WE)>(utmRefPunktKonvertiert.X / 1000),
-                static_cast<decltype(UTM::UTM_NS)>(utmRefPunktKonvertiert.Y / 1000),
+                static_cast<decltype(UTM::UTM_WE)>(utmRefPunktKonvertiert.x / 1000),
+                static_cast<decltype(UTM::UTM_NS)>(utmRefPunktKonvertiert.y / 1000),
                 this->m_utmRefPunkt.UTM_Zone,
             };
 
@@ -153,13 +155,13 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
             }
             for (const auto& nachfolger : streckenelement->children_NachNormModul) {
                 this->m_modulgrenzen.push_back({
-                    QPointF(streckenelement->b.X + utm_dx, streckenelement->b.Y + utm_dy),
+                    QPointF(streckenelement->b.x + utm_dx, streckenelement->b.y + utm_dy),
                     zusixml::ZusiPfad::vonZusiPfad(nachfolger.Datei.Dateiname, strecke_pfad)
                 });
             }
             for (const auto& nachfolger : streckenelement->children_NachGegenModul) {
                 this->m_modulgrenzen.push_back({
-                    QPointF(streckenelement->g.X + utm_dx, streckenelement->g.Y + utm_dy),
+                    QPointF(streckenelement->g.x + utm_dx, streckenelement->g.y + utm_dy),
                     zusixml::ZusiPfad::vonZusiPfad(nachfolger.Datei.Dateiname, strecke_pfad)
                 });
             }
@@ -177,14 +179,14 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
         {
             if (streckenelement)
             {
-                minX = std::min(minX, streckenelement->g.X + utm_dx);
-                minX = std::min(minX, streckenelement->b.X + utm_dx);
-                maxX = std::max(maxX, streckenelement->g.X + utm_dx);
-                maxX = std::max(maxX, streckenelement->b.X + utm_dx);
-                minY = std::min(minY, streckenelement->g.Y + utm_dy);
-                minY = std::min(minY, streckenelement->b.Y + utm_dy);
-                maxY = std::max(maxY, streckenelement->g.Y + utm_dy);
-                maxY = std::max(maxY, streckenelement->b.Y + utm_dy);
+                minX = std::min(minX, streckenelement->g.x + utm_dx);
+                minX = std::min(minX, streckenelement->b.x + utm_dx);
+                maxX = std::max(maxX, streckenelement->g.x + utm_dx);
+                maxX = std::max(maxX, streckenelement->b.x + utm_dx);
+                minY = std::min(minY, streckenelement->g.y + utm_dy);
+                minY = std::min(minY, streckenelement->b.y + utm_dy);
+                maxY = std::max(maxY, streckenelement->g.y + utm_dy);
+                maxY = std::max(maxY, streckenelement->b.y + utm_dy);
 
                 anzahlStreckenelemente++;
                 for (StreckenelementRichtung richtung : richtungen)
@@ -223,7 +225,7 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
                                 && static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Sonstiges
                                 && static_cast<SignalTyp>(signal->SignalTyp) != SignalTyp::Bahnuebergang))) {
                             Vec3 vec = elementRichtung.endpunkt() - elementRichtung.gegenrichtung().endpunkt();
-                            float phi = atan2(-vec.Y, vec.X);
+                            float phi = atan2(-vec.y, vec.x);
                             QColor farbe = Qt::red;
                             switch (static_cast<SignalTyp>(signal->SignalTyp)) {
                                 case SignalTyp::Vorsignal:
@@ -243,7 +245,7 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
                                 tooltip += "\n[" + signal->Stellwerk + "]";
                             }
                             si->setToolTip(QString::fromUtf8(tooltip.data(), tooltip.size()));
-                            QPointF pos(elementRichtung.endpunkt().X, elementRichtung.endpunkt().Y);
+                            QPointF pos(elementRichtung.endpunkt().x, elementRichtung.endpunkt().y);
                             si->setPos(pos);
                             si->moveBy(utm_dx, utm_dy);
                             this->addItem(si.release());
@@ -284,12 +286,12 @@ StreckeScene::StreckeScene(const Streckennetz& streckennetz, Visualisierung& vis
 
             if (static_cast<ReferenzpunktTyp>(refpunkt->RefTyp) == ReferenzpunktTyp::Aufgleispunkt) {
                 Vec3 vec = elementRichtung(*refpunkt).endpunkt() - elementRichtung(*refpunkt).gegenrichtung().endpunkt();
-                qreal phi = atan2(-vec.Y, vec.X);
+                qreal phi = atan2(-vec.y, vec.x);
 
                 assert(refpunkt->Info.data() != nullptr);
                 auto si = std::make_unique<DreieckItem>(phi,
                         QString::fromUtf8(refpunkt->Info.data(), refpunkt->Info.size()), Qt::magenta);
-                si->setPos(elementRichtung(*refpunkt).endpunkt().X, elementRichtung(*refpunkt).endpunkt().Y);
+                si->setPos(elementRichtung(*refpunkt).endpunkt().x, elementRichtung(*refpunkt).endpunkt().y);
                 si->moveBy(utm_dx, utm_dy);
                 this->addItem(si.release());
             }
@@ -349,12 +351,12 @@ void StreckeScene::zeigeFahrstrasse(const std::vector<StreckenelementUndRichtung
         const auto& ende = er.endpunkt();
 
         if (!angefangen) {
-            path.moveTo(start.X + dx, start.Y + dy);
+            path.moveTo(start.x + dx, start.y + dy);
             angefangen = true;
         } else {
-            path.lineTo(start.X + dx, start.Y + dy);
+            path.lineTo(start.x + dx, start.y + dy);
         }
-        path.lineTo(ende.X + dx, ende.Y + dy);
+        path.lineTo(ende.x + dx, ende.y + dy);
     }
 
     if (!angefangen) {
@@ -381,6 +383,48 @@ void StreckeScene::verbirgFahrstrasse()
         delete this->m_fahrstrasseHighlight;
         this->m_fahrstrasseHighlight = nullptr;
     }
+    this->setzeFahrstrassenDetailMarker(std::nullopt);
+}
+
+std::optional<QPointF> StreckeScene::punktInSzene(const StreckenelementUndRichtung& er) const
+{
+    const auto* el = er.getStreckenelement();
+    if (!el) {
+        return std::nullopt;
+    }
+    const auto offsetIt = this->m_elementToOffset.find(el);
+    if (offsetIt == this->m_elementToOffset.end()) {
+        return std::nullopt;
+    }
+    const auto& [dx, dy] = offsetIt->second;
+    const auto& ende = er.endpunkt();
+    return QPointF(ende.x + dx, ende.y + dy);
+}
+
+void StreckeScene::setzeFahrstrassenDetailMarker(const std::optional<QPointF>& punkt)
+{
+    if (this->m_detailMarker) {
+        this->removeItem(this->m_detailMarker);
+        delete this->m_detailMarker;
+        this->m_detailMarker = nullptr;
+    }
+    if (!punkt.has_value()) {
+        return;
+    }
+
+    // Halbtransparenter roter Kreis. Größe ist in Pixeln (cosmetic), unabhängig vom Zoom.
+    constexpr qreal radiusPx = 12.0;
+    auto* item = new QGraphicsEllipseItem(QRectF(-radiusPx, -radiusPx, 2 * radiusPx, 2 * radiusPx));
+    item->setPos(*punkt);
+    item->setBrush(QBrush(QColor(255, 0, 0, 110)));
+    QPen pen(QColor(180, 0, 0, 220));
+    pen.setWidth(2);
+    pen.setCosmetic(true);
+    item->setPen(pen);
+    item->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    item->setZValue(ZWERT_GLEIS + 0.7);
+    this->addItem(item);
+    this->m_detailMarker = item;
 }
 
 QRectF StreckeScene::boundingRectFuerPfad(const std::vector<StreckenelementUndRichtung>& pfad) const
@@ -412,8 +456,8 @@ QRectF StreckeScene::boundingRectFuerPfad(const std::vector<StreckenelementUndRi
         const auto& [dx, dy] = offsetIt->second;
         const auto& start = er.gegenrichtung().endpunkt();
         const auto& ende = er.endpunkt();
-        erweitere(start.X + dx, start.Y + dy);
-        erweitere(ende.X + dx, ende.Y + dy);
+        erweitere(start.x + dx, start.y + dy);
+        erweitere(ende.x + dx, ende.y + dy);
     }
 
     return result;

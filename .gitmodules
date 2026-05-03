@@ -4,3 +4,6 @@
 [submodule "utm"]
 	path = utm
 	url = https://github.com/mcpca/utm
+[submodule "ls3render"]
+	path = ls3render
+	url = https://github.com/zusitools/ls3render.git

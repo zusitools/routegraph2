@@ -11,9 +11,11 @@ CONFIG += c++1z rtti_off
 SOURCES += main.cpp\
         mainwindow.cpp \
     model/fahrstrasse.cpp \
+    model/fahrstrassendetails.cpp \
     streckennetz.cpp \
     view/bahnsteige.cpp \
     view/cursorwraphelper.cpp \
+    view/fahrstrassendetailswindow.cpp \
     view/fahrstrassenpanel.cpp \
     view/streckeview.cpp \
     view/streckescene.cpp \
@@ -37,6 +39,7 @@ HEADERS  += mainwindow.h \
     streckennetz.h \
     view/bahnsteige.h \
     view/cursorwraphelper.h \
+    view/fahrstrassendetailswindow.h \
     view/fahrstrassenpanel.h \
     view/streckeview.h \
     view/streckescene.h \
@@ -57,21 +60,33 @@ HEADERS  += mainwindow.h \
     view/visualisierung/ueberhoehungvisualisierung.h \
     view/visualisierung/neigungvisualisierung.h \
     model/fahrstrasse.h \
+    model/fahrstrassendetails.h \
     model/streckenelement.h
 
 FORMS    += mainwindow.ui
 
-INCLUDEPATH += $$_PRO_FILE_PWD_/build-parser/include
-INCLUDEPATH += $$_PRO_FILE_PWD_/parser/include
-INCLUDEPATH += $$_PRO_FILE_PWD_/parser/rapidxml-mod
+# CMake-Build (ls3render-Subdirectory in cmake-parser) erzeugt die Header unter
+# build-parser/ls3render/zusi_parser/zusi_parser/zusi_types.hpp – also INCLUDEPATH
+# eine Ebene darüber, damit "zusi_parser/zusi_types.hpp" eindeutig auflöst.
+LS3RENDER_BUILD = $$_PRO_FILE_PWD_/build-parser/ls3render
+INCLUDEPATH += $$LS3RENDER_BUILD/zusi_parser
+INCLUDEPATH += $$_PRO_FILE_PWD_/ls3render/parser/include
+INCLUDEPATH += $$_PRO_FILE_PWD_/ls3render/parser/rapidxml-mod
+INCLUDEPATH += $$_PRO_FILE_PWD_
 INCLUDEPATH += $$_PRO_FILE_PWD_/utm/include
+
+# ls3render-Bibliothek (CMake-Build) für die Signal-Vorschau verlinken.
+LIBS += -L$$LS3RENDER_BUILD -lls3render
+linux {
+    LIBS += -lGL -lGLEW -lglfw
+}
 
 QMAKE_CXXFLAGS_RELEASE -= -O
 QMAKE_CXXFLAGS_RELEASE -= -O1
 QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE *= -O3 -flto
 
-QMAKE_CXXFLAGS += -DROUTEGRAPH2_VERSION=$$VERSION
+QMAKE_CXXFLAGS += -DROUTEGRAPH2_VERSION=$$VERSION -DGLM_ENABLE_EXPERIMENTAL
 
 win32 {
     LIBS += -ladvapi32 -lpthread -lboost_system-mt-x64 -lboost_filesystem-mt-x64 -lboost_nowide-mt-x64 -ldbgeng

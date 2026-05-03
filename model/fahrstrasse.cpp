@@ -199,6 +199,8 @@ std::vector<ResolvedFahrstrasse> ermittleFahrstrassen(const Streckennetz& netz) 
             ResolvedFahrstrasse rf;
             rf.name = fs->FahrstrName;
             rf.typ = fs->FahrstrTyp;
+            rf.quelle = fs.get();
+            rf.fahrstrasseModul = fahrstrasseModulPfad;
 
             std::string fehler;
 

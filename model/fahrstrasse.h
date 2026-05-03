@@ -3,10 +3,13 @@
 
 #include "model/streckenelement.h"
 
+#include "zusi_parser/utils.hpp"
+
 #include <string>
 #include <vector>
 
 class Streckennetz;
+struct Fahrstrasse;
 
 /**
  * Eine aus den Streckendaten aufgelöste Fahrstraße samt vorausberechnetem Pfad.
@@ -27,6 +30,13 @@ struct ResolvedFahrstrasse {
 
     // Leerer String = aufgelöst und Pfad berechnet; sonst Tooltip-Text mit Grund.
     std::string fehler;
+
+    // Zeiger auf das ursprüngliche Fahrstraßen-Element im Streckennetz und
+    // den Pfad des Moduls, in dem es definiert ist. Wird zum Auflösen weiterer
+    // Referenzen (FahrstrSignal, FahrstrRegister, …) im Detailfenster benötigt.
+    // Lebensdauer: gültig solange Streckennetz die Strecke hält.
+    const Fahrstrasse* quelle = nullptr;
+    zusixml::ZusiPfad fahrstrasseModul = zusixml::ZusiPfad::vonZusiPfad("");
 };
 
 /**

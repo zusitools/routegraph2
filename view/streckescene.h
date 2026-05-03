@@ -9,11 +9,13 @@
 #include "zusi_parser/utils.hpp"
 #include "zusi_parser/zusi_types.hpp"
 
+#include <optional>
 #include <vector>
 #include <memory>
 #include <unordered_map>
 
 class Streckennetz;
+class QGraphicsItem;
 class QGraphicsPathItem;
 
 class StreckeScene : public QGraphicsScene
@@ -41,6 +43,19 @@ public:
      * der Szene zugeordnet werden können.
      */
     QRectF boundingRectFuerPfad(const std::vector<StreckenelementUndRichtung>& pfad) const;
+
+    /**
+     * Liefert die Position des Endpunkts der angegebenen Element-Richtung
+     * in Szenen-Koordinaten (inkl. Modul-Versatz). Liefert std::nullopt, wenn
+     * das Element nicht in der Szene bekannt ist.
+     */
+    std::optional<QPointF> punktInSzene(const StreckenelementUndRichtung& er) const;
+
+    /**
+     * Setzt einen optionalen Detail-Marker (halbtransparenter roter Kreis) auf
+     * den angegebenen Punkt. std::nullopt entfernt den Marker.
+     */
+    void setzeFahrstrassenDetailMarker(const std::optional<QPointF>& punkt);
 
     /**
      * Eine Modulgrenze in der Szene: ein Streckenelement-Endpunkt, an dem ein
@@ -72,6 +87,10 @@ private:
     // Lebenszeit gehört der Szene (über addItem); der Zeiger wird in zeigeFahrstrasse
     // gesetzt und beim verbirgFahrstrasse / Aufräumen wieder zu nullptr.
     QGraphicsPathItem* m_fahrstrasseHighlight = nullptr;
+
+    // Optionaler Detail-Marker (roter Halbtransparent-Kreis) für die im
+    // Fahrstraßen-Detailfenster ausgewählte Position. Lebenszeit gehört der Szene.
+    QGraphicsItem* m_detailMarker = nullptr;
 
     // Alle Modulgrenzen, die beim Aufbau der Szene aus den geladenen Strecken
     // ermittelt wurden. Wird für das Kontextmenü zum Nachladen benötigt.

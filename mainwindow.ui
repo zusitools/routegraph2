@@ -150,6 +150,7 @@
     <addaction name="actionAnsichtBahnsteige"/>
     <addaction name="separator"/>
     <addaction name="actionAnsichtFahrstrassen"/>
+    <addaction name="actionAnsichtFahrstrassenDetails"/>
    </widget>
    <addaction name="menuDatei"/>
    <addaction name="menuVisualisierung"/>
@@ -228,6 +229,11 @@
    </property>
    <property name="text">
     <string>&amp;Fahrstraßen</string>
+   </property>
+  </action>
+  <action name="actionAnsichtFahrstrassenDetails">
+   <property name="text">
+    <string>Fahrstraßen-&amp;Details</string>
    </property>
   </action>
   <actiongroup name="actiongroupVisualisierung">
@@ -437,6 +443,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionAnsichtFahrstrassenDetails</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionAnsichtFahrstrassenDetailsTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>511</x>
+     <y>383</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>actionOeffnenTriggered()</slot>
@@ -446,5 +468,6 @@
   <slot>actionAnsichtBetriebsstellennamenToggled(bool)</slot>
   <slot>actionAnsichtBahnsteigeToggled(bool)</slot>
   <slot>actionAnsichtFahrstrassenToggled(bool)</slot>
+  <slot>actionAnsichtFahrstrassenDetailsTriggered()</slot>
  </slots>
 </ui>

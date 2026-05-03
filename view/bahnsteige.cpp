@@ -59,20 +59,20 @@ Offset offsetVon(
 
 float laengeVonElement(const StreckenelementUndRichtung& er) {
     const Vec3 vec = er.endpunkt() - er.gegenrichtung().endpunkt();
-    return std::sqrt(vec.X * vec.X + vec.Y * vec.Y);
+    return std::sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
 // Liefert den auf Bahnsteigbreite skalierten Senkrechten-Vektor zur Element-Richtung,
 // ausgerichtet auf die angegebene Seite.
 QPointF perpVek(const Vec3& dir, Seite seite, qreal breite) {
-    const float veclen = std::sqrt(dir.X * dir.X + dir.Y * dir.Y);
+    const float veclen = std::sqrt(dir.x * dir.x + dir.y * dir.y);
     if (veclen < 1e-6f) {
         return { 0.0, 0.0 };
     }
     const qreal s = static_cast<qreal>(static_cast<int>(seite));
     return {
-        static_cast<qreal>(dir.Y) * breite * s / veclen,
-       -static_cast<qreal>(dir.X) * breite * s / veclen,
+        static_cast<qreal>(dir.y) * breite * s / veclen,
+       -static_cast<qreal>(dir.x) * breite * s / veclen,
     };
 }
 
@@ -101,8 +101,8 @@ void zeichnePolygon(
         const auto off = offsetVon(path[0].getStreckenelement(), utmOffsetByElement);
         const auto& p = path[0].gegenrichtung().endpunkt();
         const QPointF perp = perpVek(dirs[0], seite, kBahnsteigBreite);
-        innen.emplace_back(p.X + off.dx, p.Y + off.dy);
-        aussen.emplace_back(p.X + off.dx + perp.x(), p.Y + off.dy + perp.y());
+        innen.emplace_back(p.x + off.dx, p.y + off.dy);
+        aussen.emplace_back(p.x + off.dx + perp.x(), p.y + off.dy + perp.y());
     }
 
     // Innere Knotenpunkte: Mittel der angrenzenden Element-Senkrechten,
@@ -113,8 +113,8 @@ void zeichnePolygon(
         const QPointF perp1 = perpVek(dirs[i - 1], seite, kBahnsteigBreite);
         const QPointF perp2 = perpVek(dirs[i], seite, kBahnsteigBreite);
         const QPointF perp { (perp1.x() + perp2.x()) / 2.0, (perp1.y() + perp2.y()) / 2.0 };
-        innen.emplace_back(p.X + off.dx, p.Y + off.dy);
-        aussen.emplace_back(p.X + off.dx + perp.x(), p.Y + off.dy + perp.y());
+        innen.emplace_back(p.x + off.dx, p.y + off.dy);
+        aussen.emplace_back(p.x + off.dx + perp.x(), p.y + off.dy + perp.y());
     }
 
     // Letzter Knotenpunkt: Ende des letzten Elements
@@ -123,8 +123,8 @@ void zeichnePolygon(
         const auto off = offsetVon(last.getStreckenelement(), utmOffsetByElement);
         const auto& p = last.endpunkt();
         const QPointF perp = perpVek(dirs.back(), seite, kBahnsteigBreite);
-        innen.emplace_back(p.X + off.dx, p.Y + off.dy);
-        aussen.emplace_back(p.X + off.dx + perp.x(), p.Y + off.dy + perp.y());
+        innen.emplace_back(p.x + off.dx, p.y + off.dy);
+        aussen.emplace_back(p.x + off.dx + perp.x(), p.y + off.dy + perp.y());
     }
 
     QPolygonF polygon;
@@ -212,14 +212,14 @@ void zeichneMitte(
     // Ereignisse wirken am Ende des Elements: bei Norm-Richtung b, bei Gegen-Richtung g.
     const auto& p = er.endpunkt();
     const Vec3 dir = er.endpunkt() - er.gegenrichtung().endpunkt();
-    const qreal veclen = std::sqrt(static_cast<qreal>(dir.X) * dir.X + static_cast<qreal>(dir.Y) * dir.Y);
+    const qreal veclen = std::sqrt(static_cast<qreal>(dir.x) * dir.x + static_cast<qreal>(dir.y) * dir.y);
     if (veclen < 1e-6) {
         return;
     }
 
     // Einheitsvektor in Richtung Bahnsteigende (= Laufrichtung des Elements).
-    const qreal dx = static_cast<qreal>(dir.X) / veclen;
-    const qreal dy = static_cast<qreal>(dir.Y) / veclen;
+    const qreal dx = static_cast<qreal>(dir.x) / veclen;
+    const qreal dy = static_cast<qreal>(dir.y) / veclen;
     // Senkrechte zur Laufrichtung; Vorzeichen ist hier egal, da symmetrisch verwendet.
     const qreal px = dy;
     const qreal py = -dx;
@@ -229,8 +229,8 @@ void zeichneMitte(
     // Spitze ragt von dort aus in Richtung Bahnsteigende über das Element-Ende
     // hinaus.
     const QPointF perp = perpVek(dir, seite, kBahnsteigBreite / 2.0);
-    const qreal bx = p.X + off.dx + perp.x();
-    const qreal by = p.Y + off.dy + perp.y();
+    const qreal bx = p.x + off.dx + perp.x();
+    const qreal by = p.y + off.dy + perp.y();
 
     // Gleichseitiges Dreieck mit Höhe h = s * sqrt(3)/2.
     constexpr qreal kHoehe = kMitteDreieckSeite * 0.8660254037844386;  // sqrt(3)/2
