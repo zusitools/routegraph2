@@ -99,7 +99,7 @@ void zeichnePolygon(
     // Erster Knotenpunkt: Anfang des ersten Elements
     {
         const auto off = offsetVon(path[0].getStreckenelement(), utmOffsetByElement);
-        const auto& p = path[0].gegenrichtung().endpunkt();
+        const auto p = path[0].gegenrichtung().endpunkt();
         const QPointF perp = perpVek(dirs[0], seite, kBahnsteigBreite);
         innen.emplace_back(p.x + off.dx, p.y + off.dy);
         aussen.emplace_back(p.x + off.dx + perp.x(), p.y + off.dy + perp.y());
@@ -109,7 +109,7 @@ void zeichnePolygon(
     // damit der Bahnsteig an Krümmungen/Weichen optisch zusammenhängend bleibt
     for (size_t i = 1; i < path.size(); ++i) {
         const auto off = offsetVon(path[i].getStreckenelement(), utmOffsetByElement);
-        const auto& p = path[i].gegenrichtung().endpunkt();
+        const auto p = path[i].gegenrichtung().endpunkt();
         const QPointF perp1 = perpVek(dirs[i - 1], seite, kBahnsteigBreite);
         const QPointF perp2 = perpVek(dirs[i], seite, kBahnsteigBreite);
         const QPointF perp { (perp1.x() + perp2.x()) / 2.0, (perp1.y() + perp2.y()) / 2.0 };

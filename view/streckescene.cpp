@@ -347,7 +347,7 @@ void StreckeScene::zeigeFahrstrasse(const std::vector<StreckenelementUndRichtung
             continue;
         }
         const auto& [dx, dy] = offsetIt->second;
-        const auto& start = er.gegenrichtung().endpunkt();
+        const auto start = er.gegenrichtung().endpunkt();
         const auto& ende = er.endpunkt();
 
         if (!angefangen) {
@@ -454,7 +454,7 @@ QRectF StreckeScene::boundingRectFuerPfad(const std::vector<StreckenelementUndRi
             continue;
         }
         const auto& [dx, dy] = offsetIt->second;
-        const auto& start = er.gegenrichtung().endpunkt();
+        const auto start = er.gegenrichtung().endpunkt();
         const auto& ende = er.endpunkt();
         erweitere(start.x + dx, start.y + dy);
         erweitere(ende.x + dx, ende.y + dy);
