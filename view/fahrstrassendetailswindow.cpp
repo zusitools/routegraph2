@@ -20,8 +20,10 @@
 #include <QScrollArea>
 #include <QSizePolicy>
 #include <QSplitter>
+#include <QStringList>
 #include <QThread>
 #include <QVBoxLayout>
+#include <QVector>
 
 #include <atomic>
 #include <utility>
@@ -54,7 +56,19 @@ public:
         : m_generationRef(generationRef) {}
 
 public slots:
-    void renderEinzeln(int generation, int eintragIndex, QString osPfad) {
+    /**
+     * Rendert einen Signal-Eintrag, dessen Frames als parallele Listen übergeben
+     * werden:
+     *   - osPfade[i]: OS-Pfad der LS3-Datei des i-ten Frames
+     *   - params[9*i + 0..2]: Position (p.x/y/z) aus <SignalFrame>
+     *   - params[9*i + 3..5]: Rotation (phi.x/y/z) aus <SignalFrame>
+     *   - params[9*i + 6..8]: Skalierung (sk.x/y/z) aus <SignalFrame>
+     *
+     * Die parallelen Listen werden verwendet, weil Qt-Standardtypen ohne weiteres
+     * über Qt::QueuedConnection übergeben werden können (kein Q_DECLARE_METATYPE).
+     */
+    void renderEinzeln(int generation, int eintragIndex,
+                       QStringList osPfade, QVector<float> params) {
         if (m_generationRef->load() != generation) {
             return;
         }
@@ -76,31 +90,33 @@ public slots:
 
         if (fehler.isEmpty()) {
             ls3render_Reset();
-            const QByteArray utf8 = osPfad.toUtf8();
-            const int ok = ls3render_AddFahrzeug(utf8.constData(),
-                                                 /*OffsetX=*/0.0f,
-                                                 /*Fahrzeuglaenge=*/0.0f,
-                                                 /*Gedreht=*/0,
-                                                 /*StromabnehmerHoehe=*/0.0f,
-                                                 /*Stromabnehmer1Oben=*/0,
-                                                 /*Stromabnehmer2Oben=*/0,
-                                                 /*Stromabnehmer3Oben=*/0,
-                                                 /*Stromabnehmer4Oben=*/0,
-                                                 /*SpitzenlichtVorneAn=*/0,
-                                                 /*SpitzenlichtHintenAn=*/0,
-                                                 /*SchlusslichtVorneAn=*/0,
-                                                 /*SchlusslichtHintenAn=*/0);
-            if (!ok) {
-                fehler = QObject::tr("ls3render_AddFahrzeug fehlgeschlagen für %1").arg(osPfad);
+
+            Q_ASSERT(params.size() == osPfade.size() * 9);
+
+            int hinzugefuegt = 0;
+            for (int i = 0; i < osPfade.size(); ++i) {
+                const QByteArray utf8 = osPfade.at(i).toUtf8();
+                const float* p = params.constData() + i * 9;
+                if (ls3render_AddSignalFrame(utf8.constData(),
+                                             p[0], p[1], p[2],
+                                             p[3], p[4], p[5],
+                                             p[6], p[7], p[8]) == 1) {
+                    ++hinzugefuegt;
+                }
+            }
+
+            if (hinzugefuegt == 0) {
+                fehler = QObject::tr("ls3render_AddSignalFrame fehlgeschlagen für alle %1 Frame(s)")
+                             .arg(osPfade.size());
             } else {
                 const int bufsize = ls3render_GetAusgabepufferGroesse();
                 if (bufsize <= 0) {
-                    fehler = QObject::tr("Nichts zu rendern für %1").arg(osPfad);
+                    fehler = QObject::tr("Nichts zu rendern");
                 } else {
                     QByteArray buf;
                     buf.resize(bufsize);
                     if (ls3render_Render(buf.data()) != 1) {
-                        fehler = QObject::tr("ls3render_Render fehlgeschlagen für %1").arg(osPfad);
+                        fehler = QObject::tr("ls3render_Render fehlgeschlagen");
                     } else {
                         const int w = ls3render_GetBildbreite();
                         const int h = ls3render_GetBildhoehe();
@@ -196,6 +212,10 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
             this, &FahrstrassenDetailsWindow::onEintragAusgewaehlt);
     connect(m_eintragsListe, &QListWidget::itemDoubleClicked,
             this, &FahrstrassenDetailsWindow::onEintragDoppelklick);
+
+    // QVector<float> ist kein Qt-Standard-Meta-Typ; einmalig registrieren, damit
+    // er via Qt::QueuedConnection ge-Q_ARG()-fähig ist.
+    qRegisterMetaType<QVector<float>>("QVector<float>");
 
     // Worker-Thread
     m_workerThread = new QThread(this);
@@ -417,8 +437,8 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
 
     m_signalLayout->addStretch(1);
 
-    // Aufträge dispatchen: pro Signal-Eintrag genau einen LS3-Pfad rendern (wenn
-    // mehrere SignalFrames vorhanden sind, nehmen wir den ersten mit nicht-leerer Datei).
+    // Aufträge dispatchen: pro Signal-Eintrag werden alle <SignalFrame>-Einträge
+    // mit nicht-leerer LS3-Datei gerendert (Multi-Frame-Signale).
     for (size_t s = 0; s < m_signalSlots.size(); ++s) {
         const SignalSlot& slot = m_signalSlots[s];
         const auto& e = m_eintraege[slot.eintragIndex];
@@ -426,15 +446,20 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
             slot.bildLabel->setText(tr("(kein Signal)"));
             continue;
         }
-        QString osPfad;
+
+        QStringList osPfade;
+        QVector<float> params;
+        params.reserve(static_cast<int>(e.signal->children_SignalFrame.size()) * 9);
         for (const auto& frame : e.signal->children_SignalFrame) {
             if (!frame) continue;
             if (frame->Datei.Dateiname.empty()) continue;
             const auto absPfad = zusixml::ZusiPfad::vonZusiPfad(frame->Datei.Dateiname, e.signalModul);
-            osPfad = QString::fromStdString(absPfad.alsOsPfad());
-            break;
+            osPfade.append(QString::fromStdString(absPfad.alsOsPfad()));
+            params.append(frame->p.x);    params.append(frame->p.y);    params.append(frame->p.z);
+            params.append(frame->phi.x);  params.append(frame->phi.y);  params.append(frame->phi.z);
+            params.append(frame->sk.x);   params.append(frame->sk.y);   params.append(frame->sk.z);
         }
-        if (osPfad.isEmpty()) {
+        if (osPfade.isEmpty()) {
             slot.bildLabel->setText(tr("(keine LS3-Datei)"));
             continue;
         }
@@ -443,7 +468,8 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         QMetaObject::invokeMethod(m_worker, "renderEinzeln", Qt::QueuedConnection,
                                   Q_ARG(int, gen),
                                   Q_ARG(int, slot.eintragIndex),
-                                  Q_ARG(QString, osPfad));
+                                  Q_ARG(QStringList, osPfade),
+                                  Q_ARG(QVector<float>, params));
     }
 }
 
