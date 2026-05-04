@@ -120,10 +120,17 @@ public slots:
                     } else {
                         const int w = ls3render_GetBildbreite();
                         const int h = ls3render_GetBildhoehe();
-                        // ls3render liefert RGBA-Daten zeilenweise von unten nach oben.
+                        // ls3render liefert 32-Bit-Pixeldaten in BGRA-Byte-Reihenfolge
+                        // (siehe ls3render.h: glReadPixels mit GL_BGRA), zeilenweise
+                        // von unten nach oben. QImage::Format_ARGB32 ist als
+                        // 0xAARRGGBB-Integer in nativer Byte-Reihenfolge definiert,
+                        // entspricht auf Little-Endian-Systemen also genau B,G,R,A
+                        // im Speicher. mirrored(false, true) dreht die Zeilen um und
+                        // erzeugt eine eigene Kopie, sodass `buf` nach Rückkehr
+                        // verworfen werden darf.
                         QImage tmp(reinterpret_cast<const uchar*>(buf.constData()),
-                                   w, h, w * 4, QImage::Format_RGBA8888);
-                        image = tmp.mirrored(false, true).copy();
+                                   w, h, w * 4, QImage::Format_ARGB32);
+                        image = tmp.mirrored(false, true);
                     }
                 }
             }
