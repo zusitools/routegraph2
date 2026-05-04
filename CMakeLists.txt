@@ -140,7 +140,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets)
 # Boost (required for boost::stacktrace in main.cpp)
 # ---------------------------------------------------------------------------
 if(WIN32)
-  find_package(Boost REQUIRED COMPONENTS system filesystem nowide)
+  find_package(Boost REQUIRED COMPONENTS filesystem nowide)
 else()
   find_package(Boost REQUIRED)
 endif()
@@ -248,7 +248,6 @@ target_link_options(routegraph2 PRIVATE
 if(WIN32)
   target_compile_definitions(routegraph2 PRIVATE ZUSI_PARSER_USE_BOOST_FILESYSTEM)
   target_link_libraries(routegraph2 PRIVATE
-    Boost::system
     Boost::filesystem
     Boost::nowide
     advapi32
