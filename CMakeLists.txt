@@ -112,11 +112,19 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     Signal::NameBetriebsstelle
     Signal::Stellwerk
     Signal::SignalFrame
+    Signal::HsigBegriff
+    Signal::VsigBegriff
+    Signal::MatrixEintrag
+    Signal::Ersatzsignal
 
     SignalFrame::Datei
     SignalFrame::p
     SignalFrame::phi
     SignalFrame::sk
+
+    MatrixEintrag::Signalbild
+
+    Ersatzsignal::MatrixEintrag
 
     ReferenzElement::RefTyp
     ReferenzElement::StrElement

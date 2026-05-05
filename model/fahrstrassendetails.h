@@ -39,6 +39,15 @@ struct FahrstrasseDetailEintrag {
     // Modulpfad, in dem es liegt (für die LS3-Pfad-Auflösung gegen das Strecken-Modul).
     const Signal* signal = nullptr;
     zusixml::ZusiPfad signalModul = zusixml::ZusiPfad::vonZusiPfad("");
+
+    // Indizes in die Signalmatrix (Zeile=Hauptsignal-Begriff, Spalte=Vorsignal-Begriff).
+    // Für FahrstrSignal: Zeile=FahrstrSignalZeile, Spalte=0.
+    // Für FahrstrVSignal: Zeile=0, Spalte=FahrstrSignalSpalte.
+    int matrixZeile = 0;
+    int matrixSpalte = 0;
+    // Nur für FahrstrSignal: bei true wird stattdessen der Eintrag der Ersatzsignal-
+    // Matrix mit Index `matrixZeile` (ohne Spalte) verwendet.
+    bool ersatzsignal = false;
 };
 
 /**

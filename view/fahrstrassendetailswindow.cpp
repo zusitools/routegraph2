@@ -26,6 +26,8 @@
 #include <QVector>
 
 #include <atomic>
+#include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -45,6 +47,53 @@ bool& ls3renderInitialisiert() {
 }
 
 constexpr int Ls3PixelProMeter = 40;
+
+/**
+ * Liest die Signalbild-ID aus der Signalmatrix bzw. Ersatzsignal-Matrix anhand der
+ * im FahrstrasseDetailEintrag gespeicherten Indizes.
+ * Bei Fehler (Matrix leer, Index ausserhalb, MatrixEintrag fehlt) wird std::nullopt
+ * zurueckgegeben und *fehler mit einem aussagekraeftigen Text gefuellt.
+ */
+std::optional<uint64_t> berechneSignalbild(const Signal& sig, int zeile, int spalte,
+                                           bool ersatz, QString* fehler) {
+    if (ersatz) {
+        if (zeile < 0 || static_cast<size_t>(zeile) >= sig.children_Ersatzsignal.size()) {
+            *fehler = QObject::tr("Ersatzsignal-Zeile %1 außerhalb (0-%2)")
+                          .arg(zeile)
+                          .arg(static_cast<int>(sig.children_Ersatzsignal.size()));
+            return std::nullopt;
+        }
+        const auto& es = sig.children_Ersatzsignal[zeile];
+        if (!es) {
+            *fehler = QObject::tr("Ersatzsignal-Zeile %1 leer").arg(zeile);
+            return std::nullopt;
+        }
+        // Ersatzsignal::MatrixEintrag ist ein Wert (InlineChildStrategy im Parsergen),
+        // also kein unique_ptr und damit immer vorhanden.
+        return static_cast<uint64_t>(es->MatrixEintrag.Signalbild);
+    }
+
+    const size_t anzSpalten = sig.children_VsigBegriff.size();
+    if (anzSpalten == 0) {
+        *fehler = QObject::tr("Signal hat keine Vorsignal-Spalten (VsigBegriff)");
+        return std::nullopt;
+    }
+    if (zeile < 0 || spalte < 0 || static_cast<size_t>(spalte) >= anzSpalten) {
+        *fehler = QObject::tr("Matrix-Index Zeile %1 / Spalte %2 außerhalb (0-%3)")
+                      .arg(zeile).arg(spalte).arg(static_cast<int>(anzSpalten - 1));
+        return std::nullopt;
+    }
+    const size_t idx = static_cast<size_t>(zeile) * anzSpalten + static_cast<size_t>(spalte);
+    if (idx >= sig.children_MatrixEintrag.size()) {
+        *fehler = QObject::tr("Matrix-Eintrag %1 außerhalb (Matrix hat %2 Einträge)")
+                      .arg(static_cast<int>(idx))
+                      .arg(static_cast<int>(sig.children_MatrixEintrag.size()));
+        return std::nullopt;
+    }
+    // Signal::children_MatrixEintrag enthaelt MatrixEintrag-Werte (InlineChildStrategy).
+    const auto& me = sig.children_MatrixEintrag[idx];
+    return static_cast<uint64_t>(me.Signalbild);
+}
 
 }  // namespace
 
@@ -68,7 +117,7 @@ public slots:
      * über Qt::QueuedConnection übergeben werden können (kein Q_DECLARE_METATYPE).
      */
     void renderEinzeln(int generation, int eintragIndex,
-                       QStringList osPfade, QVector<float> params) {
+                       QStringList osPfade, QVector<float> params, quint64 signalbild) {
         if (m_generationRef->load() != generation) {
             return;
         }
@@ -90,6 +139,7 @@ public slots:
 
         if (fehler.isEmpty()) {
             ls3render_Reset();
+            ls3render_SetSignalbild(static_cast<uint64_t>(signalbild));
 
             Q_ASSERT(params.size() == osPfade.size() * 9);
 
@@ -447,6 +497,17 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
             continue;
         }
 
+        // Signalbild aus der Signalmatrix bzw. Ersatzsignal-Matrix bestimmen.
+        QString signalbildFehler;
+        const auto signalbild = berechneSignalbild(*e.signal,
+                                                   e.matrixZeile, e.matrixSpalte,
+                                                   e.ersatzsignal, &signalbildFehler);
+        if (!signalbild.has_value()) {
+            slot.bildLabel->setText(signalbildFehler);
+            slot.bildLabel->setToolTip(signalbildFehler);
+            continue;
+        }
+
         QStringList osPfade;
         QVector<float> params;
         params.reserve(static_cast<int>(e.signal->children_SignalFrame.size()) * 9);
@@ -469,7 +530,8 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
                                   Q_ARG(int, gen),
                                   Q_ARG(int, slot.eintragIndex),
                                   Q_ARG(QStringList, osPfade),
-                                  Q_ARG(QVector<float>, params));
+                                  Q_ARG(QVector<float>, params),
+                                  Q_ARG(quint64, static_cast<quint64>(*signalbild)));
     }
 }
 

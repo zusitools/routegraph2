@@ -208,11 +208,21 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
         if (!s) continue;
         fuegeRefHinzu(FahrstrasseDetailEintrag::Typ::FahrstrSignal,
                       "Signal", "FahrstrSignal", s->Datei.Dateiname, s->Ref, /*istSignal=*/true);
+        if (!result.empty()) {
+            result.back().matrixZeile = s->FahrstrSignalZeile;
+            result.back().matrixSpalte = 0;
+            result.back().ersatzsignal = s->FahrstrSignalErsatzsignal;
+        }
     }
     for (const auto& s : fs.quelle->children_FahrstrVSignal) {
         if (!s) continue;
         fuegeRefHinzu(FahrstrasseDetailEintrag::Typ::FahrstrVSignal,
                       "Vorsignal", "FahrstrVSignal", s->Datei.Dateiname, s->Ref, /*istSignal=*/true);
+        if (!result.empty()) {
+            result.back().matrixZeile = 0;
+            result.back().matrixSpalte = s->FahrstrSignalSpalte;
+            result.back().ersatzsignal = false;
+        }
     }
     for (const auto& w : fs.quelle->children_FahrstrWeiche) {
         if (!w) continue;
