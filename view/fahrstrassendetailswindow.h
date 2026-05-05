@@ -71,7 +71,6 @@ private:
     QScrollArea* m_signalScroll;
     QWidget* m_signalContainer;
     QHBoxLayout* m_signalLayout;
-    QLabel* m_titel;
 
     // LS3-Rendering: pro Signal-Eintrag genau ein Pixmap-Slot. Die Signals werden
     // sequenziell in einem Worker-Thread gerendert, weil ls3render globale State hat.

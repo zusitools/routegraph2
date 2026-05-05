@@ -155,18 +155,12 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
     , m_signalScroll(new QScrollArea(this))
     , m_signalContainer(new QWidget(this))
     , m_signalLayout(new QHBoxLayout(m_signalContainer))
-    , m_titel(new QLabel(tr("(keine Fahrstraße ausgewählt)"), this))
 {
     setWindowTitle(tr("Fahrstraßen-Details"));
     resize(1100, 600);
 
     auto* zentralLayout = new QVBoxLayout(this);
     zentralLayout->setContentsMargins(4, 4, 4, 4);
-
-    QFont titelFont = m_titel->font();
-    titelFont.setBold(true);
-    m_titel->setFont(titelFont);
-    zentralLayout->addWidget(m_titel);
 
     auto* hauptSplitter = new QSplitter(Qt::Horizontal, this);
     hauptSplitter->setChildrenCollapsible(false);
@@ -267,7 +261,7 @@ void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz, const
 
     if (!netz || !fs) {
         m_eintraege.clear();
-        m_titel->setText(tr("(keine Fahrstraße ausgewählt)"));
+        setWindowTitle(tr("Fahrstraßen-Details"));
         aktualisiereEintraege();
         m_vorgaengerListe->clear();
         m_nachfolgerListe->clear();
@@ -278,12 +272,12 @@ void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz, const
     if (!fs->fehler.empty() || !fs->quelle) {
         m_eintraege.clear();
         if (!fs->fehler.empty()) {
-            m_titel->setText(tr("%1 — %2  (%3)")
-                                 .arg(QString::fromStdString(fs->betriebsstelle.empty() ? "(ohne Betriebsstelle)" : fs->betriebsstelle))
-                                 .arg(QString::fromStdString(fs->name))
-                                 .arg(QString::fromStdString(fs->fehler)));
+            setWindowTitle(tr("Fahrstraßen-Details — %1  (%2)")
+                               .arg(QString::fromStdString(fs->name))
+                               .arg(QString::fromStdString(fs->fehler)));
         } else {
-            m_titel->setText(tr("(unvollständige Fahrstraße)"));
+            setWindowTitle(tr("Fahrstraßen-Details — %1")
+                               .arg(QString::fromStdString(fs->name)));
         }
         aktualisiereEintraege();
         m_vorgaengerListe->clear();
@@ -292,9 +286,8 @@ void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz, const
         return;
     }
 
-    m_titel->setText(tr("%1 — %2")
-                         .arg(QString::fromStdString(fs->betriebsstelle.empty() ? "(ohne Betriebsstelle)" : fs->betriebsstelle))
-                         .arg(QString::fromStdString(fs->name)));
+    setWindowTitle(tr("Fahrstraßen-Details — %1")
+                       .arg(QString::fromStdString(fs->name)));
 
     m_eintraege = ermittleFahrstrasseDetails(*netz, *fs);
     aktualisiereEintraege();
