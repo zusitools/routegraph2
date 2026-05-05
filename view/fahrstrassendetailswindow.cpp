@@ -130,7 +130,7 @@ public slots:
             if (ls3render_Init() == 1) {
                 ls3render_SetMultisampling(4);
                 ls3render_SetPixelProMeter(Ls3PixelProMeter);
-                ls3render_SetAxonometrieParameter(0.1f, 0.5f);
+                ls3render_SetAxonometrieParameter(0.1f, 0.25f);
                 ls3renderInitialisiert() = true;
             } else {
                 fehler = QObject::tr("ls3render_Init fehlgeschlagen");
