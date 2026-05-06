@@ -10,6 +10,10 @@
 
 namespace {
 
+const char* richtungBeschriftung(StreckenelementRichtung richtung) {
+    return richtung == StreckenelementRichtung::Norm ? "blau" : "grün";
+}
+
 /** Ergebnis einer Referenz-Auflösung. */
 struct AufloesungsErgebnis {
     StreckenelementUndRichtung elementUndRichtung;
@@ -52,11 +56,10 @@ AufloesungsErgebnis loeseReferenzAuf(const Streckennetz& netz,
 
     const auto strElIndex = refEl->StrElement;
     const auto richtung = static_cast<StreckenelementRichtung>(refEl->StrNorm);
-    const char* richtungStr = richtung == StreckenelementRichtung::Norm ? "Norm" : "Gegen";
     if ((strElIndex < 0) || (static_cast<size_t>(strElIndex) >= strecke->children_StrElement.size())) {
         std::ostringstream os;
         os << refKontext << ": Streckenelement-Nr " << strElIndex
-           << " (" << richtungStr << ") in Modul \""
+           << " (" << richtungBeschriftung(richtung) << ") in Modul \""
            << modulPfad.alsZusiPfad() << "\" außerhalb des gültigen Bereichs";
         return { {}, modulPfad, os.str() };
     }
@@ -65,16 +68,12 @@ AufloesungsErgebnis loeseReferenzAuf(const Streckennetz& netz,
     if (!strEl) {
         std::ostringstream os;
         os << refKontext << ": Streckenelement Nr " << strElIndex
-           << " (" << richtungStr << ") in Modul \""
+           << " (" << richtungBeschriftung(richtung) << ") in Modul \""
            << modulPfad.alsZusiPfad() << "\" nicht vorhanden";
         return { {}, modulPfad, os.str() };
     }
 
     return { StreckenelementUndRichtung{ strEl, richtung }, modulPfad, std::string{} };
-}
-
-const char* richtungBeschriftung(StreckenelementRichtung richtung) {
-    return richtung == StreckenelementRichtung::Norm ? "Norm" : "Gegen";
 }
 
 std::string signalLabel(const StreckenelementUndRichtung& er, const char* fallback) {
@@ -121,7 +120,7 @@ std::string elementBeschreibung(const StreckenelementUndRichtung& er) {
         return {};
     }
     std::ostringstream os;
-    os << "Element Nr " << er->Nr << " (" << richtungBeschriftung(er.getRichtung()) << ")";
+    os << "Element Nr. " << er->Nr << " (" << richtungBeschriftung(er.getRichtung()) << ")";
     return os.str();
 }
 

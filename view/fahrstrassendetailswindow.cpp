@@ -359,9 +359,7 @@ void FahrstrassenDetailsWindow::aktualisiereEintraege()
         item->setData(Qt::UserRole, static_cast<int>(i));
         if (!e.fehler.empty()) {
             item->setToolTip(QString::fromStdString(e.fehler));
-            Qt::ItemFlags flags = item->flags();
-            flags &= ~Qt::ItemIsSelectable;
-            item->setFlags(flags);
+            item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
             QFont font = item->font();
             font.setItalic(true);
             item->setFont(font);
