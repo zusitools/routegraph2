@@ -116,6 +116,7 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     Signal::VsigBegriff
     Signal::MatrixEintrag
     Signal::Ersatzsignal
+    Signal::KoppelSignal
 
     SignalFrame::Datei
     SignalFrame::p
@@ -125,6 +126,9 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     MatrixEintrag::Signalbild
 
     Ersatzsignal::MatrixEintrag
+
+    KoppelSignal::ReferenzNr
+    KoppelSignal::Datei
 
     ReferenzElement::RefTyp
     ReferenzElement::StrElement

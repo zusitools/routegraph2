@@ -27,6 +27,9 @@ struct FahrstrasseDetailEintrag {
         FahrstrAufloesung,
         FahrstrTeilaufloesung,
         FahrstrSigHaltfall,
+        // An ein Haupt-/Vorsignal gekoppeltes Signal (<KoppelSignal>-Eintrag).
+        // Wird auf dieselbe Matrix-Zeile/Spalte wie das gekoppelte Signal gestellt.
+        Koppelsignal,
     };
 
     Typ typ;
@@ -35,19 +38,28 @@ struct FahrstrasseDetailEintrag {
     StreckenelementUndRichtung elementUndRichtung;  // ggf. ungültig bei Auflösefehler
     std::string fehler;                      // leer = OK; sonst Tooltip mit Grund
 
-    // Nur für FahrstrSignal/FahrstrVSignal gefüllt: das Signal-Objekt selbst und der
-    // Modulpfad, in dem es liegt (für die LS3-Pfad-Auflösung gegen das Strecken-Modul).
+    // Nur für FahrstrSignal/FahrstrVSignal/Koppelsignal gefüllt: das Signal-Objekt
+    // selbst und der Modulpfad, in dem es liegt (für die LS3-Pfad-Auflösung gegen
+    // das Strecken-Modul).
     const Signal* signal = nullptr;
     zusixml::ZusiPfad signalModul = zusixml::ZusiPfad::vonZusiPfad("");
 
     // Indizes in die Signalmatrix (Zeile=Hauptsignal-Begriff, Spalte=Vorsignal-Begriff).
     // Für FahrstrSignal: Zeile=FahrstrSignalZeile, Spalte=0.
     // Für FahrstrVSignal: Zeile=0, Spalte=FahrstrSignalSpalte.
+    // Für Koppelsignal: vom verkoppelten Wurzelsignal geerbt.
     int matrixZeile = 0;
     int matrixSpalte = 0;
-    // Nur für FahrstrSignal: bei true wird stattdessen der Eintrag der Ersatzsignal-
-    // Matrix mit Index `matrixZeile` (ohne Spalte) verwendet.
+    // Nur für FahrstrSignal/Koppelsignal eines Hauptsignals: bei true wird stattdessen
+    // der Eintrag der Ersatzsignal-Matrix mit Index `matrixZeile` (ohne Spalte) verwendet.
     bool ersatzsignal = false;
+
+    // Nur für Typ::Koppelsignal:
+    //   kopplungsTiefe: 1 für direkt gekoppelte Signale, 2 für deren Koppelsignale, ...
+    //   kopplungZuVsig: true, wenn die Kopplungs-Wurzel ein FahrstrVSignal ist, sonst
+    //                   FahrstrSignal. Bestimmt die Gruppierung in der Visualisierung.
+    int kopplungsTiefe = 0;
+    bool kopplungZuVsig = false;
 };
 
 /**

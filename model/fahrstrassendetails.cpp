@@ -6,6 +6,7 @@
 
 #include <sstream>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 
 namespace {
@@ -24,17 +25,25 @@ struct AufloesungsErgebnis {
 /**
  * Identisch zur Hilfsfunktion in fahrstrasse.cpp; zusätzlich liefert sie den
  * Modulpfad, weil wir ihn fürs Anhängen relativer LS3-Pfade brauchen.
+ *
+ * Sonderfall: ein leerer `dateinameRef` bedeutet "im selben Modul wie die
+ * referenzierende Datei" (so verwendet z. B. <KoppelSignal> die leere
+ * Dateiverknüpfung für modul-interne Kopplungen). Da
+ * `ZusiPfad::vonZusiPfad("", parent)` den Elternpfad NICHT zurückliefert,
+ * sondern den leeren Pfad, behandeln wir den Fall hier explizit.
  */
 AufloesungsErgebnis loeseReferenzAuf(const Streckennetz& netz,
                                      const zusixml::ZusiPfad& fahrstrasseModul,
                                      std::string_view dateinameRef,
                                      int64_t refIndex,
                                      const char* refKontext) {
-    const auto modulPfad = zusixml::ZusiPfad::vonZusiPfad(dateinameRef, fahrstrasseModul);
+    const auto modulPfad = dateinameRef.empty()
+        ? fahrstrasseModul
+        : zusixml::ZusiPfad::vonZusiPfad(dateinameRef, fahrstrasseModul);
     const Strecke* strecke = netz.get(modulPfad);
     if (!strecke) {
         std::ostringstream os;
-        os << refKontext << ": Modul \"" << dateinameRef << "\" nicht geladen";
+        os << refKontext << ": Modul \"" << modulPfad.alsZusiPfad() << "\" nicht geladen";
         return { {}, modulPfad, os.str() };
     }
 
@@ -201,6 +210,87 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
         result.push_back(std::move(e));
     };
 
+    // Verkettung der <KoppelSignal>-Einträge: ausgehend von dem zuletzt eingefügten
+    // Signal/Vorsignal-Eintrag wird die Koppelsignal-Kette aufgelöst und jedes
+    // gekoppelte Signal als neuer Eintrag (Typ Koppelsignal) hinter das jeweils
+    // gekoppelte Signal gehängt. Matrix-Zeile/Spalte und Ersatzsignal-Flag werden
+    // vom Wurzelsignal geerbt (Zusi stellt das gekoppelte Signal auf denselben
+    // Index wie sein Bezugssignal). Eine Zykluserkennung über Signal-Pointer
+    // verhindert Endlosschleifen bei rekursiven Kopplungen.
+    const auto fuegeKoppelsignaleHinzu = [&](bool kopplungZuVsig) {
+        if (result.empty()) {
+            return;
+        }
+        const int wurzelIndex = static_cast<int>(result.size()) - 1;
+        const int wurzelMatrixZeile = result[wurzelIndex].matrixZeile;
+        const int wurzelMatrixSpalte = result[wurzelIndex].matrixSpalte;
+        const bool wurzelErsatzsignal = result[wurzelIndex].ersatzsignal;
+
+        std::unordered_set<const Signal*> besucht;
+        if (result[wurzelIndex].signal) {
+            besucht.insert(result[wurzelIndex].signal);
+        }
+
+        int parentIndex = wurzelIndex;
+        int tiefe = 1;
+        while (true) {
+            const Signal* parentSignal = result[parentIndex].signal;
+            if (!parentSignal || !parentSignal->KoppelSignal) {
+                break;
+            }
+            const auto& koppel = *parentSignal->KoppelSignal;
+            const auto parentSignalModul = result[parentIndex].signalModul;
+
+            FahrstrasseDetailEintrag e;
+            e.typ = FahrstrasseDetailEintrag::Typ::Koppelsignal;
+            e.kopplungsTiefe = tiefe;
+            e.kopplungZuVsig = kopplungZuVsig;
+            e.matrixZeile = wurzelMatrixZeile;
+            e.matrixSpalte = wurzelMatrixSpalte;
+            e.ersatzsignal = wurzelErsatzsignal;
+
+            auto res = loeseReferenzAuf(netz, parentSignalModul,
+                                        koppel.Datei.Dateiname,
+                                        static_cast<int64_t>(koppel.ReferenzNr),
+                                        "KoppelSignal");
+            e.elementUndRichtung = res.elementUndRichtung;
+            e.fehler = res.fehler;
+            if (res.fehler.empty()) {
+                e.label = signalLabel(res.elementUndRichtung, "Koppelsignal");
+                e.signal = signalAn(res.elementUndRichtung);
+                e.signalModul = res.modul;
+                e.beschreibung = elementBeschreibung(res.elementUndRichtung);
+            } else {
+                e.label = "Koppelsignal (Auflösefehler)";
+                e.beschreibung = res.fehler;
+            }
+
+            // Zykluserkennung: dasselbe Signal darf in der Koppelkette nicht erneut
+            // auftreten (sonst Endlosschleife).
+            if (e.signal && !besucht.insert(e.signal).second) {
+                std::ostringstream os;
+                os << "Zyklische Kopplung erkannt (Signal Element Nr "
+                   << e.elementUndRichtung->Nr << ", "
+                   << richtungBeschriftung(e.elementUndRichtung.getRichtung())
+                   << " erscheint mehrfach in der Koppelkette)";
+                e.fehler = os.str();
+                e.label = "Koppelsignal (Zyklus)";
+                e.beschreibung = e.fehler;
+                e.signal = nullptr;  // Kette hier abbrechen, nicht weiter folgen
+                result.push_back(std::move(e));
+                break;
+            }
+
+            const bool weiterMitKette = e.fehler.empty() && e.signal != nullptr;
+            result.push_back(std::move(e));
+            if (!weiterMitKette) {
+                break;
+            }
+            parentIndex = static_cast<int>(result.size()) - 1;
+            ++tiefe;
+        }
+    };
+
     // Reihenfolge gemäß Plan: Signale (Vor- und Hauptsignale), dann Weichen, Register,
     // Auflösungen, Teilauflösungen, Signalhaltfall.
     for (const auto& s : fs.quelle->children_FahrstrSignal) {
@@ -212,6 +302,7 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
             result.back().matrixSpalte = 0;
             result.back().ersatzsignal = s->FahrstrSignalErsatzsignal;
         }
+        fuegeKoppelsignaleHinzu(/*kopplungZuVsig=*/false);
     }
     for (const auto& s : fs.quelle->children_FahrstrVSignal) {
         if (!s) continue;
@@ -222,6 +313,7 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
             result.back().matrixSpalte = s->FahrstrSignalSpalte;
             result.back().ersatzsignal = false;
         }
+        fuegeKoppelsignaleHinzu(/*kopplungZuVsig=*/true);
     }
     for (const auto& w : fs.quelle->children_FahrstrWeiche) {
         if (!w) continue;

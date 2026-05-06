@@ -355,7 +355,13 @@ void FahrstrassenDetailsWindow::aktualisiereEintraege()
     m_eintragsListe->clear();
     for (size_t i = 0; i < m_eintraege.size(); ++i) {
         const auto& e = m_eintraege[i];
-        auto* item = new QListWidgetItem(QString::fromStdString(e.label));
+        // Koppelsignale werden entsprechend ihrer Kopplungs-Tiefe eingerückt
+        // (1 Tiefe = 4 Leerzeichen).
+        QString text = QString::fromStdString(e.label);
+        if (e.typ == FahrstrasseDetailEintrag::Typ::Koppelsignal && e.kopplungsTiefe > 0) {
+            text = QString(e.kopplungsTiefe * 4, QLatin1Char(' ')) + text;
+        }
+        auto* item = new QListWidgetItem(text);
         item->setData(Qt::UserRole, static_cast<int>(i));
         if (!e.fehler.empty()) {
             item->setToolTip(QString::fromStdString(e.fehler));
@@ -417,18 +423,30 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
     stoppeLs3Rendering();
 
     // Reihenfolge: erst Vorsignale, dann Hauptsignale (entspricht dem Plan
-    // „links nach rechts“; pro Gruppe in Eintragsreihenfolge).
+    // „links nach rechts“; pro Gruppe in Eintragsreihenfolge). Koppelsignale
+    // werden jeweils direkt hinter ihrem Wurzelsignal in derselben Gruppe
+    // mitgerendert (kopplungZuVsig markiert die Wurzel-Zugehörigkeit).
     std::vector<int> reihenfolge;
-    for (size_t i = 0; i < m_eintraege.size(); ++i) {
-        if (m_eintraege[i].typ == FahrstrasseDetailEintrag::Typ::FahrstrVSignal) {
+    auto sammleGruppe = [&](FahrstrasseDetailEintrag::Typ wurzelTyp, bool zuVsig) {
+        for (size_t i = 0; i < m_eintraege.size(); ++i) {
+            if (m_eintraege[i].typ != wurzelTyp) {
+                continue;
+            }
             reihenfolge.push_back(static_cast<int>(i));
+            for (size_t j = i + 1; j < m_eintraege.size(); ++j) {
+                const auto& cand = m_eintraege[j];
+                if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) {
+                    break;
+                }
+                if (cand.kopplungZuVsig != zuVsig) {
+                    break;
+                }
+                reihenfolge.push_back(static_cast<int>(j));
+            }
         }
-    }
-    for (size_t i = 0; i < m_eintraege.size(); ++i) {
-        if (m_eintraege[i].typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal) {
-            reihenfolge.push_back(static_cast<int>(i));
-        }
-    }
+    };
+    sammleGruppe(FahrstrasseDetailEintrag::Typ::FahrstrVSignal, /*zuVsig=*/true);
+    sammleGruppe(FahrstrasseDetailEintrag::Typ::FahrstrSignal, /*zuVsig=*/false);
 
     if (reihenfolge.empty()) {
         return;
@@ -468,6 +486,10 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
                 if (!bs.isEmpty() && !sn.isEmpty()) caption += QStringLiteral(" ");
                 caption += sn;
             }
+        }
+        // Koppelsignal-Einträge auch in der Visualisierung als solche kennzeichnen.
+        if (e.typ == FahrstrasseDetailEintrag::Typ::Koppelsignal) {
+            caption = tr("Koppelsignal: %1").arg(caption);
         }
         auto* textLabel = new QLabel(caption, slotWidget);
         textLabel->setAlignment(Qt::AlignCenter);
