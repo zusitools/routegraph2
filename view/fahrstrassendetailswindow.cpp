@@ -18,6 +18,7 @@
 #include <QMutexLocker>
 #include <QPixmap>
 #include <QScrollArea>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QSplitter>
 #include <QStringList>
@@ -28,6 +29,8 @@
 #include <atomic>
 #include <cstdint>
 #include <optional>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -93,6 +96,86 @@ std::optional<uint64_t> berechneSignalbild(const Signal& sig, int zeile, int spa
     // Signal::children_MatrixEintrag enthaelt MatrixEintrag-Werte (InlineChildStrategy).
     const auto& me = sig.children_MatrixEintrag[idx];
     return static_cast<uint64_t>(me.Signalbild);
+}
+
+/**
+ * Löst eine FahrstrStart/FahrstrZiel/FahrstrSignal/FahrstrVSignal-artige Referenz
+ * (Modul-Datei + Index in children_ReferenzElemente) auf das bezeichnete
+ * StreckenelementUndRichtung auf. Liefert ein leeres (default-konstruiertes)
+ * StreckenelementUndRichtung bei jeglichem Auflöse-Fehler – Fehler werden hier
+ * nicht propagiert, weil die Funktion nur zur Identitätsbildung beim
+ * Vorgänger-/Nachfolger-Matching verwendet wird.
+ *
+ * Sonderfall leerer `dateinameRef` -> dieselbe Datei wie das referenzierende
+ * Modul (gleiche Semantik wie `loeseReferenzAuf` in fahrstrassendetails.cpp).
+ */
+StreckenelementUndRichtung loeseReferenzAuf(const Streckennetz& netz,
+                                             const zusixml::ZusiPfad& fahrstrasseModul,
+                                             std::string_view dateinameRef,
+                                             int64_t refIndex) {
+    const auto modulPfad = dateinameRef.empty()
+        ? fahrstrasseModul
+        : zusixml::ZusiPfad::vonZusiPfad(dateinameRef, fahrstrasseModul);
+    const Strecke* strecke = netz.get(modulPfad);
+    if (!strecke) return {};
+    if (refIndex < 0 || static_cast<size_t>(refIndex) >= strecke->children_ReferenzElemente.size()) {
+        return {};
+    }
+    const auto& refEl = strecke->children_ReferenzElemente[refIndex];
+    if (!refEl) return {};
+    const auto strElIndex = refEl->StrElement;
+    const auto richtung = static_cast<StreckenelementRichtung>(refEl->StrNorm);
+    if (strElIndex < 0 || static_cast<size_t>(strElIndex) >= strecke->children_StrElement.size()) {
+        return {};
+    }
+    const auto* strEl = strecke->children_StrElement[strElIndex].get();
+    if (!strEl) return {};
+    return StreckenelementUndRichtung{ strEl, richtung };
+}
+
+/** Eintrag der Hauptsignal-Liste einer Fahrstraße fürs Vorgänger-Matching. */
+struct VorgaengerSignalInfo {
+    int matrixZeile;
+    bool ersatz;
+};
+
+/**
+ * Sammelt alle FahrstrSignal-Einträge der gegebenen Fahrstraße und liefert eine
+ * Map vom Signal-Standort (StreckenelementUndRichtung-val) auf die zugehörigen
+ * Matrix-Indizes (Zeile + Ersatzsignal-Flag). Nicht auflösbare Einträge werden
+ * übersprungen.
+ */
+std::unordered_map<intptr_t, VorgaengerSignalInfo> sammleVorgaengerHauptsignale(
+        const Streckennetz& netz, const ResolvedFahrstrasse& fs) {
+    std::unordered_map<intptr_t, VorgaengerSignalInfo> result;
+    if (!fs.quelle) return result;
+    for (const auto& s : fs.quelle->children_FahrstrSignal) {
+        if (!s) continue;
+        const auto er = loeseReferenzAuf(netz, fs.fahrstrasseModul,
+                                         s->Datei.Dateiname, s->Ref);
+        if (!er) continue;
+        result[er.val] = { s->FahrstrSignalZeile, s->FahrstrSignalErsatzsignal };
+    }
+    return result;
+}
+
+/** Eintrag der Vorsignal-Liste einer Fahrstraße fürs Nachfolger-Matching. */
+struct NachfolgerSignalInfo {
+    int matrixSpalte;
+};
+
+std::unordered_map<intptr_t, NachfolgerSignalInfo> sammleNachfolgerVorsignale(
+        const Streckennetz& netz, const ResolvedFahrstrasse& fs) {
+    std::unordered_map<intptr_t, NachfolgerSignalInfo> result;
+    if (!fs.quelle) return result;
+    for (const auto& s : fs.quelle->children_FahrstrVSignal) {
+        if (!s) continue;
+        const auto er = loeseReferenzAuf(netz, fs.fahrstrasseModul,
+                                         s->Datei.Dateiname, s->Ref);
+        if (!er) continue;
+        result[er.val] = { s->FahrstrSignalSpalte };
+    }
+    return result;
 }
 
 }  // namespace
@@ -263,6 +346,10 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
             this, &FahrstrassenDetailsWindow::onEintragAusgewaehlt);
     connect(m_eintragsListe, &QListWidget::itemDoubleClicked,
             this, &FahrstrassenDetailsWindow::onEintragDoppelklick);
+    connect(m_vorgaengerListe, &QListWidget::itemSelectionChanged,
+            this, &FahrstrassenDetailsWindow::onVorgaengerNachfolgerAusgewaehlt);
+    connect(m_nachfolgerListe, &QListWidget::itemSelectionChanged,
+            this, &FahrstrassenDetailsWindow::onVorgaengerNachfolgerAusgewaehlt);
 
     // QVector<float> ist kein Qt-Standard-Meta-Typ; einmalig registrieren, damit
     // er via Qt::QueuedConnection ge-Q_ARG()-fähig ist.
@@ -305,16 +392,28 @@ const FahrstrasseDetailEintrag* FahrstrassenDetailsWindow::aktuellerEintrag() co
     return &m_eintraege[idx];
 }
 
-void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz, const ResolvedFahrstrasse* fs)
+void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz,
+                                                 const std::vector<ResolvedFahrstrasse>* alleFahrstrassen,
+                                                 int aktiverIndex)
 {
     m_generation.fetch_add(1);
 
-    if (!netz || !fs) {
+    m_netz = netz;
+    m_alleFahrstrassen = alleFahrstrassen;
+    m_aktiverIndex = aktiverIndex;
+
+    const ResolvedFahrstrasse* fs = nullptr;
+    if (netz && alleFahrstrassen
+            && aktiverIndex >= 0
+            && static_cast<size_t>(aktiverIndex) < alleFahrstrassen->size()) {
+        fs = &(*alleFahrstrassen)[aktiverIndex];
+    }
+
+    if (!fs) {
         m_eintraege.clear();
         setWindowTitle(tr("Fahrstraßen-Details"));
         aktualisiereEintraege();
-        m_vorgaengerListe->clear();
-        m_nachfolgerListe->clear();
+        aktualisiereVorgaengerNachfolger();
         stoppeLs3Rendering();
         return;
     }
@@ -330,8 +429,7 @@ void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz, const
                                .arg(QString::fromStdString(fs->name)));
         }
         aktualisiereEintraege();
-        m_vorgaengerListe->clear();
-        m_nachfolgerListe->clear();
+        aktualisiereVorgaengerNachfolger();
         stoppeLs3Rendering();
         return;
     }
@@ -341,12 +439,74 @@ void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz, const
 
     m_eintraege = ermittleFahrstrasseDetails(*netz, *fs);
     aktualisiereEintraege();
+    aktualisiereVorgaengerNachfolger();
 
-    // Vorgänger/Nachfolger bleiben momentan leer (laut Spezifikation).
+    starteLs3Rendering();
+}
+
+void FahrstrassenDetailsWindow::aktualisiereVorgaengerNachfolger()
+{
+    // Liste-Aktualisierung soll keinen Re-Render auslösen – Signal-Block.
+    QSignalBlocker blockVor(m_vorgaengerListe);
+    QSignalBlocker blockNach(m_nachfolgerListe);
+
     m_vorgaengerListe->clear();
     m_nachfolgerListe->clear();
 
-    starteLs3Rendering();
+    if (!m_alleFahrstrassen
+            || m_aktiverIndex < 0
+            || static_cast<size_t>(m_aktiverIndex) >= m_alleFahrstrassen->size()) {
+        return;
+    }
+    const auto& aktuell = (*m_alleFahrstrassen)[m_aktiverIndex];
+    if (!aktuell.fehler.empty() || !aktuell.quelle) {
+        return;
+    }
+
+    // Sentinel-Einträge: speichern -1 in Qt::UserRole, damit das
+    // Standardverhalten leicht unterscheidbar ist.
+    auto* alleItem = new QListWidgetItem(tr("(alle)"));
+    alleItem->setData(Qt::UserRole, -1);
+    m_vorgaengerListe->addItem(alleItem);
+
+    auto* keineItem = new QListWidgetItem(tr("(keine)"));
+    keineItem->setData(Qt::UserRole, -1);
+    m_nachfolgerListe->addItem(keineItem);
+
+    for (size_t i = 0; i < m_alleFahrstrassen->size(); ++i) {
+        if (static_cast<int>(i) == m_aktiverIndex) continue;
+        const auto& other = (*m_alleFahrstrassen)[i];
+        if (!other.fehler.empty() || !other.quelle) continue;
+
+        if (other.ziel && aktuell.start && other.ziel == aktuell.start) {
+            auto* item = new QListWidgetItem(QString::fromStdString(other.name));
+            item->setData(Qt::UserRole, static_cast<int>(i));
+            m_vorgaengerListe->addItem(item);
+        }
+        if (other.start && aktuell.ziel && other.start == aktuell.ziel) {
+            auto* item = new QListWidgetItem(QString::fromStdString(other.name));
+            item->setData(Qt::UserRole, static_cast<int>(i));
+            m_nachfolgerListe->addItem(item);
+        }
+    }
+
+    // Default-Auswahl: Sentinel-Eintrag (entspricht „bisheriges Verhalten“).
+    m_vorgaengerListe->setCurrentRow(0);
+    m_nachfolgerListe->setCurrentRow(0);
+}
+
+int FahrstrassenDetailsWindow::aktuelleVorgaengerFsIndex() const
+{
+    const auto* item = m_vorgaengerListe->currentItem();
+    if (!item) return -1;
+    return item->data(Qt::UserRole).toInt();
+}
+
+int FahrstrassenDetailsWindow::aktuelleNachfolgerFsIndex() const
+{
+    const auto* item = m_nachfolgerListe->currentItem();
+    if (!item) return -1;
+    return item->data(Qt::UserRole).toInt();
 }
 
 void FahrstrassenDetailsWindow::aktualisiereEintraege()
@@ -404,6 +564,15 @@ void FahrstrassenDetailsWindow::onEintragDoppelklick(QListWidgetItem* item)
     emit detailDoppelklick(idx);
 }
 
+void FahrstrassenDetailsWindow::onVorgaengerNachfolgerAusgewaehlt()
+{
+    // Eine neue Auswahl macht eventuell laufende LS3-Aufträge obsolet (sie haben
+    // ggf. die alten Matrix-Indizes verwendet). Generation hochzählen, dann neu
+    // aufbauen – bisherige Slots werden in starteLs3Rendering komplett ersetzt.
+    m_generation.fetch_add(1);
+    starteLs3Rendering();
+}
+
 void FahrstrassenDetailsWindow::stoppeLs3Rendering()
 {
     // Layout leeren (alle Slots entfernen).
@@ -418,21 +587,110 @@ void FahrstrassenDetailsWindow::stoppeLs3Rendering()
     m_signalSlots.clear();
 }
 
+std::vector<FahrstrassenDetailsWindow::EintragAnzeige>
+FahrstrassenDetailsWindow::berechneEintragAnzeige() const
+{
+    std::vector<EintragAnzeige> anzeige(m_eintraege.size());
+    for (size_t i = 0; i < m_eintraege.size(); ++i) {
+        const auto& e = m_eintraege[i];
+        anzeige[i].matrixZeile = e.matrixZeile;
+        anzeige[i].matrixSpalte = e.matrixSpalte;
+        anzeige[i].ersatzsignal = e.ersatzsignal;
+    }
+
+    // Helfer: alle direkt folgenden Koppelsignal-Einträge des angegebenen Roots
+    // (zuVsig grenzt die Vorsignal- von der Hauptsignal-Gruppe ab) iterieren.
+    const auto fuerKoppelKette =
+        [this](size_t rootIdx, bool zuVsig, auto&& fn) {
+            for (size_t j = rootIdx + 1; j < m_eintraege.size(); ++j) {
+                const auto& cand = m_eintraege[j];
+                if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) break;
+                if (cand.kopplungZuVsig != zuVsig) break;
+                fn(j);
+            }
+        };
+
+    // Vorgänger-Override: Vorsignale, die in der Vorgänger-Fahrstraße als
+    // Hauptsignale verknüpft sind, werden mit deren Zeile/Ersatzsignal-Flag
+    // gerendert. Vorsignale ohne Match werden ausgeblendet.
+    const int vorgIdx = aktuelleVorgaengerFsIndex();
+    if (m_netz && m_alleFahrstrassen
+            && vorgIdx >= 0
+            && static_cast<size_t>(vorgIdx) < m_alleFahrstrassen->size()) {
+        const auto& vorg = (*m_alleFahrstrassen)[vorgIdx];
+        const auto vorgMap = sammleVorgaengerHauptsignale(*m_netz, vorg);
+        for (size_t i = 0; i < m_eintraege.size(); ++i) {
+            const auto& e = m_eintraege[i];
+            if (e.typ != FahrstrasseDetailEintrag::Typ::FahrstrVSignal) continue;
+            const auto er = e.elementUndRichtung;
+            const auto it = er ? vorgMap.find(er.val) : vorgMap.end();
+            if (it == vorgMap.end()) {
+                anzeige[i].ausgeblendet = true;
+                fuerKoppelKette(i, /*zuVsig=*/true, [&](size_t j) {
+                    anzeige[j].ausgeblendet = true;
+                });
+            } else {
+                anzeige[i].matrixZeile = it->second.matrixZeile;
+                anzeige[i].ersatzsignal = it->second.ersatz;
+                fuerKoppelKette(i, /*zuVsig=*/true, [&](size_t j) {
+                    anzeige[j].matrixZeile = it->second.matrixZeile;
+                    anzeige[j].ersatzsignal = it->second.ersatz;
+                });
+            }
+        }
+    }
+
+    // Nachfolger-Override: Hauptsignale, die in der Nachfolger-Fahrstraße als
+    // Vorsignale verknüpft sind, bekommen die dort angegebene Spalte. Die Zeile
+    // bleibt aus der aktuellen Fahrstraße. Bei gezogenem Ersatzsignal wird die
+    // Spalte ohnehin ignoriert (siehe berechneSignalbild).
+    const int nachIdx = aktuelleNachfolgerFsIndex();
+    if (m_netz && m_alleFahrstrassen
+            && nachIdx >= 0
+            && static_cast<size_t>(nachIdx) < m_alleFahrstrassen->size()) {
+        const auto& nach = (*m_alleFahrstrassen)[nachIdx];
+        const auto nachMap = sammleNachfolgerVorsignale(*m_netz, nach);
+        for (size_t i = 0; i < m_eintraege.size(); ++i) {
+            const auto& e = m_eintraege[i];
+            if (e.typ != FahrstrasseDetailEintrag::Typ::FahrstrSignal) continue;
+            const auto er = e.elementUndRichtung;
+            const auto it = er ? nachMap.find(er.val) : nachMap.end();
+            if (it == nachMap.end()) continue;
+            if (!anzeige[i].ersatzsignal) {
+                anzeige[i].matrixSpalte = it->second.matrixSpalte;
+            }
+            fuerKoppelKette(i, /*zuVsig=*/false, [&](size_t j) {
+                if (!anzeige[j].ersatzsignal) {
+                    anzeige[j].matrixSpalte = it->second.matrixSpalte;
+                }
+            });
+        }
+    }
+
+    return anzeige;
+}
+
 void FahrstrassenDetailsWindow::starteLs3Rendering()
 {
     stoppeLs3Rendering();
+
+    const auto anzeige = berechneEintragAnzeige();
 
     // Reihenfolge: erst Vorsignale, dann Hauptsignale (entspricht dem Plan
     // „links nach rechts“; pro Gruppe in Eintragsreihenfolge). Koppelsignale
     // werden jeweils direkt hinter ihrem Wurzelsignal in derselben Gruppe
     // mitgerendert (kopplungZuVsig markiert die Wurzel-Zugehörigkeit).
+    // Ausgeblendete Einträge (z.B. wegen Vorgänger-Filter) werden übersprungen,
+    // brechen die Koppel-Kette aber nicht ab.
     std::vector<int> reihenfolge;
     auto sammleGruppe = [&](FahrstrasseDetailEintrag::Typ wurzelTyp, bool zuVsig) {
         for (size_t i = 0; i < m_eintraege.size(); ++i) {
             if (m_eintraege[i].typ != wurzelTyp) {
                 continue;
             }
-            reihenfolge.push_back(static_cast<int>(i));
+            if (!anzeige[i].ausgeblendet) {
+                reihenfolge.push_back(static_cast<int>(i));
+            }
             for (size_t j = i + 1; j < m_eintraege.size(); ++j) {
                 const auto& cand = m_eintraege[j];
                 if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) {
@@ -440,6 +698,9 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
                 }
                 if (cand.kopplungZuVsig != zuVsig) {
                     break;
+                }
+                if (anzeige[j].ausgeblendet) {
+                    continue;
                 }
                 reihenfolge.push_back(static_cast<int>(j));
             }
@@ -518,10 +779,12 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         }
 
         // Signalbild aus der Signalmatrix bzw. Ersatzsignal-Matrix bestimmen.
+        // Indizes ggf. durch Vorgänger-/Nachfolger-Auswahl überschrieben.
+        const auto& a = anzeige[slot.eintragIndex];
         QString signalbildFehler;
         const auto signalbild = berechneSignalbild(*e.signal,
-                                                   e.matrixZeile, e.matrixSpalte,
-                                                   e.ersatzsignal, &signalbildFehler);
+                                                   a.matrixZeile, a.matrixSpalte,
+                                                   a.ersatzsignal, &signalbildFehler);
         if (!signalbild.has_value()) {
             slot.bildLabel->setText(signalbildFehler);
             slot.bildLabel->setToolTip(signalbildFehler);

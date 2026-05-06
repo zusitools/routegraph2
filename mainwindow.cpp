@@ -384,7 +384,7 @@ void MainWindow::fahrstrassenListeUngueltig()
         if (m_fahrstrassenDetailsWindow) {
             // Pointer in der bisherigen Liste sind nach Modul-Reload möglicherweise tot;
             // sicherheitshalber den Inhalt leeren, bis die Liste neu aufgebaut wird.
-            m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr);
+            m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr, -1);
         }
     }
 }
@@ -417,15 +417,15 @@ void MainWindow::aktualisiereFahrstrassenDetailsFenster()
         return;
     }
     if (!m_aktiveFahrstrasse) {
-        m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr);
+        m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr, -1);
         return;
     }
     const auto& list = ui->fahrstrassenPanel->fahrstrassen();
     if (static_cast<size_t>(*m_aktiveFahrstrasse) >= list.size()) {
-        m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr);
+        m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, nullptr, -1);
         return;
     }
-    m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, &list[*m_aktiveFahrstrasse]);
+    m_fahrstrassenDetailsWindow->zeigeFahrstrasse(&m_streckennetz, &list, *m_aktiveFahrstrasse);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *e)

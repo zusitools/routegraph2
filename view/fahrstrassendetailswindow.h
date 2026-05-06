@@ -29,7 +29,9 @@ class FahrstrassenDetailsLs3Worker;
  *
  * - Links: Liste der Fahrstraßen-Elemente (Start, Ziel, Signale, Weichen, …).
  *   Selektion -> Marker im Hauptfenster; Doppelklick -> View zentriert auf das Element.
- * - Rechts oben: zwei (vorerst leere) Listen für Vorgänger-/Nachfolger-Fahrstraßen.
+ * - Rechts oben: zwei Listen mit Vorgänger-/Nachfolger-Fahrstraßen (jeweils mit
+ *   einem Sentinel-Eintrag „(alle)“ bzw. „(keine)“ am Anfang). Auswahl ändert die
+ *   Signalvisualisierung (gefilterte Vorsignale bzw. überschriebene Spalten).
  * - Rechts unten: asynchron gerenderte Vorschau der Signal-LS3-Dateien.
  */
 class FahrstrassenDetailsWindow : public QWidget
@@ -39,8 +41,15 @@ public:
     explicit FahrstrassenDetailsWindow(QWidget* parent = nullptr);
     ~FahrstrassenDetailsWindow() override;
 
-    /** Setzt die anzuzeigende Fahrstraße. nullptr -> leerer Inhalt. */
-    void zeigeFahrstrasse(const Streckennetz* netz, const ResolvedFahrstrasse* fs);
+    /**
+     * Setzt die anzuzeigende Fahrstraße.
+     * `alleFahrstrassen == nullptr` oder `aktiverIndex < 0` leert den Inhalt.
+     * Sonst muss `(*alleFahrstrassen)[aktiverIndex]` gültig sein. Der Pointer auf
+     * `alleFahrstrassen` muss bis zum nächsten Aufruf gültig bleiben.
+     */
+    void zeigeFahrstrasse(const Streckennetz* netz,
+                          const std::vector<ResolvedFahrstrasse>* alleFahrstrassen,
+                          int aktiverIndex);
 
     /** Liefert die gerade ausgewählten Detail-Eintrag, oder nullptr. */
     const FahrstrasseDetailEintrag* aktuellerEintrag() const;
@@ -54,12 +63,35 @@ signals:
 private slots:
     void onEintragAusgewaehlt();
     void onEintragDoppelklick(QListWidgetItem* item);
+    void onVorgaengerNachfolgerAusgewaehlt();
     void onLs3Fertig(int signalIndex, QImage image, QString fehler);
 
 private:
     void aktualisiereEintraege();
+    void aktualisiereVorgaengerNachfolger();
     void starteLs3Rendering();
     void stoppeLs3Rendering();
+
+    // Pro Detail-Eintrag berechnete Anzeige-Werte für die Signalvisualisierung.
+    // Werden auf Basis der aktuellen Vorgänger-/Nachfolger-Auswahl bestimmt.
+    struct EintragAnzeige {
+        bool ausgeblendet = false;  // true -> in der Visualisierung nicht zeigen
+        int matrixZeile = 0;
+        int matrixSpalte = 0;
+        bool ersatzsignal = false;
+    };
+    std::vector<EintragAnzeige> berechneEintragAnzeige() const;
+
+    // Liefert den ausgewählten Index in m_alleFahrstrassen, oder -1 wenn der
+    // Sentinel-Eintrag ("(alle)" / "(keine)") gewählt ist bzw. keine Auswahl
+    // existiert.
+    int aktuelleVorgaengerFsIndex() const;
+    int aktuelleNachfolgerFsIndex() const;
+
+    // Quelldaten der aktuell angezeigten Fahrstraße.
+    const Streckennetz* m_netz = nullptr;
+    const std::vector<ResolvedFahrstrasse>* m_alleFahrstrassen = nullptr;
+    int m_aktiverIndex = -1;
 
     // Eintraege der aktuell angezeigten Fahrstraße.
     std::vector<FahrstrasseDetailEintrag> m_eintraege;
