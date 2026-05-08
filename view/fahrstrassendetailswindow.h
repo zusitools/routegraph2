@@ -64,7 +64,7 @@ private slots:
     void onEintragAusgewaehlt();
     void onEintragDoppelklick(QListWidgetItem* item);
     void onVorgaengerNachfolgerAusgewaehlt();
-    void onLs3Fertig(int signalIndex, QImage image, QString fehler);
+    void onLs3Fertig(int slotKey, QImage image, QString fehler);
 
 private:
     void aktualisiereEintraege();
@@ -74,11 +74,21 @@ private:
 
     // Pro Detail-Eintrag berechnete Anzeige-Werte für die Signalvisualisierung.
     // Werden auf Basis der aktuellen Vorgänger-/Nachfolger-Auswahl bestimmt.
+    //
+    // Pro Eintrag können null bis viele Varianten entstehen:
+    //  - 0: Eintrag wird ausgeblendet (z. B. Vorsignal mit >1 Zeile, das in keiner
+    //       relevanten Vorgänger-Fahrstraße als Hauptsignal vorkommt).
+    //  - 1: typischer Fall (eine Signalstellung pro Eintrag).
+    //  - n: Vorsignale mit >1 Zeile und Sentinel "(alle)" → eine Variante pro
+    //       eindeutiger (Zeile, Ersatzsignal)-Kombination aus allen möglichen
+    //       Vorgänger-Fahrstraßen.
     struct EintragAnzeige {
-        bool ausgeblendet = false;  // true -> in der Visualisierung nicht zeigen
-        int matrixZeile = 0;
-        int matrixSpalte = 0;
-        bool ersatzsignal = false;
+        struct Variant {
+            int matrixZeile = 0;
+            int matrixSpalte = 0;
+            bool ersatzsignal = false;
+        };
+        std::vector<Variant> varianten;
     };
     std::vector<EintragAnzeige> berechneEintragAnzeige() const;
 
@@ -104,10 +114,13 @@ private:
     QWidget* m_signalContainer;
     QHBoxLayout* m_signalLayout;
 
-    // LS3-Rendering: pro Signal-Eintrag genau ein Pixmap-Slot. Die Signals werden
-    // sequenziell in einem Worker-Thread gerendert, weil ls3render globale State hat.
+    // LS3-Rendering: pro (Eintrag, Variante) genau ein Pixmap-Slot. Die Signals
+    // werden sequenziell in einem Worker-Thread gerendert, weil ls3render globale
+    // State hat. Der Slot-Key (Position in m_signalSlots) dient zur eindeutigen
+    // Adressierung über die Worker-Schnittstelle.
     struct SignalSlot {
         int eintragIndex;     // Index in m_eintraege
+        int variantIndex;     // Index in EintragAnzeige::varianten
         QLabel* bildLabel;
         QLabel* textLabel;
     };

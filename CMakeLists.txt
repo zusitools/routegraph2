@@ -118,6 +118,8 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     Signal::Ersatzsignal
     Signal::KoppelSignal
 
+    VsigBegriff::VsigGeschw
+
     SignalFrame::Datei
     SignalFrame::p
     SignalFrame::phi

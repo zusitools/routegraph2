@@ -178,6 +178,25 @@ std::unordered_map<intptr_t, NachfolgerSignalInfo> sammleNachfolgerVorsignale(
     return result;
 }
 
+/**
+ * Liefert den Index der Spalte mit Vorsignalgeschwindigkeit 0 (entspricht
+ * "Halt erwarten") in der VsigBegriff-Liste des Signals, oder -1, falls
+ * kein solcher VsigBegriff vorhanden ist.
+ *
+ * Hinweis: Ein `<VsigBegriff/>`-Eintrag ohne `VsigGeschw`-Attribut wird vom
+ * Parser auf 0.0f initialisiert und zählt damit als "Halt erwarten"-Spalte.
+ */
+int findeVsigGeschwNullSpalte(const Signal& sig) {
+    for (size_t i = 0; i < sig.children_VsigBegriff.size(); ++i) {
+        const auto& vb = sig.children_VsigBegriff[i];
+        if (!vb) continue;
+        if (vb->VsigGeschw == 0.0f) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
 }  // namespace
 
 class FahrstrassenDetailsLs3Worker : public QObject
@@ -189,17 +208,21 @@ public:
 
 public slots:
     /**
-     * Rendert einen Signal-Eintrag, dessen Frames als parallele Listen übergeben
+     * Rendert einen Signal-Slot, dessen Frames als parallele Listen übergeben
      * werden:
      *   - osPfade[i]: OS-Pfad der LS3-Datei des i-ten Frames
      *   - params[9*i + 0..2]: Position (p.x/y/z) aus <SignalFrame>
      *   - params[9*i + 3..5]: Rotation (phi.x/y/z) aus <SignalFrame>
      *   - params[9*i + 6..8]: Skalierung (sk.x/y/z) aus <SignalFrame>
      *
+     * `slotKey` wird unverändert mit dem Ergebnis zurückgegeben und dient zur
+     * eindeutigen Adressierung des Ziel-Slots im Aufrufer (mehrere Varianten
+     * desselben Eintrags ergeben verschiedene Slots).
+     *
      * Die parallelen Listen werden verwendet, weil Qt-Standardtypen ohne weiteres
      * über Qt::QueuedConnection übergeben werden können (kein Q_DECLARE_METATYPE).
      */
-    void renderEinzeln(int generation, int eintragIndex,
+    void renderEinzeln(int generation, int slotKey,
                        QStringList osPfade, QVector<float> params, quint64 signalbild) {
         if (m_generationRef->load() != generation) {
             return;
@@ -270,11 +293,11 @@ public slots:
             ls3render_Reset();
         }
 
-        emit fertig(generation, eintragIndex, image, fehler);
+        emit fertig(generation, slotKey, image, fehler);
     }
 
 signals:
-    void fertig(int generation, int eintragIndex, QImage image, QString fehler);
+    void fertig(int generation, int slotKey, QImage image, QString fehler);
 
 private:
     std::atomic<int>* m_generationRef;
@@ -361,11 +384,11 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
     m_worker->moveToThread(m_workerThread);
     connect(m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(m_worker, &FahrstrassenDetailsLs3Worker::fertig, this,
-            [this](int generation, int eintragIndex, QImage image, QString fehler) {
+            [this](int generation, int slotKey, QImage image, QString fehler) {
                 if (generation != m_generation.load()) {
                     return;
                 }
-                onLs3Fertig(eintragIndex, std::move(image), std::move(fehler));
+                onLs3Fertig(slotKey, std::move(image), std::move(fehler));
             });
     m_workerThread->start();
 }
@@ -591,79 +614,169 @@ std::vector<FahrstrassenDetailsWindow::EintragAnzeige>
 FahrstrassenDetailsWindow::berechneEintragAnzeige() const
 {
     std::vector<EintragAnzeige> anzeige(m_eintraege.size());
-    for (size_t i = 0; i < m_eintraege.size(); ++i) {
-        const auto& e = m_eintraege[i];
-        anzeige[i].matrixZeile = e.matrixZeile;
-        anzeige[i].matrixSpalte = e.matrixSpalte;
-        anzeige[i].ersatzsignal = e.ersatzsignal;
-    }
 
-    // Helfer: alle direkt folgenden Koppelsignal-Einträge des angegebenen Roots
-    // (zuVsig grenzt die Vorsignal- von der Hauptsignal-Gruppe ab) iterieren.
-    const auto fuerKoppelKette =
-        [this](size_t rootIdx, bool zuVsig, auto&& fn) {
-            for (size_t j = rootIdx + 1; j < m_eintraege.size(); ++j) {
-                const auto& cand = m_eintraege[j];
-                if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) break;
-                if (cand.kopplungZuVsig != zuVsig) break;
-                fn(j);
-            }
-        };
-
-    // Vorgänger-Override: Vorsignale, die in der Vorgänger-Fahrstraße als
-    // Hauptsignale verknüpft sind, werden mit deren Zeile/Ersatzsignal-Flag
-    // gerendert. Vorsignale ohne Match werden ausgeblendet.
     const int vorgIdx = aktuelleVorgaengerFsIndex();
-    if (m_netz && m_alleFahrstrassen
-            && vorgIdx >= 0
-            && static_cast<size_t>(vorgIdx) < m_alleFahrstrassen->size()) {
-        const auto& vorg = (*m_alleFahrstrassen)[vorgIdx];
-        const auto vorgMap = sammleVorgaengerHauptsignale(*m_netz, vorg);
-        for (size_t i = 0; i < m_eintraege.size(); ++i) {
-            const auto& e = m_eintraege[i];
-            if (e.typ != FahrstrasseDetailEintrag::Typ::FahrstrVSignal) continue;
-            const auto er = e.elementUndRichtung;
-            const auto it = er ? vorgMap.find(er.val) : vorgMap.end();
-            if (it == vorgMap.end()) {
-                anzeige[i].ausgeblendet = true;
-                fuerKoppelKette(i, /*zuVsig=*/true, [&](size_t j) {
-                    anzeige[j].ausgeblendet = true;
-                });
-            } else {
-                anzeige[i].matrixZeile = it->second.matrixZeile;
-                anzeige[i].ersatzsignal = it->second.ersatz;
-                fuerKoppelKette(i, /*zuVsig=*/true, [&](size_t j) {
-                    anzeige[j].matrixZeile = it->second.matrixZeile;
-                    anzeige[j].ersatzsignal = it->second.ersatz;
-                });
-            }
-        }
-    }
-
-    // Nachfolger-Override: Hauptsignale, die in der Nachfolger-Fahrstraße als
-    // Vorsignale verknüpft sind, bekommen die dort angegebene Spalte. Die Zeile
-    // bleibt aus der aktuellen Fahrstraße. Bei gezogenem Ersatzsignal wird die
-    // Spalte ohnehin ignoriert (siehe berechneSignalbild).
     const int nachIdx = aktuelleNachfolgerFsIndex();
+
+    // Nachfolger-Mapping einmalig vorbereiten: nur bei konkretem Nachfolger,
+    // bei Sentinel "(keine)" bleibt die Map leer.
+    std::unordered_map<intptr_t, NachfolgerSignalInfo> nachMap;
     if (m_netz && m_alleFahrstrassen
             && nachIdx >= 0
             && static_cast<size_t>(nachIdx) < m_alleFahrstrassen->size()) {
-        const auto& nach = (*m_alleFahrstrassen)[nachIdx];
-        const auto nachMap = sammleNachfolgerVorsignale(*m_netz, nach);
-        for (size_t i = 0; i < m_eintraege.size(); ++i) {
-            const auto& e = m_eintraege[i];
-            if (e.typ != FahrstrasseDetailEintrag::Typ::FahrstrSignal) continue;
-            const auto er = e.elementUndRichtung;
-            const auto it = er ? nachMap.find(er.val) : nachMap.end();
-            if (it == nachMap.end()) continue;
-            if (!anzeige[i].ersatzsignal) {
-                anzeige[i].matrixSpalte = it->second.matrixSpalte;
-            }
-            fuerKoppelKette(i, /*zuVsig=*/false, [&](size_t j) {
-                if (!anzeige[j].ersatzsignal) {
-                    anzeige[j].matrixSpalte = it->second.matrixSpalte;
+        nachMap = sammleNachfolgerVorsignale(*m_netz, (*m_alleFahrstrassen)[nachIdx]);
+    }
+
+    // Hauptsignal-Variante (genau eine pro FahrstrSignal-Eintrag).
+    //  - Zeile/Ersatz-Flag stammen aus dem Eintrag selbst (FahrstrSignalZeile,
+    //    FahrstrSignalErsatzsignal).
+    //  - Spalte:
+    //      a) Wenn der konkrete Nachfolger das Signal als Vorsignal führt:
+    //         dessen FahrstrSignalSpalte (außer bei gezogenem Ersatzsignal,
+    //         dort ist die Spalte irrelevant).
+    //      b) Sonst: bei mehr als einer VsigBegriff-Spalte und nicht-gezogenem
+    //         Ersatzsignal wird die Spalte mit Vorsignalgeschwindigkeit 0
+    //         gewählt; gibt es keine, fällt es auf Spalte 0 zurück. Bei genau
+    //         einer Spalte oder bei gezogenem Ersatzsignal bleibt es bei 0.
+    auto bestimmeHauptsignalVariant = [&](const FahrstrasseDetailEintrag& e)
+            -> EintragAnzeige::Variant {
+        EintragAnzeige::Variant v;
+        v.matrixZeile = e.matrixZeile;
+        v.matrixSpalte = e.matrixSpalte;
+        v.ersatzsignal = e.ersatzsignal;
+
+        bool spalteAusNachfolger = false;
+        if (e.elementUndRichtung) {
+            auto it = nachMap.find(e.elementUndRichtung.val);
+            if (it != nachMap.end()) {
+                if (!v.ersatzsignal) {
+                    v.matrixSpalte = it->second.matrixSpalte;
                 }
-            });
+                spalteAusNachfolger = true;
+            }
+        }
+
+        if (!spalteAusNachfolger && !v.ersatzsignal && e.signal
+                && e.signal->children_VsigBegriff.size() > 1) {
+            const int idx = findeVsigGeschwNullSpalte(*e.signal);
+            v.matrixSpalte = idx >= 0 ? idx : 0;
+        }
+
+        return v;
+    };
+
+    // Vorsignal-Varianten:
+    //  - Spalte stammt immer aus dem FahrstrVSignal-Eintrag selbst.
+    //  - Bei genau einer HsigBegriff-Zeile (oder wenn das Signal keine
+    //    explizite HsigBegriff-Liste hat): genau eine Variante mit Zeile 0
+    //    und nicht-gezogenem Ersatzsignal, unabhängig von der Vorgänger-
+    //    Auswahl.
+    //  - Bei mehr als einer Zeile:
+    //      a) konkreter Vorgänger ausgewählt → wenn das Signal in dessen
+    //         FahrstrSignal-Liste vorkommt, eine Variante mit dessen
+    //         (Zeile, Ersatzsignal); sonst leer (= ausblenden).
+    //      b) Sentinel "(alle)" → pro eindeutiger (Zeile, Ersatzsignal)-
+    //         Kombination aus allen möglichen Vorgänger-Fahrstraßen je eine
+    //         Variante; sonst leer.
+    auto bestimmeVorsignalVarianten = [&](const FahrstrasseDetailEintrag& e)
+            -> std::vector<EintragAnzeige::Variant> {
+        std::vector<EintragAnzeige::Variant> out;
+
+        // Ohne aufgelöstes Signal lässt sich die Zeilenanzahl nicht bestimmen.
+        // Wir erzeugen einen Platzhalter-Slot mit Zeile 0, damit der Render-
+        // Loop den (kein Signal)-Fehlertext anzeigt – das entspricht dem
+        // bisherigen Verhalten und liefert dem Nutzer eine sichtbare
+        // Rückmeldung über das Element.
+        if (!e.signal) {
+            EintragAnzeige::Variant v;
+            v.matrixZeile = 0;
+            v.matrixSpalte = e.matrixSpalte;
+            v.ersatzsignal = false;
+            out.push_back(v);
+            return out;
+        }
+
+        const size_t rowCount = e.signal->children_HsigBegriff.size();
+        if (rowCount <= 1) {
+            EintragAnzeige::Variant v;
+            v.matrixZeile = 0;
+            v.matrixSpalte = e.matrixSpalte;
+            v.ersatzsignal = false;
+            out.push_back(v);
+            return out;
+        }
+
+        if (!m_netz || !m_alleFahrstrassen || !e.elementUndRichtung) {
+            return out;
+        }
+
+        const auto fuegeVarianteHinzu = [&](int zeile, bool ersatz) {
+            for (const auto& v : out) {
+                if (v.matrixZeile == zeile && v.ersatzsignal == ersatz) return;
+            }
+            EintragAnzeige::Variant v;
+            v.matrixZeile = zeile;
+            v.matrixSpalte = e.matrixSpalte;
+            v.ersatzsignal = ersatz;
+            out.push_back(v);
+        };
+
+        if (vorgIdx >= 0 && static_cast<size_t>(vorgIdx) < m_alleFahrstrassen->size()) {
+            const auto& vorg = (*m_alleFahrstrassen)[vorgIdx];
+            const auto vorgMap = sammleVorgaengerHauptsignale(*m_netz, vorg);
+            const auto it = vorgMap.find(e.elementUndRichtung.val);
+            if (it != vorgMap.end()) {
+                fuegeVarianteHinzu(it->second.matrixZeile, it->second.ersatz);
+            }
+            return out;
+        }
+
+        // Sentinel "(alle)": über alle in Frage kommenden Vorgänger iterieren.
+        if (m_aktiverIndex < 0
+                || static_cast<size_t>(m_aktiverIndex) >= m_alleFahrstrassen->size()) {
+            return out;
+        }
+        const auto& aktuell = (*m_alleFahrstrassen)[m_aktiverIndex];
+        for (size_t i = 0; i < m_alleFahrstrassen->size(); ++i) {
+            if (static_cast<int>(i) == m_aktiverIndex) continue;
+            const auto& other = (*m_alleFahrstrassen)[i];
+            if (!other.fehler.empty() || !other.quelle) continue;
+            if (!(other.ziel && aktuell.start && other.ziel == aktuell.start)) continue;
+            const auto vorgMap = sammleVorgaengerHauptsignale(*m_netz, other);
+            const auto it = vorgMap.find(e.elementUndRichtung.val);
+            if (it == vorgMap.end()) continue;
+            fuegeVarianteHinzu(it->second.matrixZeile, it->second.ersatz);
+        }
+        return out;
+    };
+
+    // Pass 1: Varianten für die jeweiligen Wurzel-Einträge berechnen.
+    for (size_t i = 0; i < m_eintraege.size(); ++i) {
+        const auto& e = m_eintraege[i];
+        if (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal) {
+            anzeige[i].varianten.push_back(bestimmeHauptsignalVariant(e));
+        } else if (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrVSignal) {
+            anzeige[i].varianten = bestimmeVorsignalVarianten(e);
+        }
+        // Andere Typen (Weichen, Register, Auflösungen, Start/Ziel ohne Signal,
+        // Koppelsignale) bleiben in dieser Pass leer; Koppelsignale erben unten.
+    }
+
+    // Pass 2: Koppelsignal-Varianten vom Wurzel-Eintrag erben (entspricht der
+    // Zusi-Semantik: gekoppelte Signale stellen denselben Matrix-Index wie ihr
+    // Bezugssignal). Das schließt sowohl die (Zeile, Ersatz)-Varianten von
+    // Vorsignalen als auch die per Nachfolger/Fallback bestimmte Spalte von
+    // Hauptsignalen ein.
+    for (size_t i = 0; i < m_eintraege.size(); ++i) {
+        const auto& e = m_eintraege[i];
+        const bool zuVsig = (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrVSignal);
+        const bool zuHsig = (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal);
+        if (!zuVsig && !zuHsig) continue;
+        for (size_t j = i + 1; j < m_eintraege.size(); ++j) {
+            const auto& cand = m_eintraege[j];
+            if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) break;
+            if (cand.kopplungZuVsig != zuVsig) break;
+            anzeige[j].varianten = anzeige[i].varianten;
         }
     }
 
@@ -680,29 +793,41 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
     // „links nach rechts“; pro Gruppe in Eintragsreihenfolge). Koppelsignale
     // werden jeweils direkt hinter ihrem Wurzelsignal in derselben Gruppe
     // mitgerendert (kopplungZuVsig markiert die Wurzel-Zugehörigkeit).
-    // Ausgeblendete Einträge (z.B. wegen Vorgänger-Filter) werden übersprungen,
-    // brechen die Koppel-Kette aber nicht ab.
-    std::vector<int> reihenfolge;
+    //
+    // Bei mehreren Varianten pro Wurzel-Eintrag (Vorsignale mit >1 Zeile bei
+    // Sentinel "(alle)") werden die Varianten szenenweise interleaved:
+    //   Wurzel-Var0, Koppel1-Var0, ..., Wurzel-Var1, Koppel1-Var1, ...
+    // So bleibt jede Signal-Stellung (Wurzel + zugehörige Koppelsignale) als
+    // zusammenhängender Block sichtbar.
+    struct SlotPlan {
+        int eintragIndex;
+        int variantIndex;
+    };
+    std::vector<SlotPlan> reihenfolge;
     auto sammleGruppe = [&](FahrstrasseDetailEintrag::Typ wurzelTyp, bool zuVsig) {
         for (size_t i = 0; i < m_eintraege.size(); ++i) {
             if (m_eintraege[i].typ != wurzelTyp) {
                 continue;
             }
-            if (!anzeige[i].ausgeblendet) {
-                reihenfolge.push_back(static_cast<int>(i));
+            // Ende der Koppel-Kette für diesen Wurzel-Eintrag bestimmen.
+            size_t kettenEnde = i + 1;
+            while (kettenEnde < m_eintraege.size()) {
+                const auto& cand = m_eintraege[kettenEnde];
+                if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) break;
+                if (cand.kopplungZuVsig != zuVsig) break;
+                ++kettenEnde;
             }
-            for (size_t j = i + 1; j < m_eintraege.size(); ++j) {
-                const auto& cand = m_eintraege[j];
-                if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) {
-                    break;
+            // Pro Wurzel-Variante alle Kettenglieder mit derselben Varianten-
+            // Position zu einem Block zusammenführen (Koppelsignale erben die
+            // Variantenliste der Wurzel; daher haben Wurzel und Koppel hier
+            // dieselbe Anzahl an Varianten).
+            const size_t vCount = anzeige[i].varianten.size();
+            for (size_t v = 0; v < vCount; ++v) {
+                for (size_t k = i; k < kettenEnde; ++k) {
+                    if (v < anzeige[k].varianten.size()) {
+                        reihenfolge.push_back({static_cast<int>(k), static_cast<int>(v)});
+                    }
                 }
-                if (cand.kopplungZuVsig != zuVsig) {
-                    break;
-                }
-                if (anzeige[j].ausgeblendet) {
-                    continue;
-                }
-                reihenfolge.push_back(static_cast<int>(j));
             }
         }
     };
@@ -722,8 +847,10 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
 
     const int gen = m_generation.load();
 
-    for (int idx : reihenfolge) {
-        const auto& e = m_eintraege[idx];
+    for (const SlotPlan& plan : reihenfolge) {
+        const auto& e = m_eintraege[plan.eintragIndex];
+        const auto& variant = anzeige[plan.eintragIndex].varianten[plan.variantIndex];
+        const bool mehrfach = anzeige[plan.eintragIndex].varianten.size() > 1;
 
         auto* slotWidget = new QWidget(m_signalContainer);
         auto* slotLayout = new QVBoxLayout(slotWidget);
@@ -752,6 +879,15 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         if (e.typ == FahrstrasseDetailEintrag::Typ::Koppelsignal) {
             caption = tr("Koppelsignal: %1").arg(caption);
         }
+        // Bei mehreren Varianten pro Eintrag (typischerweise Vorsignale mit
+        // mehr als einer Zeile bei Sentinel "(alle)") die Variante in der
+        // Caption kennzeichnen, damit die Slots unterscheidbar bleiben.
+        if (mehrfach) {
+            const QString suffix = variant.ersatzsignal
+                ? tr(" (Ersatzsignal-Zeile %1)").arg(variant.matrixZeile)
+                : tr(" (Zeile %1)").arg(variant.matrixZeile);
+            caption += suffix;
+        }
         auto* textLabel = new QLabel(caption, slotWidget);
         textLabel->setAlignment(Qt::AlignCenter);
         textLabel->setWordWrap(true);
@@ -760,7 +896,8 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         m_signalLayout->addWidget(slotWidget);
 
         SignalSlot slot;
-        slot.eintragIndex = idx;
+        slot.eintragIndex = plan.eintragIndex;
+        slot.variantIndex = plan.variantIndex;
         slot.bildLabel = bildLabel;
         slot.textLabel = textLabel;
         m_signalSlots.push_back(slot);
@@ -768,8 +905,10 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
 
     m_signalLayout->addStretch(1);
 
-    // Aufträge dispatchen: pro Signal-Eintrag werden alle <SignalFrame>-Einträge
-    // mit nicht-leerer LS3-Datei gerendert (Multi-Frame-Signale).
+    // Aufträge dispatchen: pro Slot werden alle <SignalFrame>-Einträge mit
+    // nicht-leerer LS3-Datei gerendert (Multi-Frame-Signale). Der Slot-Key
+    // ist die Position in m_signalSlots, damit unterschiedliche Varianten
+    // desselben Eintrags eindeutig adressierbar sind.
     for (size_t s = 0; s < m_signalSlots.size(); ++s) {
         const SignalSlot& slot = m_signalSlots[s];
         const auto& e = m_eintraege[slot.eintragIndex];
@@ -779,12 +918,12 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         }
 
         // Signalbild aus der Signalmatrix bzw. Ersatzsignal-Matrix bestimmen.
-        // Indizes ggf. durch Vorgänger-/Nachfolger-Auswahl überschrieben.
-        const auto& a = anzeige[slot.eintragIndex];
+        // Indizes wurden in berechneEintragAnzeige() je Variante festgelegt.
+        const auto& variant = anzeige[slot.eintragIndex].varianten[slot.variantIndex];
         QString signalbildFehler;
         const auto signalbild = berechneSignalbild(*e.signal,
-                                                   a.matrixZeile, a.matrixSpalte,
-                                                   a.ersatzsignal, &signalbildFehler);
+                                                   variant.matrixZeile, variant.matrixSpalte,
+                                                   variant.ersatzsignal, &signalbildFehler);
         if (!signalbild.has_value()) {
             slot.bildLabel->setText(signalbildFehler);
             slot.bildLabel->setToolTip(signalbildFehler);
@@ -811,36 +950,34 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         // QueuedConnection: Worker liegt in eigenem Thread.
         QMetaObject::invokeMethod(m_worker, "renderEinzeln", Qt::QueuedConnection,
                                   Q_ARG(int, gen),
-                                  Q_ARG(int, slot.eintragIndex),
+                                  Q_ARG(int, static_cast<int>(s)),
                                   Q_ARG(QStringList, osPfade),
                                   Q_ARG(QVector<float>, params),
                                   Q_ARG(quint64, static_cast<quint64>(*signalbild)));
     }
 }
 
-void FahrstrassenDetailsWindow::onLs3Fertig(int eintragIndex, QImage image, QString fehler)
+void FahrstrassenDetailsWindow::onLs3Fertig(int slotKey, QImage image, QString fehler)
 {
-    for (const auto& slot : m_signalSlots) {
-        if (slot.eintragIndex != eintragIndex) {
-            continue;
-        }
-        if (!fehler.isEmpty()) {
-            slot.bildLabel->setText(fehler);
-            slot.bildLabel->setToolTip(fehler);
-        } else if (image.isNull()) {
-            slot.bildLabel->setText(tr("(leeres Bild)"));
-        } else {
-            QPixmap pm = QPixmap::fromImage(image);
-            // Auf eine handhabbare Höhe skalieren.
-            const int maxH = 220;
-            if (pm.height() > maxH) {
-                pm = pm.scaledToHeight(maxH, Qt::SmoothTransformation);
-            }
-            slot.bildLabel->setPixmap(pm);
-            slot.bildLabel->setToolTip({});
-            slot.bildLabel->setMinimumSize(pm.size().expandedTo(QSize(120, 160)));
-        }
+    if (slotKey < 0 || static_cast<size_t>(slotKey) >= m_signalSlots.size()) {
         return;
+    }
+    const SignalSlot& slot = m_signalSlots[slotKey];
+    if (!fehler.isEmpty()) {
+        slot.bildLabel->setText(fehler);
+        slot.bildLabel->setToolTip(fehler);
+    } else if (image.isNull()) {
+        slot.bildLabel->setText(tr("(leeres Bild)"));
+    } else {
+        QPixmap pm = QPixmap::fromImage(image);
+        // Auf eine handhabbare Höhe skalieren.
+        const int maxH = 220;
+        if (pm.height() > maxH) {
+            pm = pm.scaledToHeight(maxH, Qt::SmoothTransformation);
+        }
+        slot.bildLabel->setPixmap(pm);
+        slot.bildLabel->setToolTip({});
+        slot.bildLabel->setMinimumSize(pm.size().expandedTo(QSize(120, 160)));
     }
 }
 
