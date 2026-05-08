@@ -18,6 +18,7 @@ class MainWindow;
 class Strecke;
 class StreckeScene;
 class FahrstrassenDetailsWindow;
+class AnleitungWindow;
 
 class QDir;
 class QGraphicsScene;
@@ -40,6 +41,7 @@ public slots:
     void actionAnsichtBahnsteigeToggled(bool checked);
     void actionAnsichtFahrstrassenToggled(bool checked);
     void actionAnsichtFahrstrassenDetailsTriggered();
+    void actionHilfeAnleitungTriggered();
 
 private slots:
     void onFahrstrasseAusgewaehlt(int index);
@@ -73,6 +75,10 @@ private:
     // Nicht-modales Detail-Fenster zur aktuell ausgewählten Fahrstraße.
     // Lebt solange MainWindow lebt; wird über Ansicht->Fahrstraßen-Details ein-/ausgeblendet.
     FahrstrassenDetailsWindow* m_fahrstrassenDetailsWindow = nullptr;
+
+    // Nicht-modales Anleitungs-Fenster (Hilfe -> Anleitung). Wird beim ersten
+    // Aufruf erzeugt und für nachfolgende Aufrufe wiederverwendet.
+    AnleitungWindow* m_anleitungWindow = nullptr;
 
     void setzeAnsichtZurueck();
     void aktualisiereFahrstrassenListe();

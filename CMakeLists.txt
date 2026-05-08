@@ -167,6 +167,7 @@ set(routegraph2_SOURCES
     streckennetz.cpp
     model/fahrstrasse.cpp
     model/fahrstrassendetails.cpp
+    view/anleitungwindow.cpp
     view/bahnsteige.cpp
     view/cursorwraphelper.cpp
     view/fahrstrassendetailswindow.cpp
@@ -196,6 +197,7 @@ set(routegraph2_HEADERS
     model/fahrstrasse.h
     model/fahrstrassendetails.h
     model/streckenelement.h
+    view/anleitungwindow.h
     view/bahnsteige.h
     view/cursorwraphelper.h
     view/fahrstrassendetailswindow.h

@@ -18,6 +18,7 @@
 #include <QMimeData>
 #include <QProgressDialog>
 
+#include "view/anleitungwindow.h"
 #include "view/fahrstrassendetailswindow.h"
 #include "view/fahrstrassenpanel.h"
 #include "view/streckescene.h"
@@ -200,6 +201,16 @@ void MainWindow::actionAnsichtFahrstrassenDetailsTriggered()
     m_fahrstrassenDetailsWindow->show();
     m_fahrstrassenDetailsWindow->raise();
     m_fahrstrassenDetailsWindow->activateWindow();
+}
+
+void MainWindow::actionHilfeAnleitungTriggered()
+{
+    if (!m_anleitungWindow) {
+        m_anleitungWindow = new AnleitungWindow(this);
+    }
+    m_anleitungWindow->show();
+    m_anleitungWindow->raise();
+    m_anleitungWindow->activateWindow();
 }
 
 void MainWindow::onFahrstrasseAusgewaehlt(int index)
