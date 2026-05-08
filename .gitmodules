@@ -1,6 +1,3 @@
-[submodule "parser"]
-	path = parser
-	url = https://github.com/zusitools/parser.git
 [submodule "utm"]
 	path = utm
 	url = https://github.com/mcpca/utm
