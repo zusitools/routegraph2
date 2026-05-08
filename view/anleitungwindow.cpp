@@ -270,6 +270,18 @@ anschließen:</p>
 <li><b>(keine)</b> in der Nachfolger-Liste: keine Nachfolger-Überschreibung –
     die Vorsignale zeigen die Default-Spalte aus der Signalmatrix.</li>
 </ul>
+<p>Einträge, die <b>keinen Einfluss</b> auf die Signalstellungen der aktuellen
+Fahrstraße haben, werden ausgegraut und sind nicht auswählbar:</p>
+<ul>
+<li>Eine <b>Vorgänger-Fahrstraße</b> ist nur dann relevant, wenn mindestens eines
+    ihrer Hauptsignale als Vorsignal in der aktuellen Fahrstraße vorkommt –
+    nur dann kann sie eine Vorsignal-Zeile in der aktuellen Fahrstraße
+    auswählen.</li>
+<li>Eine <b>Nachfolger-Fahrstraße</b> ist nur dann relevant, wenn mindestens
+    eines ihrer Vorsignale als Hauptsignal in der aktuellen Fahrstraße
+    vorkommt – nur dann kann sie eine Hauptsignal-Spalte in der aktuellen
+    Fahrstraße überschreiben.</li>
+</ul>
 
 <h3>Bereich „Signalstellungen“ (rechts unten)</h3>
 <p>Zeigt für jeden Signal-Eintrag der Fahrstraße eine grafische Vorschau des
