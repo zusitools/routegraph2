@@ -36,6 +36,7 @@ public slots:
     void actionModulOeffnenTriggered();
     void actionOrdnerOeffnenTriggered();
     void actionOrdnerAnfuegenTriggered();
+    void actionAktualisierenTriggered();
     void actionVisualisierungTriggered();
     void actionAnsichtBetriebsstellennamenToggled(bool checked);
     void actionAnsichtBahnsteigeToggled(bool checked);

@@ -125,6 +125,8 @@
     <addaction name="separator"/>
     <addaction name="actionOrdnerOeffnen"/>
     <addaction name="actionOrdnerAnfuegen"/>
+    <addaction name="separator"/>
+    <addaction name="actionAktualisieren"/>
    </widget>
    <widget class="QMenu" name="menuVisualisierung">
     <property name="title">
@@ -203,6 +205,17 @@
    </property>
    <property name="text">
     <string>S&amp;treckenordner anfügen ...</string>
+   </property>
+  </action>
+  <action name="actionAktualisieren">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Akt&amp;ualisieren</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
    </property>
   </action>
   <action name="actionAnsichtBetriebsstellennamen">
@@ -411,6 +424,22 @@
    </hints>
   </connection>
   <connection>
+   <sender>actionAktualisieren</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionAktualisierenTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>509</x>
+     <y>381</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>actionAnsichtBetriebsstellennamen</sender>
    <signal>toggled(bool)</signal>
    <receiver>MainWindow</receiver>
@@ -496,6 +525,7 @@
   <slot>actionModulOeffnenTriggered()</slot>
   <slot>actionOrdnerOeffnenTriggered()</slot>
   <slot>actionOrdnerAnfuegenTriggered()</slot>
+  <slot>actionAktualisierenTriggered()</slot>
   <slot>actionAnsichtBetriebsstellennamenToggled(bool)</slot>
   <slot>actionAnsichtBahnsteigeToggled(bool)</slot>
   <slot>actionAnsichtFahrstrassenToggled(bool)</slot>

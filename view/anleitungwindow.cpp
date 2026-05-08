@@ -58,6 +58,12 @@ Module über ihre UTM-Referenzpunkte zu einem einheitlichen Plan.</p>
         Verzeichnis. Bereits geladene Module werden vorher verworfen.</td></tr>
 <tr><td><b>Streckenordner anfügen …</b></td>
     <td>Wie oben, aber zusätzlich zu bereits geladenen Modulen.</td></tr>
+<tr><td><b>Aktualisieren</b> (<code>F5</code>)</td>
+    <td>Liest alle aktuell geladenen Module erneut von der Festplatte ein.
+        Die aktuelle Sicht (Zoom, Mittelpunkt) bleibt erhalten; nur die
+        Auswahl in der Fahrstraßen-Seitenleiste wird zurückgesetzt. Nützlich,
+        um nach Änderungen an einem Modul (z.&nbsp;B. im 3D-Editor) den Plan zu
+        aktualisieren, ohne alle Module manuell neu öffnen zu müssen.</td></tr>
 </table>
 
 <p><span class="hinweis">Tipp:</span> Streckendateien können auch per

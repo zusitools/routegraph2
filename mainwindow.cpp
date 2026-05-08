@@ -144,6 +144,36 @@ void MainWindow::actionOrdnerAnfuegenTriggered()
     }
 }
 
+void MainWindow::actionAktualisierenTriggered()
+{
+    if (this->m_streckennetz.empty()) {
+        return;
+    }
+
+    // OS-Pfade aller aktuell geladenen Module einsammeln, bevor das Netz verworfen wird.
+    QStringList dateinamen;
+    for (auto it = this->m_streckennetz.cbegin(); it != this->m_streckennetz.cend(); ++it) {
+        dateinamen.append(QString::fromStdString(zusixml::ZusiPfad::vonZusiPfad(it->first).alsOsPfad()));
+    }
+
+    // Aktuelle Sicht (Transformation und Mittelpunkt) merken, damit sie nach dem
+    // Neuladen erhalten bleibt -- Aktualisieren soll lediglich die Module neu von
+    // der Festplatte einlesen, nicht die Ansicht zurücksetzen.
+    const auto& transform = this->ui->streckeView->transform();
+    const auto& viewport = this->ui->streckeView->viewport();
+    const auto& centerPoint = this->ui->streckeView->mapToScene(viewport->width() / 2, viewport->height() / 2);
+
+    this->m_streckennetz = {};
+    this->m_aktiveFahrstrasse.reset();
+    this->ui->fahrstrassenPanel->setzeFahrstrassen({});
+    this->oeffneStrecken(dateinamen);
+    this->fahrstrassenListeUngueltig();
+    this->aktualisiereDarstellung();
+
+    this->ui->streckeView->setTransform(transform);
+    this->ui->streckeView->centerOn(centerPoint);
+}
+
 void MainWindow::actionVisualisierungTriggered()
 {
     // Transformation und Scroll-Position speichern und wiederherstellen
@@ -586,6 +616,7 @@ void MainWindow::oeffneStrecken(const QStringList& dateinamen)
 
     ui->actionModulOeffnen->setEnabled(!this->m_streckennetz.empty());
     ui->actionOrdnerAnfuegen->setEnabled(!this->m_streckennetz.empty());
+    ui->actionAktualisieren->setEnabled(!this->m_streckennetz.empty());
 }
 
 void MainWindow::aktualisiereDarstellung()
