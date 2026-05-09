@@ -1247,9 +1247,9 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         params.reserve(static_cast<int>(e.signal->children_SignalFrame.size()) * 9);
         for (const auto& frame : e.signal->children_SignalFrame) {
             if (!frame) continue;
-            if (frame->Datei.Dateiname.empty()) continue;
-            const auto absPfad = zusixml::ZusiPfad::vonZusiPfad(frame->Datei.Dateiname, e.signalModul);
-            osPfade.append(QString::fromStdString(absPfad.alsOsPfad()));
+            osPfade.append(frame->Datei.Dateiname.empty() ?
+                QString{} :
+                QString::fromStdString(zusixml::ZusiPfad::vonZusiPfad(frame->Datei.Dateiname, e.signalModul).alsOsPfad()));
             params.append(frame->p.x);    params.append(frame->p.y);    params.append(frame->p.z);
             params.append(frame->phi.x);  params.append(frame->phi.y);  params.append(frame->phi.z);
             params.append(frame->sk.x);   params.append(frame->sk.y);   params.append(frame->sk.z);
