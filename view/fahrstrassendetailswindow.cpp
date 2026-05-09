@@ -26,9 +26,13 @@
 #include <QVBoxLayout>
 #include <QVector>
 
+#include <array>
 #include <atomic>
 #include <cstdint>
+#include <cstring>
+#include <list>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -50,6 +54,121 @@ bool& ls3renderInitialisiert() {
 }
 
 constexpr int Ls3PixelProMeter = 40;
+
+// Maximale Anzahl an Einträgen im Bilder-LRU-Cache (siehe Ls3BildCache).
+constexpr size_t Ls3BildCacheKapazitaet = 30;
+
+/**
+ * Beschreibt einen einzelnen <SignalFrame>-Aufruf (Parameter von
+ * ls3render_AddSignalFrame): den OS-Pfad der LS3-Datei und die 9 Float-
+ * Parameter (Position p.x/y/z, Rotation phi.x/y/z, Skalierung sk.x/y/z).
+ */
+struct Ls3FrameKey {
+    std::string osPfad;
+    std::array<float, 9> params;
+
+    bool operator==(const Ls3FrameKey& other) const noexcept {
+        return osPfad == other.osPfad && params == other.params;
+    }
+};
+
+/**
+ * Vollständiger Cache-Schlüssel für ein gerendertes Bild: enthält den
+ * Parameter von ls3render_SetSignalbild (Signalbild-ID) und alle Parameter
+ * der zugehörigen ls3render_AddSignalFrame-Aufrufe in genau der Reihenfolge,
+ * in der sie an ls3render übergeben werden – nur dieselbe Reihenfolge ergibt
+ * dasselbe Bild.
+ */
+struct Ls3CacheKey {
+    uint64_t signalbild = 0;
+    std::vector<Ls3FrameKey> frames;
+
+    bool operator==(const Ls3CacheKey& other) const noexcept {
+        return signalbild == other.signalbild && frames == other.frames;
+    }
+};
+
+struct Ls3CacheKeyHash {
+    static void hashCombine(size_t& seed, size_t v) noexcept {
+        seed ^= v + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+    }
+
+    size_t operator()(const Ls3CacheKey& k) const noexcept {
+        size_t h = std::hash<uint64_t>{}(k.signalbild);
+        for (const auto& f : k.frames) {
+            hashCombine(h, std::hash<std::string>{}(f.osPfad));
+            for (float v : f.params) {
+                // Float bitweise hashen, damit -0.0/+0.0 und NaN deterministisch
+                // behandelt werden (Bitmuster-Identität entspricht der
+                // operator==-Semantik von std::array<float,9>).
+                uint32_t bits = 0;
+                std::memcpy(&bits, &v, sizeof(bits));
+                hashCombine(h, std::hash<uint32_t>{}(bits));
+            }
+        }
+        return h;
+    }
+};
+
+/**
+ * LRU-Cache für von ls3render erzeugte Bilder, mit konstanter maximaler
+ * Eintragszahl. Synchronisiert intern über einen QMutex – sowohl Lese- als
+ * auch Schreibzugriffe modifizieren die LRU-Reihenfolge, daher reicht ein
+ * exklusiver Mutex (und ein RW-Lock brächte hier keinen Vorteil).
+ */
+class Ls3BildCache {
+public:
+    explicit Ls3BildCache(size_t kapazitaet) : m_kapazitaet(kapazitaet) {}
+
+    /**
+     * Liefert das gecachte Bild zum Schlüssel und schiebt den Eintrag an die
+     * LRU-Spitze, oder std::nullopt bei Cache-Miss.
+     */
+    std::optional<QImage> hole(const Ls3CacheKey& key) {
+        QMutexLocker lock(&m_mutex);
+        const auto it = m_index.find(key);
+        if (it == m_index.end()) return std::nullopt;
+        m_eintraege.splice(m_eintraege.begin(), m_eintraege, it->second);
+        return it->second->image;
+    }
+
+    /**
+     * Fügt ein Bild unter dem gegebenen Schlüssel ein bzw. überschreibt einen
+     * vorhandenen Eintrag. Verdrängt bei Überschreitung der Kapazität die
+     * jeweils ältesten Einträge.
+     */
+    void einfuegen(Ls3CacheKey key, QImage image) {
+        QMutexLocker lock(&m_mutex);
+        auto it = m_index.find(key);
+        if (it != m_index.end()) {
+            it->second->image = std::move(image);
+            m_eintraege.splice(m_eintraege.begin(), m_eintraege, it->second);
+            return;
+        }
+        m_eintraege.push_front({std::move(key), std::move(image)});
+        m_index.emplace(m_eintraege.front().key, m_eintraege.begin());
+        while (m_eintraege.size() > m_kapazitaet) {
+            m_index.erase(m_eintraege.back().key);
+            m_eintraege.pop_back();
+        }
+    }
+
+private:
+    struct Eintrag {
+        Ls3CacheKey key;
+        QImage image;
+    };
+
+    QMutex m_mutex;
+    size_t m_kapazitaet;
+    std::list<Eintrag> m_eintraege;  // vorne: zuletzt verwendet; hinten: am ältesten
+    std::unordered_map<Ls3CacheKey, std::list<Eintrag>::iterator, Ls3CacheKeyHash> m_index;
+};
+
+Ls3BildCache& ls3BildCache() {
+    static Ls3BildCache cache(Ls3BildCacheKapazitaet);
+    return cache;
+}
 
 /**
  * Liest die Signalbild-ID aus der Signalmatrix bzw. Ersatzsignal-Matrix anhand der
@@ -228,6 +347,28 @@ public slots:
             return;
         }
 
+        Q_ASSERT(params.size() == osPfade.size() * 9);
+
+        // Cache-Schlüssel umfasst alle Parameter, die in dieser Render-Session an
+        // ls3render_SetSignalbild und ls3render_AddSignalFrame übergeben werden.
+        Ls3CacheKey cacheKey;
+        cacheKey.signalbild = static_cast<uint64_t>(signalbild);
+        cacheKey.frames.reserve(static_cast<size_t>(osPfade.size()));
+        for (int i = 0; i < osPfade.size(); ++i) {
+            Ls3FrameKey fk;
+            fk.osPfad = osPfade.at(i).toStdString();
+            const float* p = params.constData() + i * 9;
+            for (int j = 0; j < 9; ++j) fk.params[j] = p[j];
+            cacheKey.frames.push_back(std::move(fk));
+        }
+
+        // Cache-Lookup ohne ls3renderMutex – Cache-Hits sollen nicht unnötig
+        // gegen laufende Rendervorgänge serialisiert werden.
+        if (auto cached = ls3BildCache().hole(cacheKey)) {
+            emit fertig(generation, slotKey, *cached, QString());
+            return;
+        }
+
         QImage image;
         QString fehler;
 
@@ -246,8 +387,6 @@ public slots:
         if (fehler.isEmpty()) {
             ls3render_Reset();
             ls3render_SetSignalbild(static_cast<uint64_t>(signalbild));
-
-            Q_ASSERT(params.size() == osPfade.size() * 9);
 
             int hinzugefuegt = 0;
             for (int i = 0; i < osPfade.size(); ++i) {
@@ -291,6 +430,13 @@ public slots:
                 }
             }
             ls3render_Reset();
+        }
+        lock.unlock();
+
+        // Bei einem Renderfehler wird nichts gecacht (insbesondere damit ein
+        // transienter Fehler nicht dauerhaft zugeordnet bleibt).
+        if (fehler.isEmpty()) {
+            ls3BildCache().einfuegen(std::move(cacheKey), image);
         }
 
         emit fertig(generation, slotKey, image, fehler);
