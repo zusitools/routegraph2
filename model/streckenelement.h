@@ -3,6 +3,8 @@
 
 #include "zusi_parser/zusi_types.hpp"
 
+#include <functional>
+
 enum class StreckenelementRichtung : bool {
     Norm = true,
     Gegen = false
@@ -202,5 +204,17 @@ inline bool hatEreignis(const StreckenelementRichtungsInfo& info, EreignisTyp ty
 inline StreckenelementUndRichtung richtung(const StrElement& element, StreckenelementRichtung richtung) {
     return StreckenelementUndRichtung { &element, richtung };
 }
+
+namespace std {
+// Sowohl `StreckenelementUndRichtung` als auch `const StreckenelementUndRichtung`
+// werden als Schlüssel in `std::unordered_map<…>` verwendet. libstdc++ leitet
+// keine implizite Hash-Spezialisierung für die const-qualifizierte Variante
+// her, deshalb stellen wir beide bereit.
+template<> struct hash<StreckenelementUndRichtung> {
+    size_t operator()(const StreckenelementUndRichtung& er) const noexcept {
+        return std::hash<intptr_t>{}(er.val);
+    }
+};
+}  // namespace std
 
 #endif // STRECKENELEMENT_H

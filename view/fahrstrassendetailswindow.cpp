@@ -35,6 +35,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -218,38 +219,51 @@ std::optional<uint64_t> berechneSignalbild(const Signal& sig, int zeile, int spa
 }
 
 /**
- * Löst eine FahrstrStart/FahrstrZiel/FahrstrSignal/FahrstrVSignal-artige Referenz
- * (Modul-Datei + Index in children_ReferenzElemente) auf das bezeichnete
- * StreckenelementUndRichtung auf. Liefert ein leeres (default-konstruiertes)
- * StreckenelementUndRichtung bei jeglichem Auflöse-Fehler – Fehler werden hier
- * nicht propagiert, weil die Funktion nur zur Identitätsbildung beim
- * Vorgänger-/Nachfolger-Matching verwendet wird.
+ * Ergebnis einer Referenz-Auflösung: das aufgelöste StreckenelementUndRichtung
+ * sowie der Modulpfad, in dem es liegt. Implicit-Bool gibt an, ob die Auflösung
+ * geklappt hat (das StreckenelementUndRichtung also einen gültigen Pointer trägt).
+ */
+struct AufloesungMitModul {
+    StreckenelementUndRichtung er;
+    zusixml::ZusiPfad modul = zusixml::ZusiPfad::vonZusiPfad("");
+
+    explicit operator bool() const { return static_cast<bool>(er); }
+};
+
+/**
+ * Löst eine FahrstrStart/FahrstrZiel/FahrstrSignal/FahrstrVSignal/KoppelSignal-
+ * artige Referenz (Modul-Datei + Index in children_ReferenzElemente) auf das
+ * bezeichnete StreckenelementUndRichtung auf, samt Modulpfad des Ziels (für
+ * weitergehende Auflösungen, z. B. KoppelSignal-Verkettung). Liefert ein leeres
+ * Ergebnis bei jeglichem Auflöse-Fehler – Fehler werden hier nicht propagiert,
+ * weil die Funktion nur zur Identitätsbildung bzw. zum Builder-internen Lookup
+ * verwendet wird.
  *
  * Sonderfall leerer `dateinameRef` -> dieselbe Datei wie das referenzierende
  * Modul (gleiche Semantik wie `loeseReferenzAuf` in fahrstrassendetails.cpp).
  */
-StreckenelementUndRichtung loeseReferenzAuf(const Streckennetz& netz,
-                                             const zusixml::ZusiPfad& fahrstrasseModul,
-                                             std::string_view dateinameRef,
-                                             int64_t refIndex) {
+AufloesungMitModul loeseReferenzAuf(const Streckennetz& netz,
+                                    const zusixml::ZusiPfad& parentModul,
+                                    std::string_view dateinameRef,
+                                    int64_t refIndex) {
     const auto modulPfad = dateinameRef.empty()
-        ? fahrstrasseModul
-        : zusixml::ZusiPfad::vonZusiPfad(dateinameRef, fahrstrasseModul);
+        ? parentModul
+        : zusixml::ZusiPfad::vonZusiPfad(dateinameRef, parentModul);
     const Strecke* strecke = netz.get(modulPfad);
-    if (!strecke) return {};
+    if (!strecke) return { {}, modulPfad };
     if (refIndex < 0 || static_cast<size_t>(refIndex) >= strecke->children_ReferenzElemente.size()) {
-        return {};
+        return { {}, modulPfad };
     }
     const auto& refEl = strecke->children_ReferenzElemente[refIndex];
-    if (!refEl) return {};
+    if (!refEl) return { {}, modulPfad };
     const auto strElIndex = refEl->StrElement;
     const auto richtung = static_cast<StreckenelementRichtung>(refEl->StrNorm);
     if (strElIndex < 0 || static_cast<size_t>(strElIndex) >= strecke->children_StrElement.size()) {
-        return {};
+        return { {}, modulPfad };
     }
     const auto* strEl = strecke->children_StrElement[strElIndex].get();
-    if (!strEl) return {};
-    return StreckenelementUndRichtung{ strEl, richtung };
+    if (!strEl) return { {}, modulPfad };
+    return { StreckenelementUndRichtung{ strEl, richtung }, modulPfad };
 }
 
 /** Eintrag der Hauptsignal-Liste einer Fahrstraße fürs Vorgänger-Matching. */
@@ -270,10 +284,10 @@ std::unordered_map<intptr_t, VorgaengerSignalInfo> sammleVorgaengerHauptsignale(
     if (!fs.quelle) return result;
     for (const auto& s : fs.quelle->children_FahrstrSignal) {
         if (!s) continue;
-        const auto er = loeseReferenzAuf(netz, fs.fahrstrasseModul,
-                                         s->Datei.Dateiname, s->Ref);
-        if (!er) continue;
-        result[er.val] = { s->FahrstrSignalZeile, s->FahrstrSignalErsatzsignal };
+        const auto res = loeseReferenzAuf(netz, fs.fahrstrasseModul,
+                                          s->Datei.Dateiname, s->Ref);
+        if (!res) continue;
+        result[res.er.val] = { s->FahrstrSignalZeile, s->FahrstrSignalErsatzsignal };
     }
     return result;
 }
@@ -289,10 +303,10 @@ std::unordered_map<intptr_t, NachfolgerSignalInfo> sammleNachfolgerVorsignale(
     if (!fs.quelle) return result;
     for (const auto& s : fs.quelle->children_FahrstrVSignal) {
         if (!s) continue;
-        const auto er = loeseReferenzAuf(netz, fs.fahrstrasseModul,
-                                         s->Datei.Dateiname, s->Ref);
-        if (!er) continue;
-        result[er.val] = { s->FahrstrSignalSpalte };
+        const auto res = loeseReferenzAuf(netz, fs.fahrstrasseModul,
+                                          s->Datei.Dateiname, s->Ref);
+        if (!res) continue;
+        result[res.er.val] = { s->FahrstrSignalSpalte };
     }
     return result;
 }
@@ -315,6 +329,161 @@ int findeVsigGeschwNullSpalte(const Signal& sig) {
     }
     return -1;
 }
+
+/**
+ * Liefert den Index der Zeile mit Hauptsignalgeschwindigkeit 0 (entspricht
+ * "Halt") in der HsigBegriff-Liste des Signals, oder -1, falls kein solcher
+ * HsigBegriff vorhanden ist. Analog zu findeVsigGeschwNullSpalte.
+ */
+int findeHsigGeschwNullZeile(const Signal& sig) {
+    for (size_t i = 0; i < sig.children_HsigBegriff.size(); ++i) {
+        const auto& hb = sig.children_HsigBegriff[i];
+        if (!hb) continue;
+        if (hb->HsigGeschw == 0.0f) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+/** Liefert das am Standort `er` montierte Signal, oder nullptr. */
+const Signal* signalAn(const StreckenelementUndRichtung& er) {
+    if (!er) return nullptr;
+    const auto& info = er.richtungsInfo();
+    if (!info.has_value() || !info->Signal) return nullptr;
+    return info->Signal.get();
+}
+
+/**
+ * Berechnet die Signalstellungen im Streckennetz,
+ * wenn eine oder mehrere Fahrstraßen nacheinander eingestellt werden.
+ */
+class FahrstrassenEinstellung {
+public:
+    struct Stellung {
+        int zeile = 0;
+        int spalte = 0;
+        bool ersatz = false;
+    };
+
+    using StellungenMap = std::unordered_map<StreckenelementUndRichtung, Stellung>;
+
+    explicit FahrstrassenEinstellung(const Streckennetz& netz) : m_netz(netz) {}
+
+    StellungenMap stellungen() && {
+        return std::move(m_stellungen);
+    }
+
+    void fahrstrasseEinstellen(const ResolvedFahrstrasse& fs) {
+        if (!fs.quelle) return;
+        const auto& fahrstrasseModul = fs.fahrstrasseModul;
+
+        // Schritt 1: alle Hauptsignale stellen.
+        for (const auto& s : fs.quelle->children_FahrstrSignal) {
+            if (!s) continue;
+            const auto res = loeseReferenzAuf(m_netz, fahrstrasseModul,
+                                              s->Datei.Dateiname, s->Ref);
+            if (!res) continue;
+            std::unordered_set<intptr_t> besucht;
+            setzeHsig(res.er, res.modul,
+                      s->FahrstrSignalZeile, s->FahrstrSignalErsatzsignal,
+                      besucht);
+        }
+
+        // Stelle keine Vorsignale, wenn Startsignal (in Zusi: letztes Hauptsignal) auf Ersatzsignal steht.
+        const auto letztesHsigIt = std::find_if(
+            fs.quelle->children_FahrstrSignal.rbegin(),
+            fs.quelle->children_FahrstrSignal.rend(),
+            [&] (const auto& ptr) { return ptr != nullptr; }
+        );
+        if (letztesHsigIt != fs.quelle->children_FahrstrSignal.rend() && (*letztesHsigIt)->FahrstrSignalErsatzsignal) {
+            return;
+        }
+
+        // Schritt 2: alle Vorsignale stellen.
+        for (const auto& s : fs.quelle->children_FahrstrVSignal) {
+            if (!s) continue;
+            const auto res = loeseReferenzAuf(m_netz, fahrstrasseModul,
+                                              s->Datei.Dateiname, s->Ref);
+            if (!res) continue;
+            std::unordered_set<intptr_t> besucht;
+            setzeVsig(res.er, res.modul, s->FahrstrSignalSpalte, besucht);
+        }
+    }
+
+private:
+    // Aktuelle Stellung am Standort `er`: gespeicherte Stellung, sonst
+    // Grundstellung (Zeile = HsigGeschw==0, sonst 0; Spalte = VsigGeschw==0,
+    // sonst 0; Ersatz = false). Liefert eine Default-Stellung (0,0,false),
+    // wenn am Standort kein Signal montiert ist. Wird ausschließlich
+    // builder-intern benutzt, um vor einer (Teil-)Aktualisierung den
+    // bisherigen Wert für unveränderte Komponenten zu erhalten.
+    Stellung aktuelleStellung(const StreckenelementUndRichtung& er) const {
+        const auto it = m_stellungen.find(er);
+        if (it != m_stellungen.end()) return it->second;
+        Stellung s;
+        const Signal* signal = signalAn(er);
+        if (!signal) return s;
+        const int z = findeHsigGeschwNullZeile(*signal);
+        s.zeile = (z >= 0) ? z : 0;
+        const int sp = findeVsigGeschwNullSpalte(*signal);
+        s.spalte = (sp >= 0) ? sp : 0;
+        return s;
+    }
+
+    // Setzt am Standort `er` Zeile und Ersatz auf die übergebenen Werte; die
+    // Spalte bleibt unverändert (Grundstellungs-Spalte falls noch nie berührt).
+    // Folgt rekursiv der KoppelSignal-Kette und setzt jedes Koppelsignal auf
+    // dieselbe (jetzt aktualisierte) Zeile/Spalte/Ersatz – analog zur Zusi-
+    // Semantik. Zykluserkennung über `besucht`.
+    void setzeHsig(const StreckenelementUndRichtung& er,
+                   const zusixml::ZusiPfad& modul,
+                   int zeile, bool ersatz,
+                   std::unordered_set<intptr_t>& besucht) {
+        if (!er) return;
+        Stellung neu = aktuelleStellung(er);
+        neu.zeile = zeile;
+        neu.ersatz = ersatz;
+        setzeStellung(er, modul, neu, besucht);
+    }
+
+    // Setzt am Standort `er` die Spalte; Zeile/Ersatz bleiben unverändert.
+    // Sonst analog zu setzeHsig.
+    void setzeVsig(const StreckenelementUndRichtung& er,
+                   const zusixml::ZusiPfad& modul,
+                   int spalte,
+                   std::unordered_set<intptr_t>& besucht) {
+        if (!er) return;
+        Stellung neu = aktuelleStellung(er);
+        neu.spalte = spalte;
+        setzeStellung(er, modul, neu, besucht);
+    }
+
+    // Schreibt die komplette Stellung an einen Standort und propagiert sie
+    // rekursiv auf alle gekoppelten Signale (KoppelSignal-Kette). Setzt
+    // konsistent dieselben (Zeile, Spalte, Ersatz)-Werte für jedes Glied
+    // der Kette.
+    void setzeStellung(const StreckenelementUndRichtung& er,
+                       const zusixml::ZusiPfad& modul,
+                       Stellung neu,
+                       std::unordered_set<intptr_t>& besucht) {
+        if (!er) return;
+        if (!besucht.insert(er.val).second) return;
+        m_stellungen[er] = neu;
+
+        const Signal* signal = signalAn(er);
+        if (!signal || !signal->KoppelSignal) return;
+        const auto& koppel = *signal->KoppelSignal;
+        const auto res = loeseReferenzAuf(m_netz, modul,
+                                          koppel.Datei.Dateiname,
+                                          static_cast<int64_t>(koppel.ReferenzNr));
+        if (!res) return;
+        setzeStellung(res.er, res.modul, neu, besucht);
+    }
+
+    const Streckennetz& m_netz;
+    StellungenMap m_stellungen;
+};
 
 }  // namespace
 
@@ -817,168 +986,98 @@ FahrstrassenDetailsWindow::berechneEintragAnzeige() const
 {
     std::vector<EintragAnzeige> anzeige(m_eintraege.size());
 
+    if (!m_netz || !m_alleFahrstrassen
+            || m_aktiverIndex < 0
+            || static_cast<size_t>(m_aktiverIndex) >= m_alleFahrstrassen->size()) {
+        return anzeige;
+    }
+    const auto& aktuell = (*m_alleFahrstrassen)[m_aktiverIndex];
+    if (!aktuell.fehler.empty() || !aktuell.quelle) {
+        return anzeige;
+    }
+
     const int vorgIdx = aktuelleVorgaengerFsIndex();
     const int nachIdx = aktuelleNachfolgerFsIndex();
 
-    // Nachfolger-Mapping einmalig vorbereiten: nur bei konkretem Nachfolger,
-    // bei Sentinel "(keine)" bleibt die Map leer.
-    std::unordered_map<intptr_t, NachfolgerSignalInfo> nachMap;
-    if (m_netz && m_alleFahrstrassen
-            && nachIdx >= 0
-            && static_cast<size_t>(nachIdx) < m_alleFahrstrassen->size()) {
-        nachMap = sammleNachfolgerVorsignale(*m_netz, (*m_alleFahrstrassen)[nachIdx]);
+    const ResolvedFahrstrasse* nachfolger = nullptr;
+    if (nachIdx >= 0 && static_cast<size_t>(nachIdx) < m_alleFahrstrassen->size()) {
+        const auto& cand = (*m_alleFahrstrassen)[nachIdx];
+        if (cand.fehler.empty() && cand.quelle) nachfolger = &cand;
     }
 
-    // Hauptsignal-Variante (genau eine pro FahrstrSignal-Eintrag).
-    //  - Zeile/Ersatz-Flag stammen aus dem Eintrag selbst (FahrstrSignalZeile,
-    //    FahrstrSignalErsatzsignal).
-    //  - Spalte:
-    //      a) Wenn der konkrete Nachfolger das Signal als Vorsignal führt:
-    //         dessen FahrstrSignalSpalte (außer bei gezogenem Ersatzsignal,
-    //         dort ist die Spalte irrelevant).
-    //      b) Sonst: bei mehr als einer VsigBegriff-Spalte und nicht-gezogenem
-    //         Ersatzsignal wird die Spalte mit Vorsignalgeschwindigkeit 0
-    //         gewählt; gibt es keine, fällt es auf Spalte 0 zurück. Bei genau
-    //         einer Spalte oder bei gezogenem Ersatzsignal bleibt es bei 0.
-    auto bestimmeHauptsignalVariant = [&](const FahrstrasseDetailEintrag& e)
-            -> EintragAnzeige::Variant {
-        EintragAnzeige::Variant v;
-        v.matrixZeile = e.matrixZeile;
-        v.matrixSpalte = e.matrixSpalte;
-        v.ersatzsignal = e.ersatzsignal;
+    // Ein einzelner Durchlauf: Vorgänger (optional), aktuell, Nachfolger (optional)
+    // einstellen, anschließend für jeden Visualisierungs-Eintrag die
+    // resultierende Stellung aus der Builder-Map abgreifen und – sofern noch
+    // nicht in der Variantenliste vorhanden – aufnehmen.
+    //
+    // Signale, die im Durchlauf nicht berührt wurden (also nicht in der Map
+    // erscheinen), erzeugen für diesen Durchlauf KEINE Variante – das wird
+    // beim Render-Loop dazu führen, dass solche Einträge nicht visualisiert
+    // werden (genau das vom Aufrufer gewünschte Verhalten).
+    auto erfasseDurchlauf = [&](const ResolvedFahrstrasse* vorgaenger) {
+        FahrstrassenEinstellung fe(*m_netz);
+        if (vorgaenger) fe.fahrstrasseEinstellen(*vorgaenger);
+        fe.fahrstrasseEinstellen(aktuell);
+        if (nachfolger) fe.fahrstrasseEinstellen(*nachfolger);
+        const auto stellungen = std::move(fe).stellungen();
 
-        bool spalteAusNachfolger = false;
-        if (e.elementUndRichtung) {
-            auto it = nachMap.find(e.elementUndRichtung.val);
-            if (it != nachMap.end()) {
-                if (!v.ersatzsignal) {
-                    v.matrixSpalte = it->second.matrixSpalte;
-                }
-                spalteAusNachfolger = true;
+        for (size_t i = 0; i < m_eintraege.size(); ++i) {
+            const auto& e = m_eintraege[i];
+            const bool relevant =
+                e.typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal
+             || e.typ == FahrstrasseDetailEintrag::Typ::FahrstrVSignal
+             || e.typ == FahrstrasseDetailEintrag::Typ::Koppelsignal;
+            if (!relevant) continue;
+            if (!e.elementUndRichtung) continue;
+
+            const auto it = stellungen.find(e.elementUndRichtung);
+            if (it == stellungen.end()) continue;
+            const auto& st = it->second;
+
+            EintragAnzeige::Variant v;
+            v.matrixZeile = st.zeile;
+            v.matrixSpalte = st.spalte;
+            v.ersatzsignal = st.ersatz;
+
+            // Dieselbe (Zeile, Spalte, Ersatzsignal)-Kombination nur einmal aufnehmen.
+            if (std::find_if(
+                anzeige[i].varianten.cbegin(),
+                anzeige[i].varianten.cend(),
+                [&] (const auto& bestehend) {
+                    return bestehend.matrixZeile == v.matrixZeile
+                        && bestehend.matrixSpalte == v.matrixSpalte
+                        && bestehend.ersatzsignal == v.ersatzsignal;
+                })
+            == anzeige[i].varianten.cend()) {
+                anzeige[i].varianten.push_back(v);
             }
         }
-
-        if (!spalteAusNachfolger && !v.ersatzsignal && e.signal
-                && e.signal->children_VsigBegriff.size() > 1) {
-            const int idx = findeVsigGeschwNullSpalte(*e.signal);
-            v.matrixSpalte = idx >= 0 ? idx : 0;
-        }
-
-        return v;
     };
 
-    // Vorsignal-Varianten:
-    //  - Spalte stammt immer aus dem FahrstrVSignal-Eintrag selbst.
-    //  - Bei genau einer HsigBegriff-Zeile (oder wenn das Signal keine
-    //    explizite HsigBegriff-Liste hat): genau eine Variante mit Zeile 0
-    //    und nicht-gezogenem Ersatzsignal, unabhängig von der Vorgänger-
-    //    Auswahl.
-    //  - Bei mehr als einer Zeile:
-    //      a) konkreter Vorgänger ausgewählt → wenn das Signal in dessen
-    //         FahrstrSignal-Liste vorkommt, eine Variante mit dessen
-    //         (Zeile, Ersatzsignal); sonst leer (= ausblenden).
-    //      b) Sentinel "(alle)" → pro eindeutiger (Zeile, Ersatzsignal)-
-    //         Kombination aus allen möglichen Vorgänger-Fahrstraßen je eine
-    //         Variante; sonst leer.
-    auto bestimmeVorsignalVarianten = [&](const FahrstrasseDetailEintrag& e)
-            -> std::vector<EintragAnzeige::Variant> {
-        std::vector<EintragAnzeige::Variant> out;
-
-        // Ohne aufgelöstes Signal lässt sich die Zeilenanzahl nicht bestimmen.
-        // Wir erzeugen einen Platzhalter-Slot mit Zeile 0, damit der Render-
-        // Loop den (kein Signal)-Fehlertext anzeigt – das entspricht dem
-        // bisherigen Verhalten und liefert dem Nutzer eine sichtbare
-        // Rückmeldung über das Element.
-        if (!e.signal) {
-            EintragAnzeige::Variant v;
-            v.matrixZeile = 0;
-            v.matrixSpalte = e.matrixSpalte;
-            v.ersatzsignal = false;
-            out.push_back(v);
-            return out;
-        }
-
-        const size_t rowCount = e.signal->children_HsigBegriff.size();
-        if (rowCount <= 1) {
-            EintragAnzeige::Variant v;
-            v.matrixZeile = 0;
-            v.matrixSpalte = e.matrixSpalte;
-            v.ersatzsignal = false;
-            out.push_back(v);
-            return out;
-        }
-
-        if (!m_netz || !m_alleFahrstrassen || !e.elementUndRichtung) {
-            return out;
-        }
-
-        const auto fuegeVarianteHinzu = [&](int zeile, bool ersatz) {
-            for (const auto& v : out) {
-                if (v.matrixZeile == zeile && v.ersatzsignal == ersatz) return;
-            }
-            EintragAnzeige::Variant v;
-            v.matrixZeile = zeile;
-            v.matrixSpalte = e.matrixSpalte;
-            v.ersatzsignal = ersatz;
-            out.push_back(v);
-        };
-
-        if (vorgIdx >= 0 && static_cast<size_t>(vorgIdx) < m_alleFahrstrassen->size()) {
-            const auto& vorg = (*m_alleFahrstrassen)[vorgIdx];
-            const auto vorgMap = sammleVorgaengerHauptsignale(*m_netz, vorg);
-            const auto it = vorgMap.find(e.elementUndRichtung.val);
-            if (it != vorgMap.end()) {
-                fuegeVarianteHinzu(it->second.matrixZeile, it->second.ersatz);
-            }
-            return out;
-        }
-
-        // Sentinel "(alle)": über alle in Frage kommenden Vorgänger iterieren.
-        if (m_aktiverIndex < 0
-                || static_cast<size_t>(m_aktiverIndex) >= m_alleFahrstrassen->size()) {
-            return out;
-        }
-        const auto& aktuell = (*m_alleFahrstrassen)[m_aktiverIndex];
+    if (vorgIdx >= 0 && static_cast<size_t>(vorgIdx) < m_alleFahrstrassen->size()) {
+        // Konkreter Vorgänger ausgewählt: ein einzelner Durchlauf.
+        const auto& vorg = (*m_alleFahrstrassen)[vorgIdx];
+        const ResolvedFahrstrasse* vorgPtr =
+            (vorg.fehler.empty() && vorg.quelle) ? &vorg : nullptr;
+        erfasseDurchlauf(vorgPtr);
+    } else {
+        // Sentinel "(alle)": über alle in der UI gelisteten Vorgänger-Kandidaten
+        // iterieren (alle FSen, deren Ziel mit dem Start der aktuellen FS
+        // zusammenfällt; entspricht der Liste in m_vorgaengerListe).
+        bool mindestensEinDurchlauf = false;
         for (size_t i = 0; i < m_alleFahrstrassen->size(); ++i) {
             if (static_cast<int>(i) == m_aktiverIndex) continue;
             const auto& other = (*m_alleFahrstrassen)[i];
             if (!other.fehler.empty() || !other.quelle) continue;
             if (!(other.ziel && aktuell.start && other.ziel == aktuell.start)) continue;
-            const auto vorgMap = sammleVorgaengerHauptsignale(*m_netz, other);
-            const auto it = vorgMap.find(e.elementUndRichtung.val);
-            if (it == vorgMap.end()) continue;
-            fuegeVarianteHinzu(it->second.matrixZeile, it->second.ersatz);
+            erfasseDurchlauf(&other);
+            mindestensEinDurchlauf = true;
         }
-        return out;
-    };
-
-    // Pass 1: Varianten für die jeweiligen Wurzel-Einträge berechnen.
-    for (size_t i = 0; i < m_eintraege.size(); ++i) {
-        const auto& e = m_eintraege[i];
-        if (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal) {
-            anzeige[i].varianten.push_back(bestimmeHauptsignalVariant(e));
-        } else if (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrVSignal) {
-            anzeige[i].varianten = bestimmeVorsignalVarianten(e);
-        }
-        // Andere Typen (Weichen, Register, Auflösungen, Start/Ziel ohne Signal,
-        // Koppelsignale) bleiben in dieser Pass leer; Koppelsignale erben unten.
-    }
-
-    // Pass 2: Koppelsignal-Varianten vom Wurzel-Eintrag erben (entspricht der
-    // Zusi-Semantik: gekoppelte Signale stellen denselben Matrix-Index wie ihr
-    // Bezugssignal). Das schließt sowohl die (Zeile, Ersatz)-Varianten von
-    // Vorsignalen als auch die per Nachfolger/Fallback bestimmte Spalte von
-    // Hauptsignalen ein.
-    for (size_t i = 0; i < m_eintraege.size(); ++i) {
-        const auto& e = m_eintraege[i];
-        const bool zuVsig = (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrVSignal);
-        const bool zuHsig = (e.typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal);
-        if (!zuVsig && !zuHsig) continue;
-        for (size_t j = i + 1; j < m_eintraege.size(); ++j) {
-            const auto& cand = m_eintraege[j];
-            if (cand.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) break;
-            if (cand.kopplungZuVsig != zuVsig) break;
-            anzeige[j].varianten = anzeige[i].varianten;
+        // Falls keine Vorgänger-Kandidaten existieren: einmaliger Durchlauf
+        // ohne Vorgänger-FS, damit zumindest die Stellungen aus aktueller +
+        // (ggf.) Nachfolger-FS sichtbar werden.
+        if (!mindestensEinDurchlauf) {
+            erfasseDurchlauf(nullptr);
         }
     }
 
@@ -1081,13 +1180,24 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
         if (e.typ == FahrstrasseDetailEintrag::Typ::Koppelsignal) {
             caption = tr("Koppelsignal: %1").arg(caption);
         }
-        // Bei mehreren Varianten pro Eintrag (typischerweise Vorsignale mit
-        // mehr als einer Zeile bei Sentinel "(alle)") die Variante in der
-        // Caption kennzeichnen, damit die Slots unterscheidbar bleiben.
+        // Bei mehreren Varianten pro Eintrag die Variante in der Caption
+        // kennzeichnen, damit die Slots unterscheidbar bleiben:
+        //  - Hauptsignale (inkl. Hsig-gekoppelte Koppelsignale) variieren bei
+        //    Sentinel "(alle)" typischerweise in der Spalte → "(Spalte X)".
+        //  - Vorsignale (inkl. Vsig-gekoppelte Koppelsignale) variieren in der
+        //    Zeile bzw. dem Ersatzsignal-Flag → "(Zeile X)" / "(Ersatzsignal-Zeile X)".
         if (mehrfach) {
-            const QString suffix = variant.ersatzsignal
-                ? tr(" (Ersatzsignal-Zeile %1)").arg(variant.matrixZeile)
-                : tr(" (Zeile %1)").arg(variant.matrixZeile);
+            const bool istHsigArt =
+                e.typ == FahrstrasseDetailEintrag::Typ::FahrstrSignal
+             || (e.typ == FahrstrasseDetailEintrag::Typ::Koppelsignal && !e.kopplungZuVsig);
+            QString suffix;
+            if (istHsigArt) {
+                suffix = tr(" (Spalte %1)").arg(variant.matrixSpalte);
+            } else {
+                suffix = variant.ersatzsignal
+                    ? tr(" (Ersatzsignal-Zeile %1)").arg(variant.matrixZeile)
+                    : tr(" (Zeile %1)").arg(variant.matrixZeile);
+            }
             caption += suffix;
         }
         auto* textLabel = new QLabel(caption, slotWidget);
