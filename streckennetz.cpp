@@ -68,6 +68,11 @@ void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> s
         }
     }
 
+    // Das neue Modul muss bereits in m_strecken liegen, bevor wir die zuvor
+    // geladenen Module nachverknüpfen, damit deren Lookups dieses neue Modul
+    // finden können.
+    m_strecken.emplace(std::move(key), std::move(strecke));
+
     // Andere vorher geladene Module mit diesem Modul verknuepfen
     m_elementeMitUnaufgeloestemNachfolger.erase(std::remove_if(m_elementeMitUnaufgeloestemNachfolger.begin(), m_elementeMitUnaufgeloestemNachfolger.end(), [&](auto& kv) -> bool {
         const auto& pfad = kv.first;
@@ -134,8 +139,6 @@ void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> s
                     std::make_move_iterator(elementeMitUnaufgeloestemNachfolgerNeu.begin()),
                     std::make_move_iterator(elementeMitUnaufgeloestemNachfolgerNeu.end()));
     }
-
-    m_strecken.emplace(std::move(key), std::move(strecke));
 }
 
 Strecke* Streckennetz::get(const zusixml::ZusiPfad& pfad) const {
