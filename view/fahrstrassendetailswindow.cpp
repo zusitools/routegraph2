@@ -658,6 +658,7 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
 
     // Linker Bereich: Elementliste
     auto* linksBox = new QGroupBox(tr("Elemente"), this);
+    linksBox->setFlat(true);
     auto* linksLayout = new QVBoxLayout(linksBox);
     linksLayout->setContentsMargins(4, 4, 4, 4);
     m_eintragsListe->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -671,11 +672,13 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
     auto* obenSplitter = new QSplitter(Qt::Horizontal, this);
     obenSplitter->setChildrenCollapsible(false);
     auto* vorBox = new QGroupBox(tr("Vorgänger-Fahrstraßen"), this);
+    vorBox->setFlat(true);
     auto* vorLayout = new QVBoxLayout(vorBox);
     vorLayout->setContentsMargins(4, 4, 4, 4);
     vorLayout->addWidget(m_vorgaengerListe);
     obenSplitter->addWidget(vorBox);
     auto* nachBox = new QGroupBox(tr("Nachfolger-Fahrstraßen"), this);
+    nachBox->setFlat(true);
     auto* nachLayout = new QVBoxLayout(nachBox);
     nachLayout->setContentsMargins(4, 4, 4, 4);
     nachLayout->addWidget(m_nachfolgerListe);
@@ -683,6 +686,7 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
     rechtsSplitter->addWidget(obenSplitter);
 
     auto* signalBox = new QGroupBox(tr("Signalstellungen"), this);
+    signalBox->setFlat(true);
     auto* signalBoxLayout = new QVBoxLayout(signalBox);
     signalBoxLayout->setContentsMargins(4, 4, 4, 4);
     m_signalScroll->setWidgetResizable(true);
