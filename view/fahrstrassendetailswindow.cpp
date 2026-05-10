@@ -172,6 +172,57 @@ Ls3BildCache& ls3BildCache() {
 }
 
 /**
+ * Liefert die Bezeichnung der Regelgleis-/Gegengleis-Eigenschaft einer
+ * Fahrstraße entsprechend dem RglGgl-Attribut (siehe Zusi-XSD: 0=Bahnhof,
+ * 1=eingleisig, 2=Regelgleis, 3=Gegengleis). Unbekannte Werte werden als
+ * "RglGgl=N" formatiert (sichtbar, damit man fehlerhafte Daten erkennt).
+ */
+QString rglGglBezeichnung(int rglGgl) {
+    switch (rglGgl) {
+        case 0: return QObject::tr("Bahnhof");
+        case 1: return QObject::tr("eingleisig");
+        case 2: return QObject::tr("Regelgleis");
+        case 3: return QObject::tr("Gegengleis");
+        default: return QObject::tr("RglGgl=%1").arg(rglGgl);
+    }
+}
+
+/**
+ * Liefert die im durch (zeile, spalte, ersatz) bezeichneten MatrixEintrag
+ * verzeichneten Ereignisnummern (Attribut Er der Ereignis-Kindelemente).
+ * Bei Index-Fehlern oder fehlendem Eintrag wird ein leerer Vektor zurückgegeben
+ * (Anzeige-Logik soll diese Fälle einfach als "keine Ereignisse" behandeln).
+ */
+std::vector<int32_t> ereignisseImMatrixEintrag(const Signal& sig, int zeile, int spalte,
+                                               bool ersatz) {
+    std::vector<int32_t> result;
+    auto sammleAus = [&](const MatrixEintrag& me) {
+        for (const auto& er : me.children_Ereignis) {
+            if (!er) continue;
+            result.push_back(er->Er);
+        }
+    };
+    if (ersatz) {
+        if (zeile < 0 || static_cast<size_t>(zeile) >= sig.children_Ersatzsignal.size()) {
+            return result;
+        }
+        const auto& es = sig.children_Ersatzsignal[zeile];
+        if (!es) return result;
+        sammleAus(es->MatrixEintrag);
+        return result;
+    }
+    const size_t anzSpalten = sig.children_VsigBegriff.size();
+    if (anzSpalten == 0 || zeile < 0 || spalte < 0
+        || static_cast<size_t>(spalte) >= anzSpalten) {
+        return result;
+    }
+    const size_t idx = static_cast<size_t>(zeile) * anzSpalten + static_cast<size_t>(spalte);
+    if (idx >= sig.children_MatrixEintrag.size()) return result;
+    sammleAus(sig.children_MatrixEintrag[idx]);
+    return result;
+}
+
+/**
  * Liest die Signalbild-ID aus der Signalmatrix bzw. Ersatzsignal-Matrix anhand der
  * im FahrstrasseDetailEintrag gespeicherten Indizes.
  * Bei Fehler (Matrix leer, Index ausserhalb, MatrixEintrag fehlt) wird std::nullopt
@@ -711,6 +762,10 @@ FahrstrassenDetailsWindow::FahrstrassenDetailsWindow(QWidget* parent)
             this, &FahrstrassenDetailsWindow::onVorgaengerNachfolgerAusgewaehlt);
     connect(m_nachfolgerListe, &QListWidget::itemSelectionChanged,
             this, &FahrstrassenDetailsWindow::onVorgaengerNachfolgerAusgewaehlt);
+    connect(m_vorgaengerListe, &QListWidget::itemDoubleClicked,
+            this, &FahrstrassenDetailsWindow::onVorgaengerNachfolgerDoppelklick);
+    connect(m_nachfolgerListe, &QListWidget::itemDoubleClicked,
+            this, &FahrstrassenDetailsWindow::onVorgaengerNachfolgerDoppelklick);
 
     // QVector<float> ist kein Qt-Standard-Meta-Typ; einmalig registrieren, damit
     // er via Qt::QueuedConnection ge-Q_ARG()-fähig ist.
@@ -781,22 +836,22 @@ void FahrstrassenDetailsWindow::zeigeFahrstrasse(const Streckennetz* netz,
 
     if (!fs->fehler.empty() || !fs->quelle) {
         m_eintraege.clear();
+        QString titel = QStringLiteral("Fahrstraßen-Details — %1").arg(QString::fromStdString(fs->name));
         if (!fs->fehler.empty()) {
-            setWindowTitle(tr("Fahrstraßen-Details — %1  (%2)")
-                               .arg(QString::fromStdString(fs->name))
-                               .arg(QString::fromStdString(fs->fehler)));
-        } else {
-            setWindowTitle(tr("Fahrstraßen-Details — %1")
-                               .arg(QString::fromStdString(fs->name)));
+            titel += QStringLiteral("  (%1)").arg(QString::fromStdString(fs->fehler));
         }
+        setWindowTitle(titel);
         aktualisiereEintraege();
         aktualisiereVorgaengerNachfolger();
         stoppeLs3Rendering();
         return;
     }
 
-    setWindowTitle(tr("Fahrstraßen-Details — %1")
-                       .arg(QString::fromStdString(fs->name)));
+    setWindowTitle(tr("Fahrstraßen-Details — %1 (%2, %3m%4)")
+                       .arg(QString::fromStdString(fs->name),
+                       rglGglBezeichnung(fs->quelle->RglGgl),
+                       QString::number(fs->quelle->Laenge, 'f', 0),
+                       fs->quelle->ZufallsWert == 0.0 ? QString() : tr(", nicht als Ziel: %1%%").arg(QString::number(fs->quelle->ZufallsWert * 100, 'f', 0))));
 
     m_eintraege = ermittleFahrstrasseDetails(*netz, *fs);
     aktualisiereEintraege();
@@ -988,6 +1043,25 @@ void FahrstrassenDetailsWindow::onVorgaengerNachfolgerAusgewaehlt()
     // aufbauen – bisherige Slots werden in starteLs3Rendering komplett ersetzt.
     m_generation.fetch_add(1);
     starteLs3Rendering();
+}
+
+void FahrstrassenDetailsWindow::onVorgaengerNachfolgerDoppelklick(QListWidgetItem* item)
+{
+    if (!item) return;
+    // Sentinel-Einträge "(alle)" / "(keine)" tragen UserRole=-1 und werden
+    // ignoriert – ein Wechsel wäre dort sinnlos.
+    bool ok = false;
+    const int idx = item->data(Qt::UserRole).toInt(&ok);
+    if (!ok || idx < 0) return;
+    if (!m_alleFahrstrassen
+            || static_cast<size_t>(idx) >= m_alleFahrstrassen->size()) {
+        return;
+    }
+    if (!(*m_alleFahrstrassen)[idx].fehler.empty()
+            || !(*m_alleFahrstrassen)[idx].quelle) {
+        return;
+    }
+    emit wechselZuFahrstrasse(idx);
 }
 
 void FahrstrassenDetailsWindow::stoppeLs3Rendering()
@@ -1264,6 +1338,23 @@ void FahrstrassenDetailsWindow::starteLs3Rendering()
                     : tr(" (Zeile %1)").arg(variant.matrixZeile);
             }
             caption += suffix;
+        }
+        // Liste der im aktuellen MatrixEintrag ausgelösten Ereignisnummern
+        // (z. B. "Ereignisse: 1000, 2000, 1234"). Wird nur ergänzt, wenn
+        // mindestens ein Ereignis vorhanden ist.
+        if (e.signal) {
+            const auto ereignisse = ereignisseImMatrixEintrag(*e.signal,
+                                                              variant.matrixZeile,
+                                                              variant.matrixSpalte,
+                                                              variant.ersatzsignal);
+            if (!ereignisse.empty()) {
+                QStringList ereignisStrings;
+                ereignisStrings.reserve(static_cast<int>(ereignisse.size()));
+                for (int32_t er : ereignisse) {
+                    ereignisStrings << QString::number(er);
+                }
+                caption += tr("\nEreignisse: %1").arg(ereignisStrings.join(QStringLiteral(", ")));
+            }
         }
         auto* textLabel = new QLabel(caption, slotWidget);
         textLabel->setAlignment(Qt::AlignCenter);

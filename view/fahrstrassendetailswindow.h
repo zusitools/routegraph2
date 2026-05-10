@@ -59,11 +59,19 @@ signals:
     void detailAusgewaehlt(int index);
     /** Doppelklick auf einen Detail-Eintrag (Index in eintraege() oder -1). */
     void detailDoppelklick(int index);
+    /**
+     * Wird bei Doppelklick auf einen Vorgänger- oder Nachfolger-Eintrag ausgelöst.
+     * `fahrstrassenIndex` ist der Index in der Liste, die als alleFahrstrassen
+     * an zeigeFahrstrasse() übergeben wurde, oder -1 für die Sentinel-Einträge
+     * "(alle)" / "(keine)".
+     */
+    void wechselZuFahrstrasse(int fahrstrassenIndex);
 
 private slots:
     void onEintragAusgewaehlt();
     void onEintragDoppelklick(QListWidgetItem* item);
     void onVorgaengerNachfolgerAusgewaehlt();
+    void onVorgaengerNachfolgerDoppelklick(QListWidgetItem* item);
     void onLs3Fertig(int slotKey, QImage image, QString fehler);
 
 private:

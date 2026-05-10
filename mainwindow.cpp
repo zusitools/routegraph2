@@ -226,6 +226,8 @@ void MainWindow::actionAnsichtFahrstrassenDetailsTriggered()
                 this, &MainWindow::onFahrstrassenDetailAusgewaehlt);
         connect(m_fahrstrassenDetailsWindow, &FahrstrassenDetailsWindow::detailDoppelklick,
                 this, &MainWindow::onFahrstrassenDetailDoppelklick);
+        connect(m_fahrstrassenDetailsWindow, &FahrstrassenDetailsWindow::wechselZuFahrstrasse,
+                this, &MainWindow::onFahrstrassenDetailWechselZuFahrstrasse);
     }
     aktualisiereFahrstrassenDetailsFenster();
     m_fahrstrassenDetailsWindow->show();
@@ -318,6 +320,29 @@ void MainWindow::onFahrstrassenDetailDoppelklick(int /*index*/)
     const QRectF bbox(punkt->x() - rand, punkt->y() - rand, 2 * rand, 2 * rand);
     ui->streckeView->fitInView(bbox, Qt::KeepAspectRatio);
     m_streckeScene->setzeFahrstrassenDetailMarker(punkt);
+}
+
+void MainWindow::onFahrstrassenDetailWechselZuFahrstrasse(int fahrstrassenIndex)
+{
+    // Programmatische Auswahl im Seitenpanel; deren currentChanged-Signal löst
+    // anschließend die übrige Aktualisierungskette aus (Hervorhebung +
+    // Detailfenster). Falls die Seitenleiste gerade nicht sichtbar ist, das
+    // Auswahlsignal nicht ausgelöst wird oder der Eintrag durch einen Filter
+    // verborgen ist, übernehmen wir den Wechsel zusätzlich direkt, damit das
+    // Detailfenster in jedem Fall die richtige Fahrstraße zeigt.
+    if (fahrstrassenIndex < 0
+            || static_cast<size_t>(fahrstrassenIndex) >= ui->fahrstrassenPanel->fahrstrassen().size()) {
+        return;
+    }
+    if (!ui->fahrstrassenPanel->fahrstrassen()[fahrstrassenIndex].fehler.empty()) {
+        return;
+    }
+    ui->fahrstrassenPanel->waehleFahrstrasse(fahrstrassenIndex);
+    if (!m_aktiveFahrstrasse || *m_aktiveFahrstrasse != fahrstrassenIndex) {
+        m_aktiveFahrstrasse = fahrstrassenIndex;
+        wendeFahrstrassenHervorhebungAn();
+        aktualisiereFahrstrassenDetailsFenster();
+    }
 }
 
 void MainWindow::onStreckeViewKontextmenuAngefordert(QPoint viewPos)

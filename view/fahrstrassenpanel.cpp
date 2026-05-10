@@ -118,6 +118,43 @@ void FahrstrassenPanel::setzeFahrstrassen(std::vector<ResolvedFahrstrasse> fahrs
     }
 }
 
+void FahrstrassenPanel::waehleFahrstrasse(int index)
+{
+    if (index < 0 || static_cast<size_t>(index) >= m_fahrstrassen.size()) {
+        return;
+    }
+    if (!m_fahrstrassen[index].fehler.empty()) {
+        return;
+    }
+    // Source-Modell linear durchsuchen: pro Betriebsstellen-Knoten die Kinder
+    // ansehen und den Eintrag mit passender FahrstrasseIndexRole-Daten finden.
+    for (int row = 0; row < m_model->rowCount(); ++row) {
+        QStandardItem* head = m_model->item(row);
+        if (!head) continue;
+        for (int childRow = 0; childRow < head->rowCount(); ++childRow) {
+            QStandardItem* child = head->child(childRow);
+            if (!child) continue;
+            const QVariant data = child->data(FahrstrasseIndexRole);
+            bool ok = false;
+            if (!data.isValid() || data.toInt(&ok) != index || !ok) continue;
+
+            // In das Proxy-Koordinatensystem umrechnen; falls der Eintrag bzw.
+            // sein Eltern-Knoten durch den aktuellen Filter ausgeblendet ist,
+            // mappToSource liefert für ihn keinen gültigen Index – wir brechen
+            // dann ab, weil ein Auswählen ohne Sichtbarkeit verwirrend wäre.
+            const QModelIndex sourceIdx = m_model->indexFromItem(child);
+            const QModelIndex proxyIdx = m_proxy->mapFromSource(sourceIdx);
+            if (!proxyIdx.isValid()) {
+                return;
+            }
+            m_treeView->expand(proxyIdx.parent());
+            m_treeView->setCurrentIndex(proxyIdx);
+            m_treeView->scrollTo(proxyIdx);
+            return;
+        }
+    }
+}
+
 int FahrstrassenPanel::fahrstrassenIndex(const QModelIndex& proxyIndex) const
 {
     if (!proxyIndex.isValid()) {

@@ -33,6 +33,16 @@ public:
     /** Liefert die aktuell hinterlegten Fahrstraßen (z.B. für die Pfad-Hervorhebung). */
     const std::vector<ResolvedFahrstrasse>& fahrstrassen() const { return m_fahrstrassen; }
 
+    /**
+     * Wählt programmatisch die Fahrstraße mit dem angegebenen Index in der
+     * `fahrstrassen()`-Liste aus, expandiert ggf. den zugehörigen Betriebsstellen-
+     * Knoten und scrollt sie in den sichtbaren Bereich. Auf einer ungültigen,
+     * ausgegrauten oder nicht im aktuellen Filter sichtbaren Fahrstraße passiert
+     * nichts. Löst die normalen Auswahl-Signale aus (insbesondere
+     * `fahrstrasseAusgewaehlt`), damit das übrige Verhalten unverändert bleibt.
+     */
+    void waehleFahrstrasse(int index);
+
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 

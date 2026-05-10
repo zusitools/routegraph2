@@ -44,6 +44,9 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
 
     Fahrstrasse::FahrstrName
     Fahrstrasse::FahrstrTyp
+    Fahrstrasse::RglGgl
+    Fahrstrasse::Laenge
+    Fahrstrasse::ZufallsWert
     Fahrstrasse::FahrstrStart
     Fahrstrasse::FahrstrZiel
     Fahrstrasse::FahrstrWeiche
@@ -82,6 +85,7 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     StreckenelementRichtungsInfo::vMax
     StreckenelementRichtungsInfo::Signal
     StreckenelementRichtungsInfo::Ereignis
+    StreckenelementRichtungsInfo::Reg
 
     Ereignis::Er
 
@@ -112,8 +116,10 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     SignalFrame::sk
 
     MatrixEintrag::Signalbild
+    MatrixEintrag::Ereignis
 
     Ersatzsignal::MatrixEintrag
+    Ersatzsignal::ErsatzsigBezeichnung
 
     KoppelSignal::ReferenzNr
     KoppelSignal::Datei

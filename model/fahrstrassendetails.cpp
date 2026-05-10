@@ -4,6 +4,8 @@
 
 #include "zusi_parser/zusi_types.hpp"
 
+#include <cmath>
+#include <optional>
 #include <sstream>
 #include <string_view>
 #include <unordered_set>
@@ -131,6 +133,68 @@ std::string elementBeschreibung(const StreckenelementUndRichtung& er) {
     std::ostringstream os;
     os << "Element Nr. " << er->Nr << " (" << richtungBeschriftung(er.getRichtung()) << ")";
     return os.str();
+}
+
+/**
+ * Wandelt eine HsigGeschw/VsigGeschw aus einem HsigBegriff/VsigBegriff in km/h
+ * um. Konvention der Quelldaten: positive Werte sind in m/s gespeichert
+ * (×3.6 in km/h); negative Werte werden übernommen.
+ */
+int geschwindigkeitInKmh(float wert) {
+    const double kmh = wert < 0.0f ? wert : static_cast<double>(wert) * 3.6;
+    return static_cast<int>(std::lround(kmh));
+}
+
+/**
+ * Liefert die HsigGeschw der angegebenen Zeile aus der HsigBegriff-Liste eines
+ * Signals, sofern Index und Eintrag gültig sind. Wird für die Anreicherung der
+ * Anzeige um " (xx km/h)" verwendet.
+ */
+std::optional<float> hsigGeschwAnZeile(const Signal& sig, int zeile) {
+    if (zeile < 0 || static_cast<size_t>(zeile) >= sig.children_HsigBegriff.size()) {
+        return std::nullopt;
+    }
+    const auto& hb = sig.children_HsigBegriff[zeile];
+    if (!hb) return std::nullopt;
+    return hb->HsigGeschw;
+}
+
+/**
+ * Liefert die VsigGeschw der angegebenen Spalte aus der VsigBegriff-Liste
+ * eines Signals, sofern Index und Eintrag gültig sind. Analog zu
+ * hsigGeschwAnZeile.
+ */
+std::optional<float> vsigGeschwAnSpalte(const Signal& sig, int spalte) {
+    if (spalte < 0 || static_cast<size_t>(spalte) >= sig.children_VsigBegriff.size()) {
+        return std::nullopt;
+    }
+    const auto& vb = sig.children_VsigBegriff[spalte];
+    if (!vb) return std::nullopt;
+    return vb->VsigGeschw;
+}
+
+/**
+ * Liefert die ErsatzsigBezeichnung des Ersatzsignal-Eintrags der angegebenen
+ * Zeile, oder std::nullopt, falls Index/Eintrag ungültig.
+ */
+std::optional<std::string> ersatzsignalBezeichnung(const Signal& sig, int zeile) {
+    if (zeile < 0 || static_cast<size_t>(zeile) >= sig.children_Ersatzsignal.size()) {
+        return std::nullopt;
+    }
+    const auto& es = sig.children_Ersatzsignal[zeile];
+    if (!es) return std::nullopt;
+    return es->ErsatzsigBezeichnung;
+}
+
+/**
+ * Liefert die Register-Nummer der zur Element-Richtung gehörenden
+ * RichtungsInfo (Attribut Reg), oder 0 falls nicht vorhanden bzw. Reg=0.
+ */
+int registerNrAn(const StreckenelementUndRichtung& er) {
+    if (!er.getStreckenelement()) return 0;
+    const auto& info = er.richtungsInfo();
+    if (!info.has_value()) return 0;
+    return info->Reg;
 }
 
 }  // namespace
@@ -301,6 +365,28 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
             result.back().matrixZeile = s->FahrstrSignalZeile;
             result.back().matrixSpalte = 0;
             result.back().ersatzsignal = s->FahrstrSignalErsatzsignal;
+            std::ostringstream os;
+            os << result.back().label;
+            if (s->FahrstrSignalErsatzsignal) {
+                // Hauptsignal mit Ersatzsignal: " -> Ersatzsignalzeile X (<Bezeichnung>)"
+                os << " -> Ersatzsignalzeile " << s->FahrstrSignalZeile;
+                if (result.back().signal) {
+                    if (auto bez = ersatzsignalBezeichnung(*result.back().signal, s->FahrstrSignalZeile)) {
+                        if (!bez->empty()) {
+                            os << " (" << *bez << ")";
+                        }
+                    }
+                }
+            } else {
+                // Hauptsignal ohne Ersatzsignal: " -> Zeile X (yy km/h)"
+                os << " -> Zeile " << s->FahrstrSignalZeile;
+                if (result.back().signal) {
+                    if (auto v = hsigGeschwAnZeile(*result.back().signal, s->FahrstrSignalZeile)) {
+                        os << " (" << geschwindigkeitInKmh(*v) << " km/h)";
+                    }
+                }
+            }
+            result.back().label = os.str();
         }
         fuegeKoppelsignaleHinzu(/*kopplungZuVsig=*/false);
     }
@@ -312,6 +398,15 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
             result.back().matrixZeile = 0;
             result.back().matrixSpalte = s->FahrstrSignalSpalte;
             result.back().ersatzsignal = false;
+            std::ostringstream os;
+            os << result.back().label << " -> Spalte " << s->FahrstrSignalSpalte;
+            // Vorsignal: " -> Spalte X (yy km/h)"
+            if (result.back().signal) {
+                if (auto v = vsigGeschwAnSpalte(*result.back().signal, s->FahrstrSignalSpalte)) {
+                    os << " (" << geschwindigkeitInKmh(*v) << " km/h)";
+                }
+            }
+            result.back().label = os.str();
         }
         fuegeKoppelsignaleHinzu(/*kopplungZuVsig=*/true);
     }
@@ -322,7 +417,7 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
         // Weichenlage anhängen
         if (!result.empty()) {
             std::ostringstream os;
-            os << result.back().label << " -> Lage " << w->FahrstrWeichenlage;
+            os << result.back().label << " -> Nachfolger " << w->FahrstrWeichenlage;
             result.back().label = os.str();
         }
     }
@@ -330,6 +425,15 @@ std::vector<FahrstrasseDetailEintrag> ermittleFahrstrasseDetails(
         if (!r) continue;
         fuegeRefHinzu(FahrstrasseDetailEintrag::Typ::FahrstrRegister,
                       "Register", "FahrstrRegister", r->Datei.Dateiname, r->Ref, /*istSignal=*/false);
+        if (!result.empty() && result.back().fehler.empty()) {
+            // Register-Nummer aus der RichtungsInfo des aufgelösten Elements anhängen.
+            const int regNr = registerNrAn(result.back().elementUndRichtung);
+            if (regNr != 0) {
+                std::ostringstream os;
+                os << result.back().label << " -> Register " << regNr;
+                result.back().label = os.str();
+            }
+        }
     }
     for (const auto& a : fs.quelle->children_FahrstrAufloesung) {
         if (!a) continue;

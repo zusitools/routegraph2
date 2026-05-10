@@ -50,6 +50,7 @@ private slots:
     void onStreckeViewKontextmenuAngefordert(QPoint viewPos);
     void onFahrstrassenDetailAusgewaehlt(int index);
     void onFahrstrassenDetailDoppelklick(int index);
+    void onFahrstrassenDetailWechselZuFahrstrasse(int fahrstrassenIndex);
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent *e) override;
