@@ -54,27 +54,12 @@ set_property(TARGET zusi_parser APPEND PROPERTY WHITELIST
     Fahrstrasse::FahrstrSignal
     Fahrstrasse::FahrstrVSignal
 
-    FahrstrStart::Ref
-    FahrstrStart::Datei
-    FahrstrZiel::Ref
-    FahrstrZiel::Datei
-    FahrstrWeiche::Ref
-    FahrstrWeiche::Datei
+    FahrstrElement::Ref
+    FahrstrElement::Datei
+
     FahrstrWeiche::FahrstrWeichenlage
-    FahrstrRegister::Ref
-    FahrstrRegister::Datei
-    FahrstrAufloesung::Ref
-    FahrstrAufloesung::Datei
-    FahrstrTeilaufloesung::Ref
-    FahrstrTeilaufloesung::Datei
-    FahrstrSigHaltfall::Ref
-    FahrstrSigHaltfall::Datei
-    FahrstrSignal::Ref
-    FahrstrSignal::Datei
     FahrstrSignal::FahrstrSignalZeile
     FahrstrSignal::FahrstrSignalErsatzsignal
-    FahrstrVSignal::Ref
-    FahrstrVSignal::Datei
     FahrstrVSignal::FahrstrSignalSpalte
 
     StrElement::Fkt
