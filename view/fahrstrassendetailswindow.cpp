@@ -370,13 +370,21 @@ public:
 
     explicit FahrstrassenEinstellung(const Streckennetz& netz) : m_netz(netz) {}
 
-    StellungenMap stellungen() && {
-        return std::move(m_stellungen);
+    const StellungenMap& stellungen() const {
+        return m_stellungen;
     }
 
     void fahrstrasseEinstellen(const ResolvedFahrstrasse& fs) {
         if (!fs.quelle) return;
         const auto& fahrstrasseModul = fs.fahrstrasseModul;
+
+        // Pfad-Mitgliedschaft kumulieren: Startelement explizit, Pfad enthält
+        // bereits das Zielelement (siehe model/fahrstrasse.cpp). Wird unten in
+        // Schritt 2 als Filter für Vorsignale verwendet.
+        if (fs.start) m_eingestellteElemente.insert(fs.start);
+        for (const auto& e : fs.pfad) {
+            if (e) m_eingestellteElemente.insert(e);
+        }
 
         // Schritt 1: alle Hauptsignale stellen.
         for (const auto& s : fs.quelle->children_FahrstrSignal) {
@@ -400,12 +408,17 @@ public:
             return;
         }
 
-        // Schritt 2: alle Vorsignale stellen.
+        // Schritt 2: Vorsignale stellen, aber nur an Standorten, deren Element
+        // zur aktuellen oder einer zuvor eingestellten Fahrstraße gehört
+        // (m_eingestellteElemente enthält Pfad inkl. Start- und Zielelement).
+        // Das simuliert die Logik von Zusi, Vorsignale nur innerhalb gestellter
+        // Fahrstraßen zu suchen.
         for (const auto& s : fs.quelle->children_FahrstrVSignal) {
             if (!s) continue;
             const auto res = loeseReferenzAuf(m_netz, fahrstrasseModul,
                                               s->Datei.Dateiname, s->Ref);
             if (!res) continue;
+            if (m_eingestellteElemente.find(res.er) == m_eingestellteElemente.end()) continue;
             std::unordered_set<intptr_t> besucht;
             setzeVsig(res.er, res.modul, s->FahrstrSignalSpalte, besucht);
         }
@@ -483,6 +496,12 @@ private:
 
     const Streckennetz& m_netz;
     StellungenMap m_stellungen;
+    // Kumulierte Menge aller Streckenelemente, die zu einer der bisher per
+    // fahrstrasseEinstellen() einbezogenen Fahrstraßen gehören (inkl. deren
+    // Start- und Zielelementen). Wird für die Filterung von Vorsignalen
+    // herangezogen: ein Vorsignal wird nur gestellt, wenn sein Element zu
+    // einer aktuell oder zuvor eingestellten Fahrstraße gehört.
+    std::unordered_set<StreckenelementUndRichtung> m_eingestellteElemente;
 };
 
 }  // namespace
@@ -1019,7 +1038,7 @@ FahrstrassenDetailsWindow::berechneEintragAnzeige() const
         if (vorgaenger) fe.fahrstrasseEinstellen(*vorgaenger);
         fe.fahrstrasseEinstellen(aktuell);
         if (nachfolger) fe.fahrstrasseEinstellen(*nachfolger);
-        const auto stellungen = std::move(fe).stellungen();
+        const auto& stellungen = fe.stellungen();
 
         for (size_t i = 0; i < m_eintraege.size(); ++i) {
             const auto& e = m_eintraege[i];
@@ -1078,6 +1097,48 @@ FahrstrassenDetailsWindow::berechneEintragAnzeige() const
         // (ggf.) Nachfolger-FS sichtbar werden.
         if (!mindestensEinDurchlauf) {
             erfasseDurchlauf(nullptr);
+        }
+
+        // Fallback für Vorsignale, die nach allen "(alle)"-Durchläufen leer
+        // geblieben sind (typischerweise: Vorsignal-Element gehört zu keiner
+        // der einbezogenen Fahrstraßen-Pfade): synthetische Variante mit
+        // Grundstellung der Wurzel + der im FahrstrVSignal-Eintrag
+        // angegebenen Spalte (entspricht "stelle auf Grundstellung, dann auf
+        // angegebene Spalte"). Anschließend dieselbe Variante an alle
+        // unmittelbar folgenden, an dieses Vsig gekoppelten Koppelsignal-
+        // Einträge weiterreichen (entspricht "stelle auch Koppelsignale").
+        for (size_t i = 0; i < m_eintraege.size(); ++i) {
+            const auto& e = m_eintraege[i];
+            if (e.typ != FahrstrasseDetailEintrag::Typ::FahrstrVSignal) continue;
+            if (!anzeige[i].varianten.empty()) continue;
+            if (!e.elementUndRichtung || !e.signal) continue;
+
+            EintragAnzeige::Variant v;
+            const int z = findeHsigGeschwNullZeile(*e.signal);
+            v.matrixZeile = (z >= 0) ? z : 0;
+            v.matrixSpalte = e.matrixSpalte;
+            v.ersatzsignal = false;
+
+            auto fuegeEinmaligEin = [](EintragAnzeige& a, const EintragAnzeige::Variant& neu) {
+                if (std::find_if(a.varianten.cbegin(), a.varianten.cend(),
+                        [&](const auto& bestehend) {
+                            return bestehend.matrixZeile == neu.matrixZeile
+                                && bestehend.matrixSpalte == neu.matrixSpalte
+                                && bestehend.ersatzsignal == neu.ersatzsignal;
+                        }) == a.varianten.cend()) {
+                    a.varianten.push_back(neu);
+                }
+            };
+            fuegeEinmaligEin(anzeige[i], v);
+
+            // Koppel-Kette dieses Vorsignals: gleiche Iteration wie in
+            // sammleGruppe (Wurzel-Typ FahrstrVSignal → kopplungZuVsig=true).
+            for (size_t k = i + 1; k < m_eintraege.size(); ++k) {
+                const auto& kE = m_eintraege[k];
+                if (kE.typ != FahrstrasseDetailEintrag::Typ::Koppelsignal) break;
+                if (!kE.kopplungZuVsig) break;
+                fuegeEinmaligEin(anzeige[k], v);
+            }
         }
     }
 
