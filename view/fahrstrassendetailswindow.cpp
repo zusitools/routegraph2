@@ -1438,11 +1438,13 @@ void FahrstrassenDetailsWindow::onLs3Fertig(int slotKey, QImage image, QString f
         slot.bildLabel->setText(tr("(leeres Bild)"));
     } else {
         QPixmap pm = QPixmap::fromImage(image);
+#if 0
         // Auf eine handhabbare Höhe skalieren.
         const int maxH = 220;
         if (pm.height() > maxH) {
             pm = pm.scaledToHeight(maxH, Qt::SmoothTransformation);
         }
+#endif
         slot.bildLabel->setPixmap(pm);
         slot.bildLabel->setToolTip({});
         slot.bildLabel->setMinimumSize(pm.size().expandedTo(QSize(120, 160)));
