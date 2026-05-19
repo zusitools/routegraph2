@@ -146,9 +146,9 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets)
 # Boost (required for boost::stacktrace in main.cpp)
 # ---------------------------------------------------------------------------
 if(WIN32)
-  find_package(Boost REQUIRED COMPONENTS filesystem nowide)
+  find_package(Boost REQUIRED COMPONENTS filesystem nowide locale)
 else()
-  find_package(Boost REQUIRED)
+  find_package(Boost REQUIRED locale)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -237,6 +237,7 @@ target_link_libraries(routegraph2 PRIVATE
     ls3render
     zusi_parser
     Boost::headers
+    Boost::locale
 )
 
 target_compile_definitions(routegraph2 PRIVATE

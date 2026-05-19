@@ -13,6 +13,7 @@
 #define BOOST_STACKTRACE_USE_WINDBG
 #endif
 
+#include <boost/locale/generator.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/stacktrace.hpp>
 
@@ -73,6 +74,11 @@ int main(int argc, char *argv[]) {
 	    std::filesystem::remove(g_stacktraceFilename.data());
         }
     }
+
+    boost::locale::generator gen;
+    gen.locale_cache_enabled(true);
+    std::locale locale = gen("UTF-8");
+    std::locale::global(locale);
 
     MainWindow w;
     w.show();

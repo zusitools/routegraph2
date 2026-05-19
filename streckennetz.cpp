@@ -2,10 +2,12 @@
 
 #include "zusi_parser/utils.hpp"
 
+#include <boost/locale/conversion.hpp>
+
 #include <cassert>
 
 void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> strecke) {
-    std::string key { pfad.alsZusiPfad() };  // TODO: to upper case
+    const auto key { boost::locale::fold_case(pfad.alsZusiPfad().begin(), pfad.alsZusiPfad().end()) };
     if (m_strecken.find(key) != m_strecken.end()) {
         return;
     }
@@ -142,8 +144,7 @@ void Streckennetz::add(const zusixml::ZusiPfad& pfad, std::unique_ptr<Strecke> s
 }
 
 Strecke* Streckennetz::get(const zusixml::ZusiPfad& pfad) const {
-    std::string key { pfad.alsZusiPfad() };
-    // TODO: to upper case
+    const auto key { boost::locale::fold_case(pfad.alsZusiPfad().begin(), pfad.alsZusiPfad().end()) };
     if (const auto& it = m_strecken.find(key); it != m_strecken.end()) {
         return it->second.get();
     }
