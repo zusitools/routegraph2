@@ -153,6 +153,7 @@
      <string>&amp;Hilfe</string>
     </property>
     <addaction name="actionHilfeAnleitung"/>
+    <addaction name="actionHilfeUeber"/>
    </widget>
    <addaction name="menuDatei"/>
    <addaction name="menuVisualisierung"/>
@@ -256,6 +257,11 @@
    </property>
    <property name="shortcut">
     <string>F1</string>
+   </property>
+  </action>
+  <action name="actionHilfeUeber">
+   <property name="text">
+    <string>Ü&amp;ber das Programm</string>
    </property>
   </action>
   <actiongroup name="actiongroupVisualisierung">
@@ -513,6 +519,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionHilfeUeber</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionHilfeUeberTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>511</x>
+     <y>383</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>actionOeffnenTriggered()</slot>
@@ -525,5 +547,6 @@
   <slot>actionAnsichtFahrstrassenToggled(bool)</slot>
   <slot>actionAnsichtFahrstrassenDetailsTriggered()</slot>
   <slot>actionHilfeAnleitungTriggered()</slot>
+  <slot>actionHilfeUeberTriggered()</slot>
  </slots>
 </ui>

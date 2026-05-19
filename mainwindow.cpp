@@ -36,6 +36,8 @@
 #include "zusi_parser/utils.hpp"
 #include "zusi_parser/zusi_types.hpp"
 
+#include <boost/preprocessor/stringize.hpp>
+
 #ifdef HAS_CALLGRIND
 #include <valgrind/callgrind.h>
 #else
@@ -243,6 +245,16 @@ void MainWindow::actionHilfeAnleitungTriggered()
     m_anleitungWindow->show();
     m_anleitungWindow->raise();
     m_anleitungWindow->activateWindow();
+}
+
+void MainWindow::actionHilfeUeberTriggered()
+{
+    QMessageBox msgBox(this);
+    msgBox.setText(QString("Programmversion: " BOOST_PP_STRINGIZE(ROUTEGRAPH2_VERSION) "\n"
+        "Zusi-3-Datenpfad (offizieller Bestand): %1\n"
+        "Zusi-3-Datenpfad (eigene Daten); %2")
+        .arg(QString::fromStdString(zusixml::bestimmeZusiDatenpfadOffiziell()), QString::fromStdString(zusixml::bestimmeZusiDatenpfad())));
+    msgBox.exec();
 }
 
 void MainWindow::onFahrstrasseAusgewaehlt(int index)

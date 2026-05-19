@@ -43,6 +43,7 @@ public slots:
     void actionAnsichtFahrstrassenToggled(bool checked);
     void actionAnsichtFahrstrassenDetailsTriggered();
     void actionHilfeAnleitungTriggered();
+    void actionHilfeUeberTriggered();
 
 private slots:
     void onFahrstrasseAusgewaehlt(int index);
