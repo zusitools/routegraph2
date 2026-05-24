@@ -920,29 +920,35 @@ void FahrstrassenDetailsWindow::aktualisiereVorgaengerNachfolger()
     for (size_t i = 0; i < m_alleFahrstrassen->size(); ++i) {
         if (static_cast<int>(i) == m_aktiverIndex) continue;
         const auto& other = (*m_alleFahrstrassen)[i];
-        if (!other.fehler.empty() || !other.quelle) continue;
+        if (!other.quelle) continue;
 
         if (other.ziel && aktuell.start && other.ziel == aktuell.start) {
             auto* item = new QListWidgetItem(QString::fromStdString(other.name));
             item->setData(Qt::UserRole, static_cast<int>(i));
 
-            // Hat die Vorgänger-FS Einfluss auf die Vorsignale der aktuellen FS?
-            bool relevant = false;
-            if (m_netz) {
-                const auto vorgHsig = sammleVorgaengerHauptsignale(*m_netz, other);
-                for (const auto& kv : vorgHsig) {
-                    if (aktuelleVsigStandorte.count(kv.first) > 0) {
-                        relevant = true;
-                        break;
+            if (!other.fehler.empty()) {
+                item->setFlags(item->flags() & ~(Qt::ItemIsEnabled | Qt::ItemIsSelectable));
+                item->setToolTip(QString::fromStdString(other.fehler));
+            } else {
+                // Hat die Vorgänger-FS Einfluss auf die Vorsignale der aktuellen FS?
+                bool relevant = false;
+                if (m_netz) {
+                    const auto vorgHsig = sammleVorgaengerHauptsignale(*m_netz, other);
+                    for (const auto& kv : vorgHsig) {
+                        if (aktuelleVsigStandorte.count(kv.first) > 0) {
+                            relevant = true;
+                            break;
+                        }
                     }
                 }
-            }
-            if (!relevant) {
-                item->setFlags(item->flags() & ~(Qt::ItemIsEnabled | Qt::ItemIsSelectable));
-                item->setToolTip(tr("Hat keinen Einfluss auf die Signalstellungen der"
-                                    " aktuellen Fahrstraße: keines der Hauptsignale"
-                                    " dieser Vorgänger-Fahrstraße kommt als Vorsignal"
-                                    " in der aktuellen Fahrstraße vor."));
+                if (!relevant) {
+                    item->setText(QString("(%1)").arg(item->text()));
+                    item->setFlags(item->flags() & ~(Qt::ItemIsSelectable));
+                    item->setToolTip(tr("Hat keinen Einfluss auf die Signalstellungen der"
+                                        " aktuellen Fahrstraße: keines der Hauptsignale"
+                                        " dieser Vorgänger-Fahrstraße kommt als Vorsignal"
+                                        " in der aktuellen Fahrstraße vor."));
+                }
             }
             m_vorgaengerListe->addItem(item);
         }
@@ -950,23 +956,29 @@ void FahrstrassenDetailsWindow::aktualisiereVorgaengerNachfolger()
             auto* item = new QListWidgetItem(QString::fromStdString(other.name));
             item->setData(Qt::UserRole, static_cast<int>(i));
 
-            // Hat die Nachfolger-FS Einfluss auf die Hauptsignale der aktuellen FS?
-            bool relevant = false;
-            if (m_netz) {
-                const auto nachVsig = sammleNachfolgerVorsignale(*m_netz, other);
-                for (const auto& kv : nachVsig) {
-                    if (aktuelleHsigStandorte.count(kv.first) > 0) {
-                        relevant = true;
-                        break;
+            if (!other.fehler.empty()) {
+                item->setFlags(item->flags() & ~(Qt::ItemIsEnabled | Qt::ItemIsSelectable));
+                item->setToolTip(QString::fromStdString(other.fehler));
+            } else {
+                // Hat die Nachfolger-FS Einfluss auf die Hauptsignale der aktuellen FS?
+                bool relevant = false;
+                if (m_netz) {
+                    const auto nachVsig = sammleNachfolgerVorsignale(*m_netz, other);
+                    for (const auto& kv : nachVsig) {
+                        if (aktuelleHsigStandorte.count(kv.first) > 0) {
+                            relevant = true;
+                            break;
+                        }
                     }
                 }
-            }
-            if (!relevant) {
-                item->setFlags(item->flags() & ~(Qt::ItemIsEnabled | Qt::ItemIsSelectable));
-                item->setToolTip(tr("Hat keinen Einfluss auf die Signalstellungen der"
-                                    " aktuellen Fahrstraße: keines der Vorsignale"
-                                    " dieser Nachfolger-Fahrstraße kommt als Hauptsignal"
-                                    " in der aktuellen Fahrstraße vor."));
+                if (!relevant) {
+                    item->setText(QString("(%1)").arg(item->text()));
+                    item->setFlags(item->flags() & ~(Qt::ItemIsSelectable));
+                    item->setToolTip(tr("Hat keinen Einfluss auf die Signalstellungen der"
+                                        " aktuellen Fahrstraße: keines der Vorsignale"
+                                        " dieser Nachfolger-Fahrstraße kommt als Hauptsignal"
+                                        " in der aktuellen Fahrstraße vor."));
+                }
             }
             m_nachfolgerListe->addItem(item);
         }
