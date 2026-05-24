@@ -564,6 +564,16 @@ public:
     explicit FahrstrassenDetailsLs3Worker(std::atomic<int>* generationRef)
         : m_generationRef(generationRef) {}
 
+    ~FahrstrassenDetailsLs3Worker() {
+        QMutexLocker lock(&ls3renderMutex());
+        if (ls3renderInitialisiert()) {
+            // Cleanup muss im selben Thread passieren wie restliche OpenGL-Operationen,
+            // da der OpenGL-Kontext threadspezifisch ist.
+            ls3render_Cleanup();
+            ls3renderInitialisiert() = false;
+        }
+    }
+
 public slots:
     /**
      * Rendert einen Signal-Slot, dessen Frames als parallele Listen übergeben
