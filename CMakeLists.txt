@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(routegraph2 VERSION 0.1.21 LANGUAGES C CXX)
+project(routegraph2 VERSION 0.1.22 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
